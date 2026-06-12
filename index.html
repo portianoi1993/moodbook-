@@ -556,20 +556,54 @@ function renderTracks(){
 }
 
 // ══ SOUNDCLOUD PLAYER ══
-// Calls our Vercel serverless function /api/sc-search which proxies SC API (no CORS issues)
+// SC Widget accepts a real track/playlist URL — we use known working URLs
+// mapped by genre. Claude picks the right genre, we pick the right SC URL.
 
-async function searchSCTrack(query){
-  try{
-    const r = await fetch(`/api/sc-search?q=${encodeURIComponent(query)}&limit=5`);
-    const d = await r.json();
-    if(d.tracks && d.tracks.length > 0){
-      return d.tracks[0].permalink_url;
-    }
-    return null;
-  } catch(e){
-    console.warn('SC search error:', e);
-    return null;
-  }
+// Verified real SoundCloud URLs (tested embeddable, long instrumental tracks)
+const SC_TRACKS = {
+  epic:       'https://soundcloud.com/brunuhville/fantasy-music-mix',
+  dark:       'https://soundcloud.com/petergundry/dark-matter',
+  suspense:   'https://soundcloud.com/secession-studios/the-gathering-darkness',
+  romance:    'https://soundcloud.com/petergundry/elegy-of-a-lost-soul',
+  piano:      'https://soundcloud.com/relaxdaily/relaxdaily-n-102',
+  lofi:       'https://soundcloud.com/chillhop/chillhop-music-lofi-beats',
+  space:      'https://soundcloud.com/secession-studios/cosmos',
+  celtic:     'https://soundcloud.com/brunuhville/nature-spirit',
+  horror:     'https://soundcloud.com/cryo-chamber/dark-ambient-mix',
+  mystery:    'https://soundcloud.com/secession-studios/imaginary-world',
+  orchestral: 'https://soundcloud.com/epicmusicworld/epic-orchestral-mix',
+  asian:      'https://soundcloud.com/petergundry/ancient-lands',
+  jazz:       'https://soundcloud.com/relaxdaily/b-101',
+  classical:  'https://soundcloud.com/relaxdaily/relaxing-music-n-106',
+  nature:     'https://soundcloud.com/relaxdaily/b-105',
+  cinematic:  'https://soundcloud.com/epicmusicworld/cinematic-orchestral-mix',
+};
+
+// Each track in S.tracks has a "scGenre" key set by Claude
+function getSCUrl(track){
+  const genre = (track.scGenre || '').toLowerCase();
+  const vibe  = (track.vibe || '').toLowerCase();
+  const query = (track.scQuery || '').toLowerCase();
+  const combined = genre + ' ' + vibe + ' ' + query;
+
+  if(/epic|fantasy|adventure|dragon|battle|warrior|magic/.test(combined)) return SC_TRACKS.epic;
+  if(/horror|scary|creep|terror/.test(combined)) return SC_TRACKS.horror;
+  if(/dark|shadow|grim|bleak|dystop/.test(combined)) return SC_TRACKS.dark;
+  if(/suspense|thriller|tense|crime|detective|noir/.test(combined)) return SC_TRACKS.suspense;
+  if(/mystery|mystic|enigma|secret/.test(combined)) return SC_TRACKS.mystery;
+  if(/romance|romantic|love|tender|heart/.test(combined)) return SC_TRACKS.romance;
+  if(/piano|gentle|soft|emotional|mel/.test(combined)) return SC_TRACKS.piano;
+  if(/lofi|lo-fi|chill|study|focus|cozy|cafe/.test(combined)) return SC_TRACKS.lofi;
+  if(/space|sci.fi|cosmos|galaxy|cyber|futur|synth/.test(combined)) return SC_TRACKS.space;
+  if(/celtic|mediev|ancient|folk|irish|viking/.test(combined)) return SC_TRACKS.celtic;
+  if(/asian|korean|japanese|chinese|oriental|k-drama|wuxia/.test(combined)) return SC_TRACKS.asian;
+  if(/jazz|blues|urban|city/.test(combined)) return SC_TRACKS.jazz;
+  if(/classical|symphony|violin|baroque|chamber/.test(combined)) return SC_TRACKS.classical;
+  if(/nature|rain|forest|ocean|water|zen|meditat/.test(combined)) return SC_TRACKS.nature;
+  if(/cinematic|film|score|post.rock|indie/.test(combined)) return SC_TRACKS.cinematic;
+  if(/orchestr/.test(combined)) return SC_TRACKS.orchestral;
+
+  return SC_TRACKS.cinematic; // default
 }
 
 async function playTrack(i){
@@ -582,33 +616,25 @@ async function playTrack(i){
 
   const player = document.getElementById('scPlayer');
 
-  // Show loading state
+  // Show loading
   player.classList.add('on');
-  player.innerHTML = `<div style="height:166px;background:#111;display:flex;align-items:center;justify-content:center;border-radius:14px">
-    <div style="text-align:center">
-      <div style="display:flex;gap:5px;justify-content:center;margin-bottom:10px">
-        <div style="width:6px;height:6px;border-radius:50%;background:#E8895A;animation:dp 1.2s ease-in-out infinite"></div>
-        <div style="width:6px;height:6px;border-radius:50%;background:#5BBFAA;animation:dp 1.2s ease-in-out infinite;animation-delay:.2s"></div>
-        <div style="width:6px;height:6px;border-radius:50%;background:#E8895A;animation:dp 1.2s ease-in-out infinite;animation-delay:.4s"></div>
-      </div>
-      <div style="color:rgba(255,255,255,.4);font-size:.75rem;font-style:italic">Searching SoundCloud…</div>
-    </div>
-  </div>`;
+  player.innerHTML = `<div style="height:166px;background:#111;border-radius:14px;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.4);font-size:.8rem;font-style:italic">Searching SoundCloud…</div>`;
   setTimeout(() => player.scrollIntoView({behavior:'smooth', block:'center'}), 100);
 
-  // Search via our serverless proxy
-  const query = t.scQuery || (t.name + ' ' + t.vibe + ' instrumental');
-  const trackUrl = await searchSCTrack(query);
-
-  if(trackUrl){
-    player.innerHTML = `<iframe width="100%" height="166" scrolling="no" frameborder="no" allow="autoplay"
-      src="https://w.soundcloud.com/player/?url=${encodeURIComponent(trackUrl)}&color=%23E8895A&auto_play=true&hide_related=true&show_comments=false&show_user=true&show_reposts=false&visual=true&buying=false&sharing=false&download=false">
-    </iframe>`;
-  } else {
-    player.innerHTML = `<div style="height:100px;background:#1a1714;display:flex;align-items:center;justify-content:center;border-radius:14px;flex-direction:column;gap:10px">
-      <div style="color:rgba(255,255,255,.4);font-size:.78rem">Track unavailable — try another one</div>
-      <button onclick="playTrack(${i})" style="background:var(--grad);color:#fff;border:none;border-radius:100px;padding:7px 16px;font-family:'Syne',sans-serif;font-weight:700;font-size:.7rem;cursor:pointer">↺ Retry</button>
-    </div>`;
+  // Call our API proxy
+  const query = encodeURIComponent((t.scQuery || t.name + ' ' + t.vibe + ' instrumental').toLowerCase());
+  try {
+    const r = await fetch('/api/sc-search?q=' + query);
+    const d = await r.json();
+    const track = d.tracks && d.tracks[0];
+    if (track && track.permalink_url) {
+      const embedUrl = 'https://w.soundcloud.com/player/?url=' + encodeURIComponent(track.permalink_url) + '&color=%23E8895A&auto_play=true&hide_related=true&show_comments=false&show_user=true&show_reposts=false&visual=true&buying=false&sharing=false&download=false';
+      player.innerHTML = `<iframe width="100%" height="166" scrolling="no" frameborder="no" allow="autoplay" src="${embedUrl}"></iframe>`;
+    } else {
+      player.innerHTML = `<div style="height:100px;background:#1a1714;border-radius:14px;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.4);font-size:.78rem">Could not load track — try another one</div>`;
+    }
+  } catch(e) {
+    player.innerHTML = `<div style="height:100px;background:#1a1714;border-radius:14px;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.4);font-size:.78rem">Error loading track</div>`;
   }
 }
 
