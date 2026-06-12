@@ -624,7 +624,7 @@ async function playTrack(i){
   // Search YouTube via our serverless proxy
   const query = encodeURIComponent((t.scQuery || t.name + ' ' + t.vibe + ' instrumental 1 hour').toLowerCase());
   try {
-    const r = await fetch('/api/yt-search?q=' + query);
+    const r = await fetch('/api/search?q=' + query);
     const d = await r.json();
     if (d.videoId) {
       player.innerHTML = `<iframe width="100%" height="100%" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen
