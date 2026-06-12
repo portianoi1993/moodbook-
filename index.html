@@ -538,47 +538,26 @@ Genre: ${S.bookGenre||'unknown'}
 Description: ${S.bookDesc||'No description available'}
 ${moodOverride?'Current scene mood: '+moodOverride:''}`;
 
-  // Step 1: Claude generates 5 specific SoundCloud search queries
+  // Call /api/claude proxy (GPT-4o-mini)
   let trackList=[];
   try{
-    const r=await fetch(CLAUDE_API,{
-      method:'POST',headers:{'Content-Type':'application/json'},
+    const r=await fetch('/api/claude',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
       body:JSON.stringify({
-        model:'claude-sonnet-4-20250514',max_tokens:800,
-        messages:[{role:'user',content:`You are a music curator for readers with deep knowledge of books. Analyze the book "${S.book}" and create 5 YouTube search queries for INSTRUMENTAL music.
-
-IMPORTANT: Even if the description below is empty, you likely know this book from your training data. Use your knowledge of the book's themes, atmosphere, and emotional arc.
-
-${bookContext}
-
-CRITICAL RULES:
-1. Each query must be UNIQUE and reflect a DIFFERENT emotional moment from this specific book
-2. NO generic queries like "ambient music" or "relaxing music" - make them SPECIFIC to this book's themes
-3. NO lyrics - instrumental only
-4. Include specific music style keywords based on the book:
-   - Epic fantasy (dragons, magic, battles) → "epic orchestral fantasy", "celtic fantasy instrumental", "battle music orchestral"
-   - Dark thriller/crime → "dark noir jazz", "psychological thriller music", "tense suspense orchestra"  
-   - Romance → "romantic piano ballad", "love theme orchestral", "emotional strings romance"
-   - Horror → "dark ambient horror", "haunting atmospheric music", "creepy ambient soundtrack"
-   - Sci-fi → "space ambient electronic", "cyberpunk synthwave", "futuristic atmospheric"
-   - Literary/Drama → "post-rock atmospheric", "indie instrumental emotional", "cinematic drama piano"
-   - Korean/Asian fantasy → "korean drama OST instrumental", "asian epic orchestral", "chinese traditional instrumental"
-   - Lofi/Contemporary → "lofi hip hop study", "chillhop reading music", "jazz lofi instrumental"
-5. Add "no lyrics instrumental" to each query
-6. Vary the energy: include at least one intense, one reflective, one mysterious track
-
-For the book "${S.book}" specifically, think about:
-- What is the dominant emotion? (epic, tense, romantic, dark, mysterious...)
-- What era/setting? (medieval, modern, futuristic, fantasy world...)
-- Key scenes/moments that define the book's atmosphere
-
-Respond ONLY with valid JSON array, no markdown:
-[{"name":"Specific mood name for THIS book","vibe":"2-3 word description","scQuery":"specific youtube search query no lyrics instrumental","duration":"~1-2 hr"},...]`}]
+        book:S.book,
+        genre:S.bookGenre||'',
+        description:S.bookDesc||'',
+        mood:moodOverride||''
       })
     });
     const d=await r.json();
-    trackList=JSON.parse(d.content.map(b=>b.text||'').join('').replace(/```json|```/g,'').trim());
+    if(d.tracks && d.tracks.length>0) trackList=d.tracks;
+    else console.error('AI returned no tracks:', d);
   }catch(e){
+    console.error('AI error:',e);
+  }
+  if(!trackList.length){
     trackList=[
       {name:'Deep Atmosphere',vibe:'Immersive focus',scQuery:'ambient instrumental reading music 1 hour',duration:'~1 hr'},
       {name:'Cinematic Journey',vibe:'Epic & grand',scQuery:'cinematic orchestral instrumental 2 hours',duration:'~2 hr'},
@@ -700,36 +679,19 @@ async function playTrack(i){
 // ══ LOAD MOODS ══
 async function loadMoods(){
   try{
-    const bookContext=`Book: "${S.book}"
-Genre: ${S.bookGenre||'unknown'}
-Description: ${S.bookDesc||''}`;
-
-    const r=await fetch(CLAUDE_API,{
-      method:'POST',headers:{'Content-Type':'application/json'},
+    const r=await fetch('/api/claude',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
       body:JSON.stringify({
-        model:'claude-sonnet-4-20250514',max_tokens:300,
-        messages:[{role:'user',content:`Based on this specific book, generate 6 scene moods that reflect actual emotional moments from THIS story.
-
-${bookContext}
-
-Rules:
-- Use the book's description to identify real scenes/moments
-- Each mood should feel like a chapter or scene from this specific book
-- Be specific to this book's world and characters, not generic
-- Format: short evocative phrase (2-4 words)
-
-If the description mentions specific themes, use them. Examples by genre:
-- Epic fantasy: "Ancient Dragon Awakens", "Last Stand at Dawn", "Forbidden Magic Ritual", "Quiet Before Battle", "Lost in Dark Forest", "Victory Celebration"
-- Thriller: "Following the Suspect", "Dark Secret Revealed", "Late Night Stakeout", "Final Confrontation", "Evidence Found", "Escape Scene"
-- Romance: "First Glance", "Almost a Kiss", "Heartbreaking Goodbye", "Secret Meeting", "Love Confession", "Happy Reunion"
-- Horror: "Something in the Dark", "Running for Life", "Abandoned Place", "The Ritual Begins", "No Way Out", "Final Terror"
-
-ONLY return JSON array of 6 strings, no markdown:
-["mood 1","mood 2","mood 3","mood 4","mood 5","mood 6"]`}]
+        book:S.book,
+        genre:S.bookGenre||'',
+        description:S.bookDesc||'',
+        moodsOnly:true
       })
     });
     const d=await r.json();
-    S.moods=JSON.parse(d.content.map(b=>b.text||'').join('').replace(/```json|```/g,'').trim());
+    if(d.moods && d.moods.length>0) S.moods=d.moods;
+    else S.moods=['Opening Scene','Rising Action','Dark Turn','Quiet Moment','Climax','Resolution'];
   }catch(e){
     S.moods=['Opening Scene','Rising Action','Dark Turn','Quiet Moment','Climax','Resolution'];
   }
