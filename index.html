@@ -233,11 +233,11 @@ nav,.page{position:relative;z-index:1}
     return`<svg width="44" height="64" viewBox="0 0 44 64" fill="none"><rect x="6" y="2" width="36" height="60" rx="3" fill="${c1}"/><rect x="2" y="2" width="8" height="60" rx="2" fill="${c2}"/><rect x="13" y="12" width="22" height="2" rx="1" fill="rgba(255,255,255,0.5)"/><rect x="13" y="18" width="16" height="2" rx="1" fill="rgba(255,255,255,0.35)"/></svg>`;
   }
   const pal=[['#E8895A','#5BBFAA'],['#5BBFAA','#E8895A'],['#E8C4A8','#A8D4C8'],['#D4A07A','#7BBFB0']];
-  for(let i=0;i<10;i++){
+  for(let i=0;i<14;i++){
     const d=document.createElement('div');d.className='bg-book';
     const[c1,c2]=pal[Math.floor(Math.random()*pal.length)];
     d.innerHTML=mk(c1,c2,Math.floor(Math.random()*2));
-    const left=2+Math.random()*90,delay=Math.random()*40,dur=30+Math.random()*40,rot=(Math.random()-.5)*30,scale=.7+Math.random()*.7,op=.4+Math.random()*.25;
+    const left=2+Math.random()*90,delay=Math.random()*35,dur=22+Math.random()*30,rot=(Math.random()-.5)*30,scale=.8+Math.random()*.8,op=0.55+Math.random()*.25;
     d.style.cssText=`left:${left}%;bottom:-80px;--r:${rot}deg;--s:${scale};--op:${op};animation-duration:${dur}s;animation-delay:-${delay}s;`;
     c.appendChild(d);
   }
@@ -345,8 +345,8 @@ nav,.page{position:relative;z-index:1}
             <button class="bill-btn on" id="billM" onclick="setBilling('monthly')">Monthly · $9.99</button>
             <button class="bill-btn off" id="billA" onclick="setBilling('annual')">Annual · $99.99 <span style="background:var(--teal);color:#fff;padding:1px 5px;border-radius:100px;font-size:.58rem;margin-left:2px">−25%</span></button>
           </div>
-          <button class="btn-sub">Start 7-day free trial →</button>
-          <p class="sub-note">Cancel anytime · No credit card required to start</p>
+          <button class="btn-sub">Upgrade to Pro →</button>
+          <p class="sub-note">Free plan: 3 books/month · Pro: unlimited · Cancel anytime</p>
         </div>
       </div>
     </div>
@@ -821,11 +821,13 @@ async function addBook(){
     if(item){
       const idx=DB.books.findIndex(b=>b.id===tempId);
       if(idx!==-1){
+        let cover=item.imageLinks?.thumbnail||item.imageLinks?.smallThumbnail||null;
+        if(cover) cover=cover.replace('http://','https://').replace('zoom=1','zoom=2');
         DB.books[idx]={
           id:tempId,
           title:item.title||q,
           author:item.authors?.[0]||'',
-          cover:item.imageLinks?.thumbnail?.replace('http://','https://')||null,
+          cover:cover,
         };
       }
     }
@@ -883,8 +885,16 @@ if(!DB.books.length){
     try{
       const r=await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(b.title+' '+b.author)}&maxResults=1`);
       const d=await r.json();
-      const cover=d.items?.[0]?.volumeInfo?.imageLinks?.thumbnail?.replace('http://','https://');
-      if(cover){DB.books[i].cover=cover;saveDB();renderBooks();}
+      const item=d.items?.[0]?.volumeInfo;
+      // Try thumbnail, then smallThumbnail, use zoom=2 for better quality
+      let cover=item?.imageLinks?.thumbnail||item?.imageLinks?.smallThumbnail||null;
+      if(cover){
+        cover=cover.replace('http://','https://').replace('zoom=1','zoom=2');
+        DB.books[i].cover=cover;
+        DB.books[i].title=item.title||b.title;
+        DB.books[i].author=item.authors?.[0]||b.author;
+        saveDB();renderBooks();
+      }
     }catch(e){}
   });
   saveDB();
