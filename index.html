@@ -212,7 +212,12 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:16px 2
 /* FLOATING BOOKS */
 .bg-books{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
 .bg-book{position:absolute;opacity:0;animation:bookFloat linear infinite}
-@keyframes bookFloat{0%{opacity:0;transform:translateY(0) rotate(var(--r)) scale(var(--s))}8%{opacity:var(--op)}88%{opacity:var(--op)}100%{opacity:0;transform:translateY(-110vh) rotate(calc(var(--r)+20deg)) scale(var(--s))}}
+@keyframes bookFloat{
+  0%{opacity:0;transform:translateY(0) rotate(var(--r)) scale(var(--s))}
+  8%{opacity:var(--op)}
+  88%{opacity:var(--op)}
+  100%{opacity:0;transform:translateY(-120vh) rotate(calc(var(--r)+25deg)) scale(var(--s))}
+}
 nav,.page{position:relative;z-index:1}
 
 @media(min-width:520px){
@@ -237,8 +242,19 @@ nav,.page{position:relative;z-index:1}
     const d=document.createElement('div');d.className='bg-book';
     const[c1,c2]=pal[Math.floor(Math.random()*pal.length)];
     d.innerHTML=mk(c1,c2,Math.floor(Math.random()*2));
-    const left=2+Math.random()*90,delay=Math.random()*35,dur=22+Math.random()*30,rot=(Math.random()-.5)*30,scale=.8+Math.random()*.8,op=0.55+Math.random()*.25;
-    d.style.cssText=`left:${left}%;bottom:-80px;--r:${rot}deg;--s:${scale};--op:${op};animation-duration:${dur}s;animation-delay:-${delay}s;`;
+    const left=2+Math.random()*92;
+    const dur=18+Math.random()*25;
+    const delay=Math.random()*dur; // spread evenly so always some visible
+    const rot=(Math.random()-.5)*35;
+    const scale=0.7+Math.random()*0.9;
+    const op=0.5+Math.random()*0.3;
+    d.style.left=left+'%';
+    d.style.bottom='-100px';
+    d.style.setProperty('--r',rot+'deg');
+    d.style.setProperty('--s',scale);
+    d.style.setProperty('--op',op);
+    d.style.animationDuration=dur+'s';
+    d.style.animationDelay='-'+delay+'s';
     c.appendChild(d);
   }
 })();
@@ -807,29 +823,59 @@ async function addBook(){
   if(!q)return;
   document.getElementById('addInput').value='';
   const tempId=Date.now();
-  // Add immediately with placeholder
-  DB.books.unshift({title:q,author:'',cover:null,id:tempId});
+  DB.books.unshift({title:q,author:'Loading…',cover:null,id:tempId});
   saveDB();renderBooks();
 
-  // Fetch from Google Books (supports any language)
-  try{
-    const r=await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(q)}&maxResults=1`);
-    const d=await r.json();
-    const item=d.items?.[0]?.volumeInfo;
-    if(item){
-      const idx=DB.books.findIndex(b=>b.id===tempId);
-      if(idx!==-1){
-        let cover=item.imageLinks?.thumbnail||item.imageLinks?.smallThumbnail||null;
-        if(cover) cover=cover.replace('http://','https://').replace('zoom=1','zoom=2');
-        DB.books[idx]={
-          id:tempId,
-          title:item.title||q,
-          author:item.authors?.[0]||'',
-          cover:cover,
-        };
+  let found=false;
+
+  // Try Google Books with original query
+  const queries=[q, q+' book', q.replace(/['"«»]/g,'')];
+  for(const query of queries){
+    try{
+      const r=await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=3`);
+      const d=await r.json();
+      const item=d.items?.[0]?.volumeInfo;
+      if(item && item.title){
+        const idx=DB.books.findIndex(b=>b.id===tempId);
+        if(idx!==-1){
+          let cover=item.imageLinks?.thumbnail||item.imageLinks?.smallThumbnail||null;
+          if(cover) cover=cover.replace('http://','https://').replace('zoom=1','zoom=2');
+          DB.books[idx]={id:tempId,title:item.title,author:item.authors?.[0]||'',cover:cover};
+          found=true;
+        }
+        break;
       }
-    }
-  }catch(e){}
+    }catch(e){}
+  }
+
+  // If not found — ask AI to identify the book
+  if(!found){
+    try{
+      const r=await fetch('/api/claude',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({book:q, identifyOnly:true})
+      });
+      const d=await r.json();
+      if(d.title){
+        // Search Google Books with English title
+        const r2=await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(d.title+' '+d.author)}&maxResults=1`);
+        const d2=await r2.json();
+        const item=d2.items?.[0]?.volumeInfo;
+        const idx=DB.books.findIndex(b=>b.id===tempId);
+        if(idx!==-1){
+          let cover=item?.imageLinks?.thumbnail||item?.imageLinks?.smallThumbnail||null;
+          if(cover) cover=cover.replace('http://','https://').replace('zoom=1','zoom=2');
+          DB.books[idx]={id:tempId,title:d.title,author:d.author||item?.authors?.[0]||'',cover:cover};
+        }
+      }
+    }catch(e){}
+  }
+
+  // Fix unknown author
+  const idx=DB.books.findIndex(b=>b.id===tempId);
+  if(idx!==-1 && DB.books[idx].author==='Loading…') DB.books[idx].author='';
+
   saveDB();renderBooks();
   toast(`📖 <span class="g">"${esc(q)}"</span> added`);
 }
