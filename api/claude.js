@@ -13,39 +13,50 @@ export default async function handler(req, res) {
     let prompt;
 
     if (moodsOnly) {
-      prompt = `For the book "${book}" (genre: ${genre || 'unknown'}), generate 6 specific scene moods that reflect actual emotional moments from THIS story.
-${description ? 'Description: ' + description : ''}
+      prompt = `Book: "${book}"
+${description ? 'Description: ' + description.slice(0, 500) : ''}
 
-Rules:
-- Use your knowledge of this book
-- Each mood = short evocative phrase (2-4 words)
-- Specific to this book's world and characters
+First identify what this book actually is (translate title if needed, identify genre/themes).
+Then generate 6 specific scene moods from THIS book's actual plot and atmosphere.
 
-Respond ONLY with JSON array of 6 strings:
+Respond ONLY with JSON array of 6 short phrases (2-4 words each):
 ["mood 1","mood 2","mood 3","mood 4","mood 5","mood 6"]`;
+
     } else {
-      prompt = `You are a music curator. For the book "${book}", create 5 YouTube search queries for INSTRUMENTAL music.
+      prompt = `You are a music curator. Book: "${book}"
+${description ? 'Description: ' + description.slice(0, 600) : ''}
+${mood ? 'Scene: ' + mood : ''}
 
-Genre: ${genre || 'unknown'}
-${description ? 'Description: ' + description : 'Use your knowledge of this book.'}
-${mood ? 'Current scene mood: ' + mood : ''}
+STEP 1: Identify this book. If the title is in another language, translate it. Determine:
+- What is this book actually about?
+- Genre: sci-fi / fantasy / horror / romance / thriller / self-help / literary fiction / etc.
+- Dominant emotions: epic / tense / romantic / dark / uplifting / contemplative / etc.
+- Setting: space / medieval / modern city / fantasy world / etc.
 
-RULES:
-- Use your deep knowledge of this specific book
-- Each query must be UNIQUE and reflect a DIFFERENT mood/energy from the book
-- NO lyrics — add "no lyrics instrumental" to every query
-- Be SPECIFIC: not "ambient music" but e.g. "epic desert sci-fi orchestral" for Dune
-- Vary energy: intense, reflective, mysterious, epic, peaceful
-- Match the genre:
-  * Epic fantasy → "epic orchestral fantasy battle", "celtic adventure instrumental"
-  * Dark thriller → "dark psychological thriller piano", "tense noir suspense"
-  * Romance → "romantic piano love theme", "emotional strings romance"
-  * Horror → "dark horror ambient atmospheric", "haunting suspense music"
-  * Sci-fi → "space ambient electronic futuristic", "cyberpunk synthwave"
-  * Korean/Asian fantasy → "korean drama OST instrumental", "asian epic orchestral"
+STEP 2: Based on that analysis, create 5 YouTube search queries for INSTRUMENTAL background music.
 
-Respond ONLY with JSON array, no markdown:
-[{"name":"mood name for THIS book","vibe":"2-3 words","scQuery":"youtube search query no lyrics instrumental","duration":"~1-2 hr"}]`;
+CRITICAL RULES:
+- "Atomic Habits" = self-help → lofi study music, focus beats, NOT epic orchestral
+- "Dune" = epic sci-fi desert → cinematic orchestral, NOT pop music
+- "Twilight" = teen romance → romantic piano, soft strings, NOT battle music
+- "Andy Weir Project Hail Mary" = sci-fi space = space ambient electronic
+- "Warhammer 40k" = grimdark sci-fi = dark industrial metal instrumental, heavy orchestral
+- Self-help/non-fiction → lofi hip hop, focus music, study beats
+- Romance → romantic piano, soft strings, emotional
+- Horror → dark ambient, atmospheric horror
+- Epic fantasy → orchestral epic, celtic, battle music
+- Sci-fi → space ambient, electronic, synthetic
+- Thriller → tense suspense, dark noir
+- NEVER suggest music that contradicts the genre
+
+Each query MUST:
+- End with "no lyrics instrumental"
+- Match the ACTUAL genre of the book
+- Be specific (not generic "ambient music")
+- Target videos 30min-2hr long (add "1 hour" or "2 hours")
+
+Respond ONLY with JSON array, no markdown, no explanation:
+[{"name":"descriptive mood name","vibe":"2-3 words","scQuery":"specific youtube query no lyrics instrumental 1 hour","duration":"~1-2 hr"}]`;
     }
 
     const r = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -56,8 +67,8 @@ Respond ONLY with JSON array, no markdown:
       },
       body: JSON.stringify({
         model: 'gpt-4o-mini',
-        max_tokens: 800,
-        temperature: 0.9,
+        max_tokens: 900,
+        temperature: 0.7,
         messages: [{ role: 'user', content: prompt }]
       })
     });
