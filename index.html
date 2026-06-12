@@ -211,13 +211,7 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:16px 2
 
 /* FLOATING BOOKS */
 .bg-books{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
-.bg-book{position:absolute;opacity:0;animation:bookFloat linear infinite}
-@keyframes bookFloat{
-  0%{opacity:0;transform:translateY(0) rotate(var(--r)) scale(var(--s))}
-  8%{opacity:var(--op)}
-  88%{opacity:var(--op)}
-  100%{opacity:0;transform:translateY(-120vh) rotate(calc(var(--r)+25deg)) scale(var(--s))}
-}
+.bg-book{position:absolute;will-change:transform,opacity}
 nav,.page{position:relative;z-index:1}
 
 @media(min-width:520px){
@@ -233,30 +227,77 @@ nav,.page{position:relative;z-index:1}
 <script>
 (function(){
   const c=document.getElementById('bgBooks');
-  function mk(c1,c2,v){
-    if(v===0)return`<svg width="52" height="72" viewBox="0 0 52 72" fill="none"><rect x="8" y="2" width="40" height="68" rx="3" fill="${c1}"/><rect x="2" y="2" width="10" height="68" rx="2" fill="${c2}"/><rect x="16" y="14" width="26" height="2" rx="1" fill="rgba(255,255,255,0.5)"/><rect x="16" y="20" width="20" height="2" rx="1" fill="rgba(255,255,255,0.35)"/></svg>`;
-    return`<svg width="44" height="64" viewBox="0 0 44 64" fill="none"><rect x="6" y="2" width="36" height="60" rx="3" fill="${c1}"/><rect x="2" y="2" width="8" height="60" rx="2" fill="${c2}"/><rect x="13" y="12" width="22" height="2" rx="1" fill="rgba(255,255,255,0.5)"/><rect x="13" y="18" width="16" height="2" rx="1" fill="rgba(255,255,255,0.35)"/></svg>`;
-  }
+  const W=window.innerWidth,H=window.innerHeight;
   const pal=[['#E8895A','#5BBFAA'],['#5BBFAA','#E8895A'],['#E8C4A8','#A8D4C8'],['#D4A07A','#7BBFB0']];
-  for(let i=0;i<14;i++){
-    const d=document.createElement('div');d.className='bg-book';
-    const[c1,c2]=pal[Math.floor(Math.random()*pal.length)];
-    d.innerHTML=mk(c1,c2,Math.floor(Math.random()*2));
-    const left=2+Math.random()*92;
-    const dur=18+Math.random()*25;
-    const delay=Math.random()*dur; // spread evenly so always some visible
-    const rot=(Math.random()-.5)*35;
-    const scale=0.7+Math.random()*0.9;
-    const op=0.5+Math.random()*0.3;
-    d.style.left=left+'%';
-    d.style.bottom='-100px';
-    d.style.setProperty('--r',rot+'deg');
-    d.style.setProperty('--s',scale);
-    d.style.setProperty('--op',op);
-    d.style.animationDuration=dur+'s';
-    d.style.animationDelay='-'+delay+'s';
-    c.appendChild(d);
+
+  function mkSVG(c1,c2){
+    const w=40+Math.random()*20, h=w*1.4;
+    return `<svg width="${w}" height="${h}" viewBox="0 0 52 72" fill="none">
+      <rect x="8" y="2" width="40" height="68" rx="4" fill="${c1}"/>
+      <rect x="2" y="2" width="10" height="68" rx="3" fill="${c2}"/>
+      <rect x="16" y="14" width="26" height="2.5" rx="1" fill="rgba(255,255,255,0.55)"/>
+      <rect x="16" y="22" width="20" height="2" rx="1" fill="rgba(255,255,255,0.38)"/>
+      <rect x="16" y="29" width="23" height="2" rx="1" fill="rgba(255,255,255,0.28)"/>
+    </svg>`;
   }
+
+  const books=[];
+  for(let i=0;i<14;i++){
+    const el=document.createElement('div');
+    el.className='bg-book';
+    const[c1,c2]=pal[Math.floor(Math.random()*pal.length)];
+    el.innerHTML=mkSVG(c1,c2);
+    c.appendChild(el);
+
+    books.push({
+      el,
+      x: Math.random()*W,
+      y: H + 60 + Math.random()*H,   // start below screen
+      speed: 0.4 + Math.random()*0.7, // px per frame
+      rot: (Math.random()-0.5)*25,
+      rotSpeed: (Math.random()-0.5)*0.08,
+      scale: 0.7 + Math.random()*0.8,
+      opacity: 0,
+      targetOp: 0.45 + Math.random()*0.35,
+      phase: 'rise', // rise → show → fade → reset
+    });
+  }
+
+  function tick(){
+    books.forEach(b=>{
+      b.y -= b.speed;
+      b.rot += b.rotSpeed;
+
+      // Fade in when entering screen
+      if(b.y < H*0.9 && b.phase==='rise'){
+        b.phase='show';
+      }
+      if(b.phase==='show'){
+        b.opacity=Math.min(b.opacity+0.015, b.targetOp);
+      }
+      // Fade out near top
+      if(b.y < H*0.15){
+        b.phase='fade';
+      }
+      if(b.phase==='fade'){
+        b.opacity=Math.max(b.opacity-0.02, 0);
+      }
+      // Reset when gone
+      if(b.y < -120){
+        b.y = H + 60 + Math.random()*200;
+        b.x = Math.random()*W;
+        b.opacity=0;
+        b.phase='rise';
+        b.speed=0.4+Math.random()*0.7;
+        b.rotSpeed=(Math.random()-0.5)*0.08;
+      }
+
+      b.el.style.transform=`translate(${b.x}px,${b.y}px) rotate(${b.rot}deg) scale(${b.scale})`;
+      b.el.style.opacity=b.opacity;
+    });
+    requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
 })();
 </script>
 
@@ -359,7 +400,18 @@ nav,.page{position:relative;z-index:1}
             <button class="bill-btn on" id="billM" onclick="setBilling('monthly')">Monthly · $9.99</button>
             <button class="bill-btn off" id="billA" onclick="setBilling('annual')">Annual · $99.99 <span style="background:var(--teal);color:#fff;padding:1px 5px;border-radius:100px;font-size:.58rem;margin-left:2px">−25%</span></button>
           </div>
-          <button class="btn-sub">Upgrade to Pro →</button>
+          <div id="promoSection">
+            <div style="display:flex;gap:8px;margin-bottom:12px">
+              <input id="promoInput" type="text" placeholder="Have a promo code?" 
+                style="flex:1;background:rgba(255,255,255,.08);border:1.5px solid rgba(255,255,255,.15);border-radius:10px;padding:10px 14px;color:#fff;font-family:'DM Sans',sans-serif;font-size:.82rem;outline:none"
+                onkeydown="if(event.key==='Enter')applyPromo()"/>
+              <button onclick="applyPromo()" 
+                style="padding:10px 16px;background:rgba(255,255,255,.15);border:1.5px solid rgba(255,255,255,.2);border-radius:10px;color:#fff;font-family:'Syne',sans-serif;font-weight:700;font-size:.72rem;cursor:pointer;white-space:nowrap">
+                Apply
+              </button>
+            </div>
+            <button class="btn-sub" onclick="window.open('mailto:moodbook@moodbook.ink?subject=Pro Subscription')">Upgrade to Pro →</button>
+          </div>
           <p class="sub-note">Free plan: 3 books/month · Pro: unlimited · Cancel anytime</p>
         </div>
       </div>
@@ -428,11 +480,25 @@ nav,.page{position:relative;z-index:1}
 const CLAUDE_API='https://api.anthropic.com/v1/messages';
 
 // ══ STATE ══
+// ══ PRO STATUS ══
+const PROMO_CODES = ['MOODBOOK2024','BLOGGER2024','PROMOBOOK','READERPRO','MBREADER'];
+function isPro(){
+  return localStorage.getItem('mb_pro')==='true';
+}
+function activatePro(code){
+  if(PROMO_CODES.includes(code.toUpperCase())){
+    localStorage.setItem('mb_pro','true');
+    return true;
+  }
+  return false;
+}
+
 const S={
   book:'',bookDesc:'',bookGenre:'',
   tracks:[],moods:[],playing:null,
   liked:new Set(JSON.parse(localStorage.getItem('mb_liked')||'[]')),
   editingCoverIdx:null,
+  searchCount:parseInt(localStorage.getItem('mb_searches_'+new Date().toDateString())||'0'),
 };
 const DB={
   books:JSON.parse(localStorage.getItem('mb_books')||'[]'),
@@ -457,6 +523,16 @@ function saveDB(){localStorage.setItem('mb_books',JSON.stringify(DB.books));loca
 
 // ══ BILLING ══
 let billingPlan='monthly';
+
+function applyPromo(){
+  const code=document.getElementById('promoInput')?.value?.trim()||'';
+  if(activatePro(code)){
+    toast('🎉 <span class="g">Pro activated! Enjoy unlimited access.</span>',4000);
+    document.getElementById('promoSection').innerHTML='<div style="background:rgba(91,191,170,.2);border:1.5px solid rgba(91,191,170,.4);border-radius:12px;padding:12px;text-align:center;color:#5BBFAA;font-family:Syne,sans-serif;font-weight:700;font-size:.82rem">✓ Pro Active — Unlimited Access</div>';
+  } else {
+    toast('Invalid promo code');
+  }
+}
 function setBilling(p){
   billingPlan=p;
   document.getElementById('billM').className='bill-btn '+(p==='monthly'?'on':'off');
