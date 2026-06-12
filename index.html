@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MoodBook — Music for Every Page</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F8F5F0;--white:#fff;--ink:#1A1714;--ink2:#7A7068;--ink3:#B0A89E;
+  --border:#EDE9E3;--peach:#E8895A;--teal:#5BBFAA;
+  --grad:linear-gradient(135deg,#E8895A,#5BBFAA);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--ink);font-family:'DM Sans',sans-serif;min-height:100vh;overflow-x:hidden}
+
+/* NAV */
+nav{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;background:rgba(248,245,240,.95);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:50}
+.logo{font-family:'Syne',sans-serif;font-weight:800;font-size:1.2rem;letter-spacing:-.02em;cursor:pointer;color:var(--ink)}
+.logo span{background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.nav-tabs{display:flex;gap:4px}
+.nav-tab{font-family:'Syne',sans-serif;font-weight:700;font-size:.72rem;color:var(--ink2);background:none;border:1.5px solid var(--border);border-radius:100px;padding:7px 14px;cursor:pointer;transition:all .2s}
+.nav-tab:hover{border-color:var(--ink);color:var(--ink)}
+.nav-tab.active{background:var(--ink);color:#fff;border-color:var(--ink)}
+.avatar{width:34px;height:34px;border-radius:50%;background:var(--grad);display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:800;font-size:.75rem;color:#fff;cursor:pointer;margin-left:4px;transition:transform .2s}
+.avatar:hover{transform:scale(1.08)}
+
+/* PAGES */
+.page{display:none}.page.active{display:block}
+.wrap{max-width:480px;margin:0 auto;padding:0 20px}
+
+/* HERO */
+.hero{padding:40px 0 28px}
+.hero-h1{font-family:'Syne',sans-serif;font-weight:800;font-size:clamp(2.2rem,8vw,2.8rem);line-height:1.05;letter-spacing:-.03em;margin-bottom:12px}
+.hero-h1 em{font-style:normal;background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero-sub{font-size:.86rem;color:var(--ink2);line-height:1.7;margin-bottom:24px;font-weight:300}
+
+/* SEARCH */
+.search-card{background:var(--white);border:1.5px solid var(--border);border-radius:20px;padding:18px;box-shadow:0 4px 24px rgba(0,0,0,.06);margin-bottom:12px;transition:box-shadow .3s,border-color .3s}
+.search-card:focus-within{box-shadow:0 8px 40px rgba(232,137,90,.12);border-color:rgba(232,137,90,.3)}
+.sc-lbl{font-family:'Syne',sans-serif;font-weight:700;font-size:.6rem;letter-spacing:.12em;text-transform:uppercase;color:var(--ink3);margin-bottom:10px}
+.sc-row{display:flex;gap:8px}
+.sc-input{flex:1;background:var(--bg);border:1.5px solid var(--border);border-radius:12px;padding:12px 14px;font-family:'DM Sans',sans-serif;font-size:.9rem;color:var(--ink);outline:none;transition:all .2s;-webkit-appearance:none}
+.sc-input::placeholder{color:var(--ink3)}
+.sc-input:focus{border-color:var(--peach);background:var(--white);box-shadow:0 0 0 3px rgba(232,137,90,.1)}
+.sc-go{width:44px;height:44px;border-radius:12px;flex-shrink:0;background:var(--grad);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 3px 14px rgba(232,137,90,.35);transition:all .2s}
+.sc-go:hover{transform:scale(1.08)}
+.sc-go:active{transform:scale(.93)}
+.sc-go svg{width:16px;height:16px;stroke:#fff;fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+.chip{font-family:'DM Sans',sans-serif;font-size:.72rem;font-weight:500;color:var(--ink2);background:var(--bg);border:1.5px solid var(--border);border-radius:100px;padding:5px 12px;cursor:pointer;transition:all .2s}
+.chip:hover{background:var(--white);border-color:var(--peach);color:var(--peach);transform:translateY(-2px)}
+
+/* RESULTS */
+.results{display:none}.results.visible{display:block;animation:fadeUp .4s ease forwards}
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+.bk-bar{display:flex;align-items:center;justify-content:space-between;padding:14px 0 10px}
+.bk-title{font-family:'Syne',sans-serif;font-weight:800;font-size:1.05rem;letter-spacing:-.02em}
+.bk-sub{font-size:.66rem;color:var(--ink3);margin-top:2px}
+.bk-new{font-family:'Syne',sans-serif;font-weight:700;font-size:.68rem;color:var(--ink2);background:none;border:1.5px solid var(--border);border-radius:100px;padding:6px 12px;cursor:pointer;flex-shrink:0;transition:all .2s}
+.bk-new:hover{border-color:var(--peach);color:var(--peach)}
+
+/* TABS */
+.tabs{display:flex;gap:4px;background:var(--white);border:1.5px solid var(--border);border-radius:14px;padding:4px;margin-bottom:14px;box-shadow:0 2px 8px rgba(0,0,0,.04)}
+.tab{flex:1;padding:8px;border:none;border-radius:10px;font-family:'Syne',sans-serif;font-weight:700;font-size:.72rem;color:var(--ink2);background:none;cursor:pointer;transition:all .2s}
+.tab:hover{color:var(--ink);background:var(--bg)}
+.tab.active{background:var(--grad);color:#fff;box-shadow:0 2px 10px rgba(232,137,90,.3)}
+.tab-pane{display:none}.tab-pane.active{display:block;animation:fadeUp .3s ease forwards}
+
+/* TRACKS */
+.tracks{display:flex;flex-direction:column;gap:7px;margin-bottom:14px}
+.track{display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:14px;border:1.5px solid var(--border);background:var(--white);cursor:pointer;transition:all .2s;-webkit-tap-highlight-color:transparent}
+.track:hover{border-color:var(--peach);transform:translateX(3px);box-shadow:0 4px 14px rgba(232,137,90,.12)}
+.track.playing{background:rgba(232,137,90,.05);border-color:rgba(232,137,90,.35)}
+.tn{font-family:'Syne',sans-serif;font-weight:800;font-size:.76rem;min-width:18px;text-align:center;background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.ti{flex:1;min-width:0}
+.tname{font-size:.83rem;font-weight:500;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:2px}
+.tvibe{font-size:.65rem;color:var(--ink3)}
+.tsc{font-size:.6rem;color:var(--teal);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;opacity:.8}
+.tr{display:flex;align-items:center;gap:6px;flex-shrink:0}
+.like-btn{background:none;border:none;cursor:pointer;font-size:.9rem;color:var(--ink3);transition:all .2s;padding:3px;-webkit-tap-highlight-color:transparent}
+.like-btn:hover{color:var(--peach);transform:scale(1.3)}
+.track.liked .like-btn{color:var(--peach)}
+.play-btn{width:30px;height:30px;border-radius:50%;background:var(--grad);color:#fff;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:.55rem;box-shadow:0 2px 8px rgba(232,137,90,.3);transition:all .2s}
+.play-btn:hover{transform:scale(1.12)}
+
+/* SOUNDCLOUD PLAYER */
+.sc-player{border-radius:14px;overflow:hidden;margin-bottom:14px;display:none;box-shadow:0 6px 24px rgba(0,0,0,.1)}
+.sc-player.on{display:block}
+.sc-player iframe{width:100%;height:166px;border:none;display:block}
+
+/* LOADER */
+.loader{display:flex;flex-direction:column;align-items:center;gap:12px;padding:36px 20px}
+.loader-text{font-size:.8rem;color:var(--ink3);font-style:italic}
+.dots{display:flex;gap:5px}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--peach);opacity:.3;animation:dp 1.2s ease-in-out infinite}
+.dot:nth-child(2){animation-delay:.2s;background:linear-gradient(135deg,var(--peach),var(--teal))}
+.dot:nth-child(3){animation-delay:.4s;background:var(--teal)}
+@keyframes dp{0%,100%{opacity:.2;transform:scale(.7)}50%{opacity:1;transform:scale(1)}}
+
+/* MOOD */
+.mood-intro{font-size:.82rem;color:var(--ink2);line-height:1.65;margin-bottom:16px}
+.mood-grid{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px}
+.mpill{padding:8px 16px;border-radius:100px;border:1.5px solid var(--border);background:var(--white);font-family:'DM Sans',sans-serif;font-size:.76rem;font-weight:500;color:var(--ink2);cursor:pointer;transition:all .2s;-webkit-tap-highlight-color:transparent}
+.mpill:hover{border-color:var(--peach);color:var(--peach);transform:translateY(-2px)}
+.mpill.active{background:var(--grad);color:#fff;border-color:transparent;box-shadow:0 3px 14px rgba(232,137,90,.3)}
+
+/* PRO */
+.sub-card{background:var(--ink);border-radius:18px;padding:22px}
+.sub-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.sub-title{font-family:'Syne',sans-serif;font-weight:800;font-size:1.05rem;color:#fff}
+.sub-title em{font-style:normal;background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.sub-price{font-family:'Syne',sans-serif;font-weight:800;font-size:.85rem;color:rgba(248,245,240,.4)}
+.sub-tagline{font-size:.78rem;color:rgba(248,245,240,.5);margin-bottom:18px}
+.perks{display:flex;flex-direction:column;gap:8px;margin-bottom:20px}
+.perk{display:flex;align-items:center;gap:9px;font-size:.8rem;color:rgba(248,245,240,.8)}
+.perk-dot{width:6px;height:6px;border-radius:50%;background:var(--grad);flex-shrink:0}
+.bill-toggle{display:flex;background:rgba(255,255,255,.08);border-radius:10px;padding:3px;gap:3px;margin-bottom:14px}
+.bill-btn{flex:1;padding:7px;border-radius:8px;border:none;cursor:pointer;font-family:'Syne',sans-serif;font-weight:700;font-size:.7rem;transition:all .2s}
+.bill-btn.on{background:rgba(255,255,255,.15);color:#fff}
+.bill-btn.off{background:none;color:rgba(255,255,255,.4)}
+.btn-sub{width:100%;padding:13px;border-radius:12px;border:none;cursor:pointer;background:var(--grad);color:#fff;font-family:'Syne',sans-serif;font-weight:800;font-size:.82rem;box-shadow:0 4px 20px rgba(232,137,90,.4);transition:all .2s}
+.btn-sub:hover{transform:translateY(-2px);box-shadow:0 7px 28px rgba(232,137,90,.5)}
+.sub-note{font-size:.65rem;color:rgba(248,245,240,.3);text-align:center;margin-top:8px}
+
+/* NOW PLAYING */
+.np{position:fixed;bottom:0;left:0;right:0;z-index:100;background:rgba(248,245,240,.97);backdrop-filter:blur(20px);border-top:1px solid var(--border);padding:12px 20px;display:flex;align-items:center;gap:12px;transform:translateY(100%);transition:transform .45s cubic-bezier(.22,1,.36,1);box-shadow:0 -4px 24px rgba(0,0,0,.06)}
+.np.up{transform:translateY(0)}
+.np-eq{display:flex;align-items:flex-end;gap:2px;height:18px;flex-shrink:0}
+.eb{width:3px;border-radius:2px;background:var(--grad);animation:eq .75s ease-in-out infinite alternate}
+.eb:nth-child(1){height:5px}.eb:nth-child(2){height:14px;animation-delay:.12s}.eb:nth-child(3){height:7px;animation-delay:.24s}.eb:nth-child(4){height:15px;animation-delay:.08s}.eb:nth-child(5){height:6px;animation-delay:.2s}
+@keyframes eq{from{transform:scaleY(.2)}to{transform:scaleY(1)}}
+.np-info{flex:1;min-width:0}
+.np-lbl{font-family:'Syne',sans-serif;font-weight:700;font-size:.58rem;letter-spacing:.15em;text-transform:uppercase;color:var(--peach)}
+.np-name{font-size:.84rem;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
+.np-scroll{font-family:'Syne',sans-serif;font-weight:700;font-size:.68rem;color:var(--peach);background:rgba(232,137,90,.1);border:1.5px solid rgba(232,137,90,.25);border-radius:100px;padding:5px 12px;cursor:pointer;white-space:nowrap;transition:all .2s}
+.np-scroll:hover{background:var(--peach);color:#fff}
+
+/* TOAST */
+.toast{position:fixed;top:16px;left:50%;transform:translateX(-50%) translateY(-70px);background:var(--ink);color:var(--bg);font-size:.78rem;padding:9px 18px;border-radius:100px;z-index:200;transition:transform .35s cubic-bezier(.22,1,.36,1);pointer-events:none;white-space:nowrap;box-shadow:0 4px 20px rgba(0,0,0,.15)}
+.toast.on{transform:translateX(-50%) translateY(0)}
+.toast .g{color:var(--peach)}
+
+/* LIBRARY */
+.page-header{padding:32px 0 22px}
+.page-header h1{font-family:'Syne',sans-serif;font-weight:800;font-size:clamp(1.7rem,6vw,2.1rem);letter-spacing:-.03em;margin-bottom:6px}
+.page-header h1 em{font-style:normal;background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.page-sub{font-size:.82rem;color:var(--ink2);line-height:1.6}
+.section-label{font-family:'Syne',sans-serif;font-weight:700;font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;color:var(--ink3);margin-bottom:12px}
+.add-bar{display:flex;gap:8px;margin-bottom:24px}
+.add-input{flex:1;background:var(--white);border:1.5px solid var(--border);border-radius:12px;padding:11px 14px;font-family:'DM Sans',sans-serif;font-size:.88rem;color:var(--ink);outline:none;transition:all .2s;-webkit-appearance:none}
+.add-input::placeholder{color:var(--ink3)}
+.add-input:focus{border-color:var(--peach);box-shadow:0 0 0 3px rgba(232,137,90,.1)}
+.add-btn{padding:11px 16px;background:var(--grad);color:#fff;border:none;border-radius:12px;font-family:'Syne',sans-serif;font-weight:800;font-size:.76rem;cursor:pointer;white-space:nowrap;box-shadow:0 3px 14px rgba(232,137,90,.3);transition:all .2s}
+.add-btn:hover{transform:translateY(-2px)}
+.books-grid{display:flex;flex-direction:column;gap:10px;margin-bottom:28px}
+.book-card{background:var(--white);border:1.5px solid var(--border);border-radius:16px;overflow:hidden;display:flex;align-items:stretch;box-shadow:0 2px 10px rgba(0,0,0,.05);transition:all .2s}
+.book-card:hover{border-color:rgba(232,137,90,.3);transform:translateY(-2px);box-shadow:0 6px 20px rgba(232,137,90,.1)}
+.book-cover-wrap{width:64px;flex-shrink:0;background:var(--grad);position:relative;overflow:hidden;cursor:pointer}
+.book-cover-wrap img{width:100%;height:100%;object-fit:cover;display:block}
+.book-cover-wrap .cover-fallback{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:1.6rem;opacity:.5}
+.cover-edit-overlay{position:absolute;inset:0;background:rgba(0,0,0,.55);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;opacity:0;transition:opacity .2s;cursor:pointer}
+.book-cover-wrap:hover .cover-edit-overlay{opacity:1}
+.cover-edit-overlay span{font-size:.55rem;color:#fff;font-family:'Syne',sans-serif;font-weight:700;letter-spacing:.06em;text-align:center;line-height:1.3}
+.cover-edit-overlay svg{width:14px;height:14px;stroke:#fff;fill:none;stroke-width:2.5}
+.book-info{flex:1;padding:13px 13px 13px 14px;min-width:0}
+.book-name{font-family:'Syne',sans-serif;font-weight:800;font-size:.86rem;color:var(--ink);letter-spacing:-.01em;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.book-author{font-size:.7rem;color:var(--ink3);margin-bottom:10px;font-style:italic}
+.book-actions{display:flex;gap:6px;align-items:center}
+.btn-play-book{display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border-radius:100px;background:var(--grad);color:#fff;border:none;font-family:'Syne',sans-serif;font-weight:700;font-size:.68rem;cursor:pointer;box-shadow:0 2px 8px rgba(232,137,90,.25);transition:all .2s}
+.btn-play-book:hover{transform:scale(1.05)}
+.btn-remove{width:26px;height:26px;border-radius:50%;background:none;border:1.5px solid var(--border);color:var(--ink3);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:.65rem;transition:all .2s;margin-left:auto}
+.btn-remove:hover{border-color:#E05A5A;color:#E05A5A}
+.empty{text-align:center;padding:36px 20px;background:var(--white);border:1.5px dashed var(--border);border-radius:16px}
+.empty-icon{font-size:2.2rem;margin-bottom:10px;opacity:.4}
+.empty-text{font-size:.82rem;color:var(--ink3);line-height:1.6}
+.liked-tracks{display:flex;flex-direction:column;gap:7px;margin-bottom:28px}
+.liked-track{display:flex;align-items:center;gap:10px;padding:10px 13px;border-radius:12px;border:1.5px solid var(--border);background:var(--white);cursor:pointer;transition:all .2s}
+.liked-track:hover{border-color:var(--peach);transform:translateX(3px)}
+.lt-heart{color:var(--peach);font-size:.9rem;flex-shrink:0}
+.lt-info{flex:1;min-width:0}
+.lt-name{font-size:.8rem;font-weight:500;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:1px}
+.lt-book{font-size:.65rem;color:var(--ink3)}
+.lt-play{width:28px;height:28px;border-radius:50%;background:var(--grad);color:#fff;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:.55rem;transition:all .2s;flex-shrink:0}
+.lt-play:hover{transform:scale(1.12)}
+
+/* ACCOUNT */
+.account-card{background:var(--white);border:1.5px solid var(--border);border-radius:16px;padding:20px;box-shadow:0 2px 10px rgba(0,0,0,.05);margin-bottom:14px}
+.account-top{display:flex;align-items:center;gap:14px;margin-bottom:16px}
+.account-avatar{width:50px;height:50px;border-radius:50%;background:var(--grad);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:800;font-size:1rem;color:#fff}
+.account-name{font-family:'Syne',sans-serif;font-weight:800;font-size:.96rem;color:var(--ink)}
+.account-email{font-size:.72rem;color:var(--ink3);margin-top:2px}
+.account-badge{display:inline-flex;align-items:center;gap:4px;background:var(--grad);color:#fff;font-family:'Syne',sans-serif;font-weight:700;font-size:.6rem;padding:3px 9px;border-radius:100px;margin-top:5px}
+.account-stats{display:flex;border:1.5px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:16px}
+.stat{flex:1;text-align:center;padding:13px 8px;border-right:1px solid var(--border)}
+.stat:last-child{border-right:none}
+.stat-num{font-family:'Syne',sans-serif;font-weight:800;font-size:1.25rem;background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;line-height:1;margin-bottom:2px}
+.stat-lbl{font-size:.6rem;color:var(--ink3)}
+.sub-status{background:linear-gradient(135deg,rgba(232,137,90,.08),rgba(91,191,170,.08));border:1.5px solid rgba(232,137,90,.2);border-radius:12px;padding:13px 15px;display:flex;align-items:center;justify-content:space-between}
+.sub-status-plan{font-family:'Syne',sans-serif;font-weight:800;font-size:.83rem;color:var(--ink)}
+.sub-status-date{font-size:.67rem;color:var(--ink3);margin-top:2px}
+.sub-status-btn{font-family:'Syne',sans-serif;font-weight:700;font-size:.67rem;color:var(--peach);background:rgba(232,137,90,.1);border:1.5px solid rgba(232,137,90,.2);border-radius:100px;padding:6px 12px;cursor:pointer;white-space:nowrap;transition:all .2s}
+.sub-status-btn:hover{background:var(--peach);color:#fff}
+
+/* HIDDEN FILE INPUT */
+.cover-file-input{display:none}
+
+.pb{height:80px}
+
+/* FLOATING BOOKS */
+.bg-books{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+.bg-book{position:absolute;opacity:0;animation:bookFloat linear infinite}
+@keyframes bookFloat{0%{opacity:0;transform:translateY(0) rotate(var(--r)) scale(var(--s))}8%{opacity:var(--op)}88%{opacity:var(--op)}100%{opacity:0;transform:translateY(-110vh) rotate(calc(var(--r)+20deg)) scale(var(--s))}}
+nav,.page{position:relative;z-index:1}
+
+@media(min-width:520px){
+  .wrap{max-width:520px}
+  .np{max-width:480px;left:50%;right:auto;border-radius:16px 16px 0 0;border:1px solid var(--border);border-bottom:none;transform:translateX(-50%) translateY(100%)}
+  .np.up{transform:translateX(-50%) translateY(0)}
+}
+</style>
+</head>
+<body>
+
+<div class="bg-books" id="bgBooks"></div>
+<script>
+(function(){
+  const c=document.getElementById('bgBooks');
+  function mk(c1,c2,v){
+    if(v===0)return`<svg width="52" height="72" viewBox="0 0 52 72" fill="none"><rect x="8" y="2" width="40" height="68" rx="3" fill="${c1}"/><rect x="2" y="2" width="10" height="68" rx="2" fill="${c2}"/><rect x="16" y="14" width="26" height="2" rx="1" fill="rgba(255,255,255,0.5)"/><rect x="16" y="20" width="20" height="2" rx="1" fill="rgba(255,255,255,0.35)"/></svg>`;
+    return`<svg width="44" height="64" viewBox="0 0 44 64" fill="none"><rect x="6" y="2" width="36" height="60" rx="3" fill="${c1}"/><rect x="2" y="2" width="8" height="60" rx="2" fill="${c2}"/><rect x="13" y="12" width="22" height="2" rx="1" fill="rgba(255,255,255,0.5)"/><rect x="13" y="18" width="16" height="2" rx="1" fill="rgba(255,255,255,0.35)"/></svg>`;
+  }
+  const pal=[['#E8895A','#5BBFAA'],['#5BBFAA','#E8895A'],['#E8C4A8','#A8D4C8'],['#D4A07A','#7BBFB0']];
+  for(let i=0;i<10;i++){
+    const d=document.createElement('div');d.className='bg-book';
+    const[c1,c2]=pal[Math.floor(Math.random()*pal.length)];
+    d.innerHTML=mk(c1,c2,Math.floor(Math.random()*2));
+    const left=2+Math.random()*90,delay=Math.random()*40,dur=30+Math.random()*40,rot=(Math.random()-.5)*30,scale=.7+Math.random()*.7,op=.4+Math.random()*.25;
+    d.style.cssText=`left:${left}%;bottom:-80px;--r:${rot}deg;--s:${scale};--op:${op};animation-duration:${dur}s;animation-delay:-${delay}s;`;
+    c.appendChild(d);
+  }
+})();
+</script>
+
+<!-- NAV -->
+<nav>
+  <span class="logo" onclick="showPage('discover')">Mood<span>Book</span></span>
+  <div style="display:flex;align-items:center;gap:4px">
+    <div class="nav-tabs">
+      <button class="nav-tab active" id="navDiscover" onclick="showPage('discover')">Discover</button>
+      <button class="nav-tab" id="navLibrary" onclick="showPage('library')">Library</button>
+    </div>
+    <div class="avatar" onclick="showPage('library');setTimeout(()=>document.getElementById('accountSection').scrollIntoView({behavior:'smooth'}),120)">A</div>
+  </div>
+</nav>
+
+<!-- ═══ DISCOVER ═══ -->
+<div class="page active" id="pageDiscover">
+  <div class="wrap">
+    <div class="hero">
+      <h1 class="hero-h1">Music for<br><em>every page.</em></h1>
+      <p class="hero-sub">Tell us what you're reading — we'll find music that matches its exact world, mood, and atmosphere.</p>
+      <div class="search-card">
+        <div class="sc-lbl">What are you reading?</div>
+        <div class="sc-row">
+          <input class="sc-input" id="mainIn" type="text" placeholder="Book title or author…" autocomplete="off" spellcheck="false"/>
+          <button class="sc-go" id="mainBtn">
+            <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="22" y2="22"/></svg>
+          </button>
+        </div>
+        <div class="chips">
+          <button class="chip" data-q="Fourth Wing Rebecca Yarros">Fourth Wing</button>
+          <button class="chip" data-q="Intermezzo Sally Rooney">Intermezzo</button>
+          <button class="chip" data-q="The Women Kristin Hannah">The Women</button>
+          <button class="chip" data-q="Dune Frank Herbert">Dune</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="results" id="results">
+      <div class="bk-bar">
+        <div>
+          <div class="bk-title" id="bkTitle">—</div>
+          <div class="bk-sub" id="bkGenre">AI-curated soundtrack</div>
+        </div>
+        <button class="bk-new" onclick="resetSearch()">↺ New search</button>
+      </div>
+      <div class="tabs">
+        <button class="tab active" id="tabT" onclick="switchTab('tracks')">♫ Soundtrack</button>
+        <button class="tab" id="tabM" onclick="switchTab('mood')">◈ Mood</button>
+        <button class="tab" id="tabP" onclick="switchTab('pro')">✦ Pro</button>
+      </div>
+      <div class="tab-pane active" id="paneT">
+        <div id="tracksBody"></div>
+        <div class="sc-player" id="scPlayer">
+          <iframe id="scFrame" scrolling="no" allow="autoplay"></iframe>
+        </div>
+      </div>
+      <div class="tab-pane" id="paneM">
+        <div id="moodBody"></div>
+      </div>
+      <div class="tab-pane" id="paneP">
+        <div class="sub-card">
+          <div class="sub-head">
+            <div class="sub-title">Mood<em>Book</em> Pro</div>
+            <div class="sub-price" id="subPrice">$7.99/mo</div>
+          </div>
+          <p class="sub-tagline">Everything you need for the perfect reading session.</p>
+          <div class="perks">
+            <div class="perk"><div class="perk-dot"></div>Unlimited books per day</div>
+            <div class="perk"><div class="perk-dot"></div>All mood scenes unlocked</div>
+            <div class="perk"><div class="perk-dot"></div>Personal reading library</div>
+            <div class="perk"><div class="perk-dot"></div>Liked tracks saved forever</div>
+            <div class="perk"><div class="perk-dot"></div>Sync across all devices</div>
+          </div>
+          <div class="bill-toggle">
+            <button class="bill-btn on" id="billM" onclick="setBilling('monthly')">Monthly · $7.99</button>
+            <button class="bill-btn off" id="billA" onclick="setBilling('annual')">Annual · $71.99 <span style="background:var(--teal);color:#fff;padding:1px 5px;border-radius:100px;font-size:.58rem;margin-left:2px">−25%</span></button>
+          </div>
+          <button class="btn-sub">Start 7-day free trial →</button>
+          <p class="sub-note">Cancel anytime · No credit card required to start</p>
+        </div>
+      </div>
+    </div>
+    <div class="pb"></div>
+  </div>
+</div>
+
+<!-- ═══ LIBRARY ═══ -->
+<div class="page" id="pageLibrary">
+  <div class="wrap">
+    <div class="page-header">
+      <h1>My <em>Library</em></h1>
+      <p class="page-sub">Your books, your soundtracks.</p>
+    </div>
+    <div class="add-bar">
+      <input class="add-input" id="addInput" type="text" placeholder="Add a book — title or author…" autocomplete="off" spellcheck="false"/>
+      <button class="add-btn" onclick="addBook()">+ Add</button>
+    </div>
+    <div class="section-label">Currently reading</div>
+    <div class="books-grid" id="booksGrid"></div>
+    <div class="section-label">Liked tracks</div>
+    <div class="liked-tracks" id="likedTracks"></div>
+    <div class="section-label" id="accountSection">Account</div>
+    <div class="account-card">
+      <div class="account-top">
+        <div class="account-avatar">A</div>
+        <div>
+          <div class="account-name">Alex Reader</div>
+          <div class="account-email">alex@example.com</div>
+          <div class="account-badge">✦ Pro</div>
+        </div>
+      </div>
+      <div class="account-stats">
+        <div class="stat"><div class="stat-num" id="statBooks">0</div><div class="stat-lbl">Books</div></div>
+        <div class="stat"><div class="stat-num" id="statLiked">0</div><div class="stat-lbl">Liked</div></div>
+        <div class="stat"><div class="stat-num">∞</div><div class="stat-lbl">Searches</div></div>
+      </div>
+      <div class="sub-status">
+        <div>
+          <div class="sub-status-plan">MoodBook Pro · $7.99/mo</div>
+          <div class="sub-status-date">Renews July 11, 2026</div>
+        </div>
+        <button class="sub-status-btn">Manage</button>
+      </div>
+    </div>
+    <div class="pb"></div>
+  </div>
+</div>
+
+<!-- NOW PLAYING -->
+<div class="np" id="np">
+  <div class="np-eq"><div class="eb"></div><div class="eb"></div><div class="eb"></div><div class="eb"></div><div class="eb"></div></div>
+  <div class="np-info">
+    <div class="np-lbl">Now playing</div>
+    <div class="np-name" id="npName">—</div>
+  </div>
+  <button class="np-scroll" onclick="showPage('discover');setTimeout(()=>document.getElementById('scPlayer').scrollIntoView({behavior:'smooth',block:'center'}),120)">Show ↑</button>
+</div>
+
+<div class="toast" id="toast"></div>
+<input type="file" class="cover-file-input" id="coverFileInput" accept="image/*">
+
+<script>
+// ══ CONSTANTS ══
+const CLAUDE_API='https://api.anthropic.com/v1/messages';
+
+// ══ STATE ══
+const S={
+  book:'',bookDesc:'',bookGenre:'',
+  tracks:[],moods:[],playing:null,
+  liked:new Set(JSON.parse(localStorage.getItem('mb_liked')||'[]')),
+  editingCoverIdx:null,
+};
+const DB={
+  books:JSON.parse(localStorage.getItem('mb_books')||'[]'),
+  liked:JSON.parse(localStorage.getItem('mb_liked_tracks')||'[]'),
+};
+
+// ══ PAGE ROUTER ══
+function showPage(p){
+  ['discover','library'].forEach(n=>{
+    document.getElementById('page'+n[0].toUpperCase()+n.slice(1)).classList.toggle('active',n===p);
+    document.getElementById('nav'+n[0].toUpperCase()+n.slice(1)).classList.toggle('active',n===p);
+  });
+  if(p==='library'){renderBooks();renderLiked();}
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+// ══ HELPERS ══
+function toast(html,ms=2800){const t=document.getElementById('toast');t.innerHTML=html;t.classList.add('on');setTimeout(()=>t.classList.remove('on'),ms);}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+function loader(msg){return`<div class="loader"><div class="dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div><span class="loader-text">${msg}</span></div>`}
+function saveDB(){localStorage.setItem('mb_books',JSON.stringify(DB.books));localStorage.setItem('mb_liked_tracks',JSON.stringify(DB.liked));}
+
+// ══ BILLING ══
+let billingPlan='monthly';
+function setBilling(p){
+  billingPlan=p;
+  document.getElementById('billM').className='bill-btn '+(p==='monthly'?'on':'off');
+  document.getElementById('billA').className='bill-btn '+(p==='annual'?'on':'off');
+  document.getElementById('subPrice').textContent=p==='monthly'?'$7.99/mo':'$71.99/yr';
+}
+
+// ══ TABS ══
+function switchTab(name){
+  const map={tracks:'T',mood:'M',pro:'P'};
+  Object.entries(map).forEach(([n,k])=>{
+    document.getElementById('tab'+k).classList.toggle('active',n===name);
+    document.getElementById('pane'+k).classList.toggle('active',n===name);
+  });
+}
+
+function showResults(){
+  const r=document.getElementById('results');
+  r.classList.add('visible');
+  setTimeout(()=>r.scrollIntoView({behavior:'smooth',block:'start'}),80);
+}
+
+function resetSearch(){
+  document.getElementById('results').classList.remove('visible');
+  document.getElementById('np').classList.remove('up');
+  document.getElementById('scPlayer').classList.remove('on');
+  document.getElementById('mainIn').value='';
+  document.getElementById('mainIn').focus();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+// ══ MAIN SEARCH FLOW ══
+async function doSearch(q){
+  if(!q.trim())return;
+  S.book=q;S.playing=null;S.bookDesc='';S.bookGenre='';
+  document.getElementById('bkTitle').textContent=q;
+  document.getElementById('bkGenre').textContent='Analysing book…';
+  document.getElementById('scPlayer').classList.remove('on');
+  document.getElementById('np').classList.remove('up');
+  document.getElementById('tracksBody').innerHTML=loader('Looking up the book…');
+  document.getElementById('moodBody').innerHTML=loader('Reading the vibe…');
+  switchTab('tracks');
+  showResults();
+
+  // Step 1: Get book description from Google Books API
+  await fetchBookInfo(q);
+
+  // Step 2: Load tracks + moods in parallel (both use book description)
+  await Promise.all([loadTracks(), loadMoods()]);
+}
+
+async function fetchBookInfo(q){
+  try{
+    const r=await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(q)}&maxResults=1&langRestrict=`);
+    const d=await r.json();
+    const item=d.items?.[0]?.volumeInfo;
+    if(item){
+      S.bookDesc=(item.description||'').slice(0,800);
+      S.bookGenre=(item.categories||[]).join(', ')||'Fiction';
+      document.getElementById('bkGenre').textContent=S.bookGenre;
+      document.getElementById('bkTitle').textContent=item.title||q;
+    }
+  }catch(e){}
+  if(!S.bookDesc) document.getElementById('bkGenre').textContent='AI-curated soundtrack';
+}
+
+// ══ LOAD TRACKS via Claude → SoundCloud search ══
+async function loadTracks(moodOverride){
+  document.getElementById('tracksBody').innerHTML=loader('Curating your soundtrack…');
+
+  const bookContext=`Book: "${S.book}"
+Genre: ${S.bookGenre||'unknown'}
+Description: ${S.bookDesc||'No description available'}
+${moodOverride?'Current scene mood: '+moodOverride:''}`;
+
+  // Step 1: Claude generates 5 specific SoundCloud search queries
+  let trackList=[];
+  try{
+    const r=await fetch(CLAUDE_API,{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',max_tokens:800,
+        messages:[{role:'user',content:`You are a music curator. Based on this book, create 5 SoundCloud search queries for LONG (1-3hr) INSTRUMENTAL tracks that match the reading atmosphere.
+
+${bookContext}
+
+Rules:
+- Analyze the actual genre, themes, and emotional tone from the description
+- NO lyrics / vocals — instrumental only
+- Match the real mood: thriller→dark suspense cinematic; fantasy→epic orchestral celtic; romance→romantic piano strings; horror→horror ambient dark; sci-fi→space ambient electronic; contemporary→indie instrumental post-rock; korean fantasy→korean drama OST
+- Each track should have a different energy level (e.g. intense, reflective, mysterious, epic, peaceful)
+- Make queries specific enough to find relevant music on SoundCloud
+
+scGenre must be ONE of: epic, dark, suspense, romance, piano, lofi, space, celtic, horror, mystery, orchestral, asian, jazz, classical, nature, cinematic
+
+Respond ONLY with valid JSON array, no markdown:
+[{"name":"Mood label (e.g. Battle Tension)","vibe":"2-3 word description","scQuery":"search query","scGenre":"one_of_the_genres_above","duration":"~1-2 hr"},...]`}]
+      })
+    });
+    const d=await r.json();
+    trackList=JSON.parse(d.content.map(b=>b.text||'').join('').replace(/```json|```/g,'').trim());
+  }catch(e){
+    trackList=[
+      {name:'Deep Atmosphere',vibe:'Immersive focus',scQuery:'ambient instrumental reading music 1 hour',duration:'~1 hr'},
+      {name:'Cinematic Journey',vibe:'Epic & grand',scQuery:'cinematic orchestral instrumental 2 hours',duration:'~2 hr'},
+      {name:'Dark Tension',vibe:'Tense & moody',scQuery:'dark suspense instrumental ambient',duration:'~1 hr'},
+      {name:'Quiet Reflection',vibe:'Calm & peaceful',scQuery:'peaceful piano instrumental 1 hour',duration:'~1 hr'},
+      {name:'Mysterious Depths',vibe:'Mysterious & deep',scQuery:'mysterious atmospheric instrumental music',duration:'~1 hr'},
+    ];
+  }
+
+  S.tracks=trackList;
+  renderTracks();
+}
+
+// ══ RENDER TRACKS ══
+function renderTracks(){
+  document.getElementById('tracksBody').innerHTML=`
+    <div class="tracks">
+      ${S.tracks.map((t,i)=>`
+        <div class="track${S.playing===i?' playing':''}${S.liked.has(i)?' liked':''}" id="tr${i}"
+             tabindex="0" onclick="playTrack(${i})">
+          <span class="tn">${i+1}</span>
+          <div class="ti">
+            <div class="tname">${esc(t.name)}</div>
+            <div class="tvibe">${esc(t.vibe)} · ${t.duration||'~1 hr'}</div>
+            <div class="tsc">♫ SoundCloud · ${esc(t.scQuery)}</div>
+          </div>
+          <div class="tr">
+            <button class="like-btn" onclick="toggleLike(event,${i})">
+              ${S.liked.has(i)?'♥':'♡'}
+            </button>
+            <button class="play-btn">▶</button>
+          </div>
+        </div>`).join('')}
+    </div>`;
+}
+
+// ══ SOUNDCLOUD PLAYER ══
+// Calls our Vercel serverless function /api/sc-search which proxies SC API (no CORS issues)
+
+async function searchSCTrack(query){
+  try{
+    const r = await fetch(`/api/sc-search?q=${encodeURIComponent(query)}&limit=5`);
+    const d = await r.json();
+    if(d.tracks && d.tracks.length > 0){
+      return d.tracks[0].permalink_url;
+    }
+    return null;
+  } catch(e){
+    console.warn('SC search error:', e);
+    return null;
+  }
+}
+
+async function playTrack(i){
+  S.playing = i;
+  const t = S.tracks[i];
+  document.querySelectorAll('.track').forEach(el => el.classList.remove('playing'));
+  const el = document.getElementById('tr'+i); if(el) el.classList.add('playing');
+  document.getElementById('npName').textContent = t.name + ' — ' + t.vibe;
+  document.getElementById('np').classList.add('up');
+
+  const player = document.getElementById('scPlayer');
+
+  // Show loading state
+  player.classList.add('on');
+  player.innerHTML = `<div style="height:166px;background:#111;display:flex;align-items:center;justify-content:center;border-radius:14px">
+    <div style="text-align:center">
+      <div style="display:flex;gap:5px;justify-content:center;margin-bottom:10px">
+        <div style="width:6px;height:6px;border-radius:50%;background:#E8895A;animation:dp 1.2s ease-in-out infinite"></div>
+        <div style="width:6px;height:6px;border-radius:50%;background:#5BBFAA;animation:dp 1.2s ease-in-out infinite;animation-delay:.2s"></div>
+        <div style="width:6px;height:6px;border-radius:50%;background:#E8895A;animation:dp 1.2s ease-in-out infinite;animation-delay:.4s"></div>
+      </div>
+      <div style="color:rgba(255,255,255,.4);font-size:.75rem;font-style:italic">Searching SoundCloud…</div>
+    </div>
+  </div>`;
+  setTimeout(() => player.scrollIntoView({behavior:'smooth', block:'center'}), 100);
+
+  // Search via our serverless proxy
+  const query = t.scQuery || (t.name + ' ' + t.vibe + ' instrumental');
+  const trackUrl = await searchSCTrack(query);
+
+  if(trackUrl){
+    player.innerHTML = `<iframe width="100%" height="166" scrolling="no" frameborder="no" allow="autoplay"
+      src="https://w.soundcloud.com/player/?url=${encodeURIComponent(trackUrl)}&color=%23E8895A&auto_play=true&hide_related=true&show_comments=false&show_user=true&show_reposts=false&visual=true&buying=false&sharing=false&download=false">
+    </iframe>`;
+  } else {
+    player.innerHTML = `<div style="height:100px;background:#1a1714;display:flex;align-items:center;justify-content:center;border-radius:14px;flex-direction:column;gap:10px">
+      <div style="color:rgba(255,255,255,.4);font-size:.78rem">Track unavailable — try another one</div>
+      <button onclick="playTrack(${i})" style="background:var(--grad);color:#fff;border:none;border-radius:100px;padding:7px 16px;font-family:'Syne',sans-serif;font-weight:700;font-size:.7rem;cursor:pointer">↺ Retry</button>
+    </div>`;
+  }
+}
+
+// ══ LOAD MOODS ══
+async function loadMoods(){
+  try{
+    const bookContext=`Book: "${S.book}"
+Genre: ${S.bookGenre||'unknown'}
+Description: ${S.bookDesc||''}`;
+
+    const r=await fetch(CLAUDE_API,{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',max_tokens:300,
+        messages:[{role:'user',content:`Based on this book, generate 6 specific scene moods that exist in THIS story. They should reflect the actual emotional moments in the book.
+
+${bookContext}
+
+Examples for different genres:
+- Fantasy: "Dragon Battle", "Quiet Village", "Dark Dungeon", "Forbidden Magic", "Epic Journey", "Ancient Mystery"
+- Thriller: "Chase Scene", "Dark Revelation", "Tense Negotiation", "Crime Scene", "Quiet Before Storm", "Final Confrontation"  
+- Romance: "First Meeting", "Secret Longing", "Romantic Tension", "Heart Break", "Reconciliation", "Happy Ending"
+
+Create 6 moods specific to THIS book. ONLY JSON array:
+["Mood 1","Mood 2","Mood 3","Mood 4","Mood 5","Mood 6"]`}]
+      })
+    });
+    const d=await r.json();
+    S.moods=JSON.parse(d.content.map(b=>b.text||'').join('').replace(/```json|```/g,'').trim());
+  }catch(e){
+    S.moods=['Opening Scene','Rising Action','Dark Turn','Quiet Moment','Climax','Resolution'];
+  }
+  renderMoods();
+}
+
+function renderMoods(){
+  document.getElementById('moodBody').innerHTML=`
+    <p class="mood-intro">Choose a scene from the book — the soundtrack shifts to match that specific moment.</p>
+    <div class="mood-grid">
+      ${S.moods.map((m,i)=>`
+        <button class="mpill${i===0?' active':''}" onclick="pickMood(this,'${esc(m).replace(/'/g,"\\'")}')">
+          ${esc(m)}
+        </button>`).join('')}
+    </div>`;
+}
+
+function pickMood(btn,mood){
+  document.querySelectorAll('.mpill').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('scPlayer').classList.remove('on');
+  switchTab('tracks');
+  loadTracks(mood);
+}
+
+// ══ LIKE ══
+function toggleLike(e,i){
+  e.stopPropagation();
+  if(S.liked.has(i)){
+    S.liked.delete(i);
+  } else {
+    S.liked.add(i);
+    toast('♥ <span class="g">Saved to liked tracks</span>');
+    if(S.tracks[i]){
+      const t=S.tracks[i];
+      if(!DB.liked.find(x=>x.name===t.name&&x.book===S.book)){
+        DB.liked.unshift({name:t.name,book:S.book,vibe:t.vibe,scQuery:t.scQuery});
+        saveDB();
+      }
+    }
+  }
+  localStorage.setItem('mb_liked',JSON.stringify([...S.liked]));
+  const el=document.getElementById('tr'+i);if(!el)return;
+  el.classList.toggle('liked',S.liked.has(i));
+  el.querySelector('.like-btn').textContent=S.liked.has(i)?'♥':'♡';
+}
+
+// ══ LIBRARY ══
+function renderBooks(){
+  const grid=document.getElementById('booksGrid');
+  document.getElementById('statBooks').textContent=DB.books.length;
+  if(!DB.books.length){
+    grid.innerHTML=`<div class="empty"><div class="empty-icon">📚</div><p class="empty-text">No books yet.<br>Add one above to get started.</p></div>`;
+    return;
+  }
+  grid.innerHTML=DB.books.map((b,i)=>`
+    <div class="book-card">
+      <div class="book-cover-wrap" onclick="triggerCoverUpload(${i})">
+        ${b.cover?`<img src="${esc(b.cover)}" alt="${esc(b.title)}" onerror="this.style.display='none'">`:''}
+        <div class="cover-fallback" style="${b.cover?'display:none':''}">📖</div>
+        <div class="cover-edit-overlay">
+          <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          <span>Change<br>cover</span>
+        </div>
+      </div>
+      <div class="book-info">
+        <div class="book-name">${esc(b.title)}</div>
+        <div class="book-author">${esc(b.author||'Unknown author')}</div>
+        <div class="book-actions">
+          <button class="btn-play-book" onclick="playBook(${i})">▶ Play</button>
+          <button class="btn-remove" onclick="removeBook(${i})">✕</button>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+function triggerCoverUpload(i){
+  S.editingCoverIdx=i;
+  document.getElementById('coverFileInput').click();
+}
+
+document.getElementById('coverFileInput').addEventListener('change',function(){
+  const file=this.files[0];
+  if(!file||S.editingCoverIdx===null)return;
+  const reader=new FileReader();
+  reader.onload=function(e){
+    DB.books[S.editingCoverIdx].cover=e.target.result;
+    saveDB();renderBooks();
+    toast('✓ <span class="g">Cover updated</span>');
+  };
+  reader.readAsDataURL(file);
+  this.value='';
+});
+
+function renderLiked(){
+  const el=document.getElementById('likedTracks');
+  document.getElementById('statLiked').textContent=DB.liked.length;
+  if(!DB.liked.length){
+    el.innerHTML=`<div class="empty"><div class="empty-icon">♡</div><p class="empty-text">No liked tracks yet.<br>Heart a track while listening.</p></div>`;
+    return;
+  }
+  el.innerHTML=DB.liked.map((t,i)=>`
+    <div class="liked-track">
+      <span class="lt-heart">♥</span>
+      <div class="lt-info">
+        <div class="lt-name">${esc(t.name)} — ${esc(t.vibe)}</div>
+        <div class="lt-book">${esc(t.book||'')}</div>
+      </div>
+      <button class="lt-play" onclick="playLikedTrack(${i})">▶</button>
+    </div>`).join('');
+}
+
+async function addBook(){
+  const q=document.getElementById('addInput').value.trim();
+  if(!q)return;
+  document.getElementById('addInput').value='';
+  const tempId=Date.now();
+  // Add immediately with placeholder
+  DB.books.unshift({title:q,author:'',cover:null,id:tempId});
+  saveDB();renderBooks();
+
+  // Fetch from Google Books (supports any language)
+  try{
+    const r=await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(q)}&maxResults=1`);
+    const d=await r.json();
+    const item=d.items?.[0]?.volumeInfo;
+    if(item){
+      const idx=DB.books.findIndex(b=>b.id===tempId);
+      if(idx!==-1){
+        DB.books[idx]={
+          id:tempId,
+          title:item.title||q,
+          author:item.authors?.[0]||'',
+          cover:item.imageLinks?.thumbnail?.replace('http://','https://')||null,
+        };
+      }
+    }
+  }catch(e){}
+  saveDB();renderBooks();
+  toast(`📖 <span class="g">"${esc(q)}"</span> added`);
+}
+
+function removeBook(i){
+  const t=DB.books[i].title;
+  DB.books.splice(i,1);saveDB();renderBooks();
+  toast(`Removed "${esc(t)}"`);
+}
+
+function playBook(i){
+  const b=DB.books[i];
+  showPage('discover');
+  setTimeout(()=>{
+    document.getElementById('mainIn').value=b.title+(b.author?' by '+b.author:'');
+    doSearch(b.title+(b.author?' '+b.author:''));
+  },100);
+}
+
+function playLikedTrack(i){
+  const t=DB.liked[i];
+  showPage('discover');
+  setTimeout(()=>{
+    S.book=t.book||t.name;
+    S.bookDesc='';S.bookGenre='';
+    document.getElementById('bkTitle').textContent=S.book;
+    document.getElementById('bkGenre').textContent='Liked track';
+    document.getElementById('results').classList.add('visible');
+    S.tracks=[t];
+    renderTracks();
+    playTrack(0);
+  },150);
+}
+
+// ══ INIT ══
+document.getElementById('mainBtn').addEventListener('click',()=>doSearch(document.getElementById('mainIn').value));
+document.getElementById('mainIn').addEventListener('keydown',e=>{if(e.key==='Enter')doSearch(e.target.value)});
+document.querySelectorAll('.chip').forEach(c=>c.addEventListener('click',()=>{
+  document.getElementById('mainIn').value=c.dataset.q;
+  doSearch(c.dataset.q);
+}));
+document.getElementById('addInput').addEventListener('keydown',e=>{if(e.key==='Enter')addBook()});
+
+if(!DB.books.length){
+  DB.books=[
+    {id:1,title:'Fourth Wing',author:'Rebecca Yarros',cover:null},
+    {id:2,title:'Dune',author:'Frank Herbert',cover:null},
+  ];
+  // Fetch covers async
+  DB.books.forEach(async(b,i)=>{
+    try{
+      const r=await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(b.title+' '+b.author)}&maxResults=1`);
+      const d=await r.json();
+      const cover=d.items?.[0]?.volumeInfo?.imageLinks?.thumbnail?.replace('http://','https://');
+      if(cover){DB.books[i].cover=cover;saveDB();renderBooks();}
+    }catch(e){}
+  });
+  saveDB();
+}
+renderBooks();
+renderLiked();
+</script>
+</body>
+</html>
