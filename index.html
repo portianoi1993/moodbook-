@@ -247,29 +247,27 @@ nav,.page{position:relative;z-index:1}
 <!-- NAV -->
 <nav>
   <span class="logo" onclick="showPage('discover')" style="display:flex;align-items:center;gap:8px">
-    <svg width="32" height="32" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <!-- Book pages -->
-      <path d="M50 75 C35 70 20 68 15 70 L15 28 C20 26 35 28 50 33 C65 28 80 26 85 28 L85 70 C80 68 65 70 50 75Z" fill="url(#bookGrad)"/>
-      <line x1="50" y1="33" x2="50" y2="75" stroke="white" stroke-width="2" opacity="0.4"/>
-      <!-- Headphones arc -->
-      <path d="M22 50 C22 28 78 28 78 50" stroke="url(#headGrad)" stroke-width="6" fill="none" stroke-linecap="round"/>
-      <!-- Headphone cups -->
-      <rect x="14" y="48" width="12" height="18" rx="6" fill="#E8895A"/>
-      <rect x="74" y="48" width="12" height="18" rx="6" fill="#5BBFAA"/>
-      <!-- Stars -->
-      <path d="M50 18 L51.5 22 L55 22 L52.5 24.5 L53.5 28 L50 26 L46.5 28 L47.5 24.5 L45 22 L48.5 22Z" fill="#E8895A" opacity="0.9"/>
-      <path d="M40 22 L41 25 L44 25 L41.5 26.5 L42.5 30 L40 28 L37.5 30 L38.5 26.5 L36 25 L39 25Z" fill="#5BBFAA" opacity="0.7" transform="scale(0.7) translate(15,8)"/>
-      <path d="M62 20 L63 23 L66 23 L63.5 24.5 L64.5 28 L62 26 L59.5 28 L60.5 24.5 L58 23 L61 23Z" fill="#5BBFAA" opacity="0.7" transform="scale(0.6) translate(45,10)"/>
+    <svg width="36" height="36" viewBox="0 0 120 110" fill="none" xmlns="http://www.w3.org/2000/svg">
       <defs>
-        <linearGradient id="bookGrad" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stop-color="#E8895A"/>
-          <stop offset="100%" stop-color="#5BBFAA"/>
-        </linearGradient>
-        <linearGradient id="headGrad" x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0%" stop-color="#E8895A"/>
-          <stop offset="100%" stop-color="#5BBFAA"/>
-        </linearGradient>
+        <linearGradient id="lg1" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#E8895A"/><stop offset="100%" stop-color="#5BBFAA"/></linearGradient>
+        <linearGradient id="lg2" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#E8895A"/><stop offset="100%" stop-color="#5BBFAA"/></linearGradient>
       </defs>
+      <!-- Open book left page -->
+      <path d="M60 85 C50 80 30 78 14 80 L14 40 C30 38 50 40 60 46Z" fill="url(#lg2)" opacity="0.9"/>
+      <!-- Open book right page -->
+      <path d="M60 85 C70 80 90 78 106 80 L106 40 C90 38 70 40 60 46Z" fill="url(#lg1)" opacity="0.85"/>
+      <!-- Book spine -->
+      <line x1="60" y1="46" x2="60" y2="85" stroke="white" stroke-width="1.5" opacity="0.5"/>
+      <!-- Headphones arc -->
+      <path d="M24 62 C24 30 96 30 96 62" stroke="url(#lg1)" stroke-width="7" fill="none" stroke-linecap="round"/>
+      <!-- Left ear cup -->
+      <rect x="14" y="58" width="14" height="22" rx="7" fill="#E8895A"/>
+      <!-- Right ear cup -->
+      <rect x="92" y="58" width="14" height="22" rx="7" fill="#5BBFAA"/>
+      <!-- Stars -->
+      <path d="M60 26 L61.8 31.5 L67.5 31.5 L63 34.8 L64.8 40.5 L60 37.2 L55.2 40.5 L57 34.8 L52.5 31.5 L58.2 31.5Z" fill="#E8895A" opacity="0.95"/>
+      <path d="M44 32 L45 35 L48 35 L45.8 36.8 L46.7 40 L44 38.2 L41.3 40 L42.2 36.8 L40 35 L43 35Z" fill="#5BBFAA" opacity="0.8"/>
+      <path d="M76 30 L77 33 L80 33 L77.8 34.8 L78.7 38 L76 36.2 L73.3 38 L74.2 34.8 L72 33 L75 33Z" fill="#5BBFAA" opacity="0.7"/>
     </svg>
     <span style="font-family:'Syne',sans-serif;font-weight:800;font-size:1.2rem;letter-spacing:-.02em;color:var(--ink)">Mood<span style="background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">Book</span></span>
   </span>
