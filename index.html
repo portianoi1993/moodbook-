@@ -86,10 +86,10 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:16px 2
 .play-btn{width:30px;height:30px;border-radius:50%;background:var(--grad);color:#fff;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:.55rem;box-shadow:0 2px 8px rgba(232,137,90,.3);transition:all .2s}
 .play-btn:hover{transform:scale(1.12)}
 
-/* SOUNDCLOUD PLAYER */
-.sc-player{border-radius:14px;overflow:hidden;margin-bottom:14px;display:none;box-shadow:0 6px 24px rgba(0,0,0,.1)}
+/* YOUTUBE PLAYER */
+.sc-player{border-radius:14px;overflow:hidden;margin-bottom:14px;display:none;box-shadow:0 6px 24px rgba(0,0,0,.1);aspect-ratio:16/9;background:#000}
 .sc-player.on{display:block}
-.sc-player iframe{width:100%;height:166px;border:none;display:block}
+.sc-player iframe{width:100%;height:100%;border:none;display:block}
 
 /* LOADER */
 .loader{display:flex;flex-direction:column;align-items:center;gap:12px;padding:36px 20px}
@@ -621,17 +621,16 @@ async function playTrack(i){
   player.innerHTML = `<div style="height:166px;background:#111;border-radius:14px;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.4);font-size:.8rem;font-style:italic">Searching SoundCloud…</div>`;
   setTimeout(() => player.scrollIntoView({behavior:'smooth', block:'center'}), 100);
 
-  // Call our API proxy
-  const query = encodeURIComponent((t.scQuery || t.name + ' ' + t.vibe + ' instrumental').toLowerCase());
+  // Search YouTube via our serverless proxy
+  const query = encodeURIComponent((t.scQuery || t.name + ' ' + t.vibe + ' instrumental 1 hour').toLowerCase());
   try {
-    const r = await fetch('/api/sc-search?q=' + query);
+    const r = await fetch('/api/yt-search?q=' + query);
     const d = await r.json();
-    const track = d.tracks && d.tracks[0];
-    if (track && track.permalink_url) {
-      const embedUrl = 'https://w.soundcloud.com/player/?url=' + encodeURIComponent(track.permalink_url) + '&color=%23E8895A&auto_play=true&hide_related=true&show_comments=false&show_user=true&show_reposts=false&visual=true&buying=false&sharing=false&download=false';
-      player.innerHTML = `<iframe width="100%" height="166" scrolling="no" frameborder="no" allow="autoplay" src="${embedUrl}"></iframe>`;
+    if (d.videoId) {
+      player.innerHTML = `<iframe width="100%" height="100%" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen
+        src="https://www.youtube.com/embed/${d.videoId}?autoplay=1&rel=0&modestbranding=1"></iframe>`;
     } else {
-      player.innerHTML = `<div style="height:100px;background:#1a1714;border-radius:14px;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.4);font-size:.78rem">Could not load track — try another one</div>`;
+      player.innerHTML = `<div style="height:100px;background:#1a1714;border-radius:14px;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.4);font-size:.78rem">Could not find a track — try another one</div>`;
     }
   } catch(e) {
     player.innerHTML = `<div style="height:100px;background:#1a1714;border-radius:14px;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.4);font-size:.78rem">Error loading track</div>`;
