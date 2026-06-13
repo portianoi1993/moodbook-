@@ -207,6 +207,45 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:16px 2
 /* HIDDEN FILE INPUT */
 .cover-file-input{display:none}
 
+/* ACCOUNT PAGE */
+.plan-cards{display:flex;flex-direction:column;gap:12px;margin-bottom:28px}
+.plan-card{background:var(--white);border:1.5px solid var(--border);border-radius:18px;padding:20px;transition:all .2s}
+.plan-card.active-plan{border-color:var(--peach);box-shadow:0 4px 20px rgba(232,137,90,.12)}
+.plan-card.pro-plan{background:var(--ink);border-color:var(--ink)}
+.plan-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.plan-name{font-family:'Syne',sans-serif;font-weight:800;font-size:1rem;color:var(--ink)}
+.plan-card.pro-plan .plan-name{color:#fff}
+.plan-price{font-family:'Syne',sans-serif;font-weight:800;font-size:.9rem;color:var(--ink3)}
+.plan-card.pro-plan .plan-price{color:rgba(255,255,255,.5)}
+.plan-desc{font-size:.78rem;color:var(--ink2);margin-bottom:14px}
+.plan-card.pro-plan .plan-desc{color:rgba(255,255,255,.5)}
+.plan-features{display:flex;flex-direction:column;gap:6px;margin-bottom:16px}
+.plan-feature{display:flex;align-items:center;gap:8px;font-size:.78rem;color:var(--ink2)}
+.plan-card.pro-plan .plan-feature{color:rgba(255,255,255,.75)}
+.plan-feature-dot{width:5px;height:5px;border-radius:50%;background:var(--peach);flex-shrink:0}
+.plan-card.pro-plan .plan-feature-dot{background:var(--teal)}
+.plan-btn{width:100%;padding:11px;border-radius:10px;border:none;cursor:pointer;font-family:'Syne',sans-serif;font-weight:800;font-size:.78rem;transition:all .2s}
+.plan-btn-free{background:var(--bg);color:var(--ink2);border:1.5px solid var(--border)}
+.plan-btn-pro{background:var(--grad);color:#fff;box-shadow:0 3px 14px rgba(232,137,90,.35)}
+.plan-btn-pro:hover{transform:translateY(-2px);box-shadow:0 5px 20px rgba(232,137,90,.45)}
+.plan-badge{background:var(--grad);color:#fff;font-family:'Syne',sans-serif;font-weight:700;font-size:.6rem;padding:3px 8px;border-radius:100px;letter-spacing:.04em}
+.billing-switch{display:flex;background:var(--bg);border:1.5px solid var(--border);border-radius:10px;padding:3px;gap:3px;margin-bottom:16px}
+.billing-opt{flex:1;padding:7px;border-radius:8px;border:none;cursor:pointer;font-family:'Syne',sans-serif;font-weight:700;font-size:.7rem;transition:all .2s;background:none;color:var(--ink2)}
+.billing-opt.active{background:var(--white);color:var(--ink);box-shadow:0 1px 4px rgba(0,0,0,.08)}
+.wfp-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;align-items:center;justify-content:center;padding:20px}
+.wfp-modal.open{display:flex}
+.wfp-box{background:var(--white);border-radius:20px;padding:24px;width:100%;max-width:380px;box-shadow:0 20px 60px rgba(0,0,0,.2)}
+.wfp-title{font-family:'Syne',sans-serif;font-weight:800;font-size:1.1rem;color:var(--ink);margin-bottom:6px}
+.wfp-sub{font-size:.78rem;color:var(--ink2);margin-bottom:20px}
+.wfp-field{margin-bottom:14px}
+.wfp-label{font-family:'Syne',sans-serif;font-weight:700;font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ink3);margin-bottom:6px;display:block}
+.wfp-input{width:100%;background:var(--bg);border:1.5px solid var(--border);border-radius:10px;padding:11px 14px;font-family:'DM Sans',sans-serif;font-size:.88rem;color:var(--ink);outline:none;transition:all .2s;-webkit-appearance:none}
+.wfp-input:focus{border-color:var(--peach);box-shadow:0 0 0 3px rgba(232,137,90,.1)}
+.wfp-btn{width:100%;padding:13px;border-radius:12px;border:none;cursor:pointer;background:var(--grad);color:#fff;font-family:'Syne',sans-serif;font-weight:800;font-size:.84rem;box-shadow:0 4px 16px rgba(232,137,90,.35);transition:all .2s;margin-top:4px}
+.wfp-btn:hover{transform:translateY(-2px)}
+.wfp-close{position:absolute;top:16px;right:16px;background:none;border:none;font-size:1.2rem;cursor:pointer;color:var(--ink2)}
+.wfp-secure{font-size:.65rem;color:var(--ink3);text-align:center;margin-top:10px}
+
 .pb{height:80px}
 
 /* FLOATING BOOKS */
@@ -323,8 +362,9 @@ nav,.page{position:relative;z-index:1}
     <div class="nav-tabs">
       <button class="nav-tab active" id="navDiscover" onclick="showPage('discover')">Discover</button>
       <button class="nav-tab" id="navLibrary" onclick="showPage('library')">Library</button>
+      <button class="nav-tab" id="navAccount" onclick="showPage('account')">Account</button>
     </div>
-    <div class="avatar" onclick="showPage('library');setTimeout(()=>document.getElementById('accountSection').scrollIntoView({behavior:'smooth'}),120)">A</div>
+    <div class="avatar" onclick="showPage('account')" id="avatarBtn">A</div>
   </div>
 </nav>
 
@@ -426,30 +466,105 @@ nav,.page{position:relative;z-index:1}
     <div class="books-grid" id="booksGrid"></div>
     <div class="section-label">Liked tracks</div>
     <div class="liked-tracks" id="likedTracks"></div>
-    <div class="section-label" id="accountSection">Account</div>
-    <div class="account-card">
+
+    <div class="pb"></div>
+  </div>
+</div>
+
+<!-- ═══ ACCOUNT PAGE ═══ -->
+<div class="page" id="pageAccount">
+  <div class="wrap">
+    <div class="page-header">
+      <h1>My <em>Account</em></h1>
+      <p class="page-sub">Manage your subscription and settings.</p>
+    </div>
+
+    <!-- User info -->
+    <div class="account-card" style="margin-bottom:20px">
       <div class="account-top">
-        <div class="account-avatar">A</div>
+        <div class="account-avatar" id="acctAvatar">A</div>
         <div>
-          <div class="account-name">Alex Reader</div>
-          <div class="account-email">alex@example.com</div>
-          <div class="account-badge">✦ Pro</div>
+          <div class="account-name" id="acctName">Reader</div>
+          <div class="account-email" id="acctEmail">Free plan</div>
+          <div class="account-badge" id="acctBadge">Free</div>
         </div>
       </div>
       <div class="account-stats">
-        <div class="stat"><div class="stat-num" id="statBooks">0</div><div class="stat-lbl">Books</div></div>
-        <div class="stat"><div class="stat-num" id="statLiked">0</div><div class="stat-lbl">Liked</div></div>
-        <div class="stat"><div class="stat-num">∞</div><div class="stat-lbl">Searches</div></div>
-      </div>
-      <div class="sub-status">
-        <div>
-          <div class="sub-status-plan">MoodBook Pro · $9.99/mo</div>
-          <div class="sub-status-date">Renews July 11, 2026</div>
-        </div>
-        <button class="sub-status-btn">Manage</button>
+        <div class="stat"><div class="stat-num" id="acctBooks">0</div><div class="stat-lbl">Books</div></div>
+        <div class="stat"><div class="stat-num" id="acctLiked">0</div><div class="stat-lbl">Liked</div></div>
+        <div class="stat"><div class="stat-num" id="acctSearches">0</div><div class="stat-lbl">Searches</div></div>
       </div>
     </div>
+
+    <!-- Billing switch -->
+    <div class="section-label">Choose your plan</div>
+    <div class="billing-switch" style="margin-bottom:16px">
+      <button class="billing-opt active" id="billMonthly" onclick="switchBilling('monthly')">Monthly</button>
+      <button class="billing-opt" id="billAnnual" onclick="switchBilling('annual')">Annual <span style="background:var(--teal);color:#fff;padding:1px 7px;border-radius:100px;font-size:.6rem;margin-left:4px">−17%</span></button>
+    </div>
+
+    <!-- Plan cards -->
+    <div class="plan-cards">
+      <!-- Free -->
+      <div class="plan-card">
+        <div class="plan-header">
+          <div class="plan-name">Free</div>
+          <div class="plan-price">$0</div>
+        </div>
+        <div class="plan-desc">Perfect for casual readers</div>
+        <div class="plan-features">
+          <div class="plan-feature"><div class="plan-feature-dot"></div>3 book searches per month</div>
+          <div class="plan-feature"><div class="plan-feature-dot"></div>5 tracks per search</div>
+          <div class="plan-feature"><div class="plan-feature-dot"></div>Basic mood scenes</div>
+        </div>
+        <button class="plan-btn plan-btn-free" disabled>Current plan</button>
+      </div>
+
+      <!-- Pro -->
+      <div class="plan-card pro-plan">
+        <div class="plan-header">
+          <div class="plan-name">MoodBook Pro ✦</div>
+          <div class="plan-price" id="proPriceLabel">$9.99/mo</div>
+        </div>
+        <div class="plan-desc">For passionate readers</div>
+        <div class="plan-features">
+          <div class="plan-feature"><div class="plan-feature-dot"></div>Unlimited book searches</div>
+          <div class="plan-feature"><div class="plan-feature-dot"></div>All mood scenes unlocked</div>
+          <div class="plan-feature"><div class="plan-feature-dot"></div>Personal reading library</div>
+          <div class="plan-feature"><div class="plan-feature-dot"></div>Liked tracks saved forever</div>
+          <div class="plan-feature"><div class="plan-feature-dot"></div>Sync across all devices</div>
+        </div>
+        <button class="plan-btn plan-btn-pro" onclick="openPayment()">Upgrade to Pro →</button>
+      </div>
+    </div>
+
+    <!-- Promo code -->
+    <div class="section-label">Have a promo code?</div>
+    <div style="display:flex;gap:8px;margin-bottom:28px">
+      <input id="promoInput" type="text" placeholder="Enter promo code…" class="add-input" style="flex:1"/>
+      <button onclick="applyPromo()" class="add-btn">Apply</button>
+    </div>
+
     <div class="pb"></div>
+  </div>
+</div>
+
+<!-- WAYFORPAY MODAL -->
+<div class="wfp-modal" id="wfpModal">
+  <div class="wfp-box" style="position:relative">
+    <button class="wfp-close" onclick="closePayment()">✕</button>
+    <div class="wfp-title">Upgrade to Pro</div>
+    <div class="wfp-sub" id="wfpSubLabel">$9.99/month · Cancel anytime</div>
+    <div class="wfp-field">
+      <label class="wfp-label">Email</label>
+      <input class="wfp-input" id="wfpEmail" type="email" placeholder="your@email.com"/>
+    </div>
+    <div class="wfp-field">
+      <label class="wfp-label">Name</label>
+      <input class="wfp-input" id="wfpName" type="text" placeholder="Your name"/>
+    </div>
+    <button class="wfp-btn" onclick="submitPayment()">Pay with WayForPay →</button>
+    <div class="wfp-secure">🔒 Secure payment via WayForPay · SSL encrypted</div>
   </div>
 </div>
 
@@ -498,11 +613,12 @@ const DB={
 
 // ══ PAGE ROUTER ══
 function showPage(p){
-  ['discover','library'].forEach(n=>{
+  ['discover','library','account'].forEach(n=>{
     document.getElementById('page'+n[0].toUpperCase()+n.slice(1)).classList.toggle('active',n===p);
     document.getElementById('nav'+n[0].toUpperCase()+n.slice(1)).classList.toggle('active',n===p);
   });
   if(p==='library'){renderBooks();renderLiked();}
+  if(p==='account'){renderAccount();}
   window.scrollTo({top:0,behavior:'smooth'});
 }
 
@@ -558,6 +674,9 @@ function resetSearch(){
 // ══ MAIN SEARCH FLOW ══
 async function doSearch(q){
   if(!q.trim())return;
+  // Track search count
+  const total=parseInt(localStorage.getItem('mb_total_searches')||'0')+1;
+  localStorage.setItem('mb_total_searches',total);
   S.book=q;S.playing=null;S.bookDesc='';S.bookGenre='';
   document.getElementById('bkTitle').textContent=q;
   document.getElementById('bkGenre').textContent='Analysing book…';
@@ -890,61 +1009,52 @@ async function addBook(){
   if(!q)return;
   document.getElementById('addInput').value='';
   const tempId=Date.now();
-  DB.books.unshift({title:q,author:'Loading…',cover:null,id:tempId});
+  DB.books.unshift({title:q,author:'',cover:null,id:tempId});
   saveDB();renderBooks();
 
-  let found=false;
+  // Step 1: Ask AI to identify book (translate if needed)
+  let bookTitle=q, bookAuthor='';
+  try{
+    const r=await fetch('/api/claude',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({book:q,identifyOnly:true})
+    });
+    const d=await r.json();
+    if(d.title){bookTitle=d.title;bookAuthor=d.author||'';}
+  }catch(e){}
 
-  // Try Google Books with original query
-  const queries=[q, q+' book', q.replace(/['"«»]/g,'')];
-  for(const query of queries){
+  // Step 2: Search Google Books with English title
+  let cover=null, finalTitle=bookTitle, finalAuthor=bookAuthor;
+  const searchQueries=[
+    bookTitle+(bookAuthor?' '+bookAuthor:''),
+    bookTitle,
+    q
+  ];
+  for(const sq of searchQueries){
     try{
-      const r=await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=3`);
+      const r=await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(sq)}&maxResults=5&langRestrict=en`);
       const d=await r.json();
-      const item=d.items?.[0]?.volumeInfo;
-      if(item && item.title){
-        const idx=DB.books.findIndex(b=>b.id===tempId);
-        if(idx!==-1){
-          let cover=item.imageLinks?.thumbnail||item.imageLinks?.smallThumbnail||null;
-          if(cover) cover=cover.replace('http://','https://').replace('zoom=1','zoom=2');
-          DB.books[idx]={id:tempId,title:item.title,author:item.authors?.[0]||'',cover:cover};
-          found=true;
-        }
-        break;
+      // Find item with cover image
+      const item=d.items?.find(i=>i.volumeInfo?.imageLinks?.thumbnail||i.volumeInfo?.imageLinks?.smallThumbnail);
+      const best=item||d.items?.[0];
+      if(best?.volumeInfo){
+        const v=best.volumeInfo;
+        finalTitle=v.title||bookTitle;
+        finalAuthor=v.authors?.[0]||bookAuthor;
+        const img=v.imageLinks?.thumbnail||v.imageLinks?.smallThumbnail||null;
+        if(img) cover=img.replace('http://','https://').replace('zoom=1','zoom=2').replace('zoom=0','zoom=2');
+        if(cover) break;
       }
     }catch(e){}
   }
 
-  // If not found — ask AI to identify the book
-  if(!found){
-    try{
-      const r=await fetch('/api/claude',{
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({book:q, identifyOnly:true})
-      });
-      const d=await r.json();
-      if(d.title){
-        // Search Google Books with English title
-        const r2=await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(d.title+' '+d.author)}&maxResults=1`);
-        const d2=await r2.json();
-        const item=d2.items?.[0]?.volumeInfo;
-        const idx=DB.books.findIndex(b=>b.id===tempId);
-        if(idx!==-1){
-          let cover=item?.imageLinks?.thumbnail||item?.imageLinks?.smallThumbnail||null;
-          if(cover) cover=cover.replace('http://','https://').replace('zoom=1','zoom=2');
-          DB.books[idx]={id:tempId,title:d.title,author:d.author||item?.authors?.[0]||'',cover:cover};
-        }
-      }
-    }catch(e){}
-  }
-
-  // Fix unknown author
   const idx=DB.books.findIndex(b=>b.id===tempId);
-  if(idx!==-1 && DB.books[idx].author==='Loading…') DB.books[idx].author='';
-
+  if(idx!==-1){
+    DB.books[idx]={id:tempId,title:finalTitle,author:finalAuthor,cover:cover};
+  }
   saveDB();renderBooks();
-  toast(`📖 <span class="g">"${esc(q)}"</span> added`);
+  toast(`📖 <span class="g">"${esc(finalTitle)}"</span> added`);
 }
 
 function removeBook(i){
@@ -975,6 +1085,92 @@ function playLikedTrack(i){
     renderTracks();
     playTrack(0);
   },150);
+}
+
+// ══ ACCOUNT ══
+let currentBilling='monthly';
+
+function switchBilling(plan){
+  currentBilling=plan;
+  document.getElementById('billMonthly').classList.toggle('active',plan==='monthly');
+  document.getElementById('billAnnual').classList.toggle('active',plan==='annual');
+  document.getElementById('proPriceLabel').textContent=plan==='monthly'?'$9.99/mo':'$99.99/yr';
+}
+
+function renderAccount(){
+  const pro=isPro();
+  document.getElementById('acctBadge').textContent=pro?'✦ Pro':'Free';
+  document.getElementById('acctBadge').style.background=pro?'var(--grad)':'var(--ink3)';
+  document.getElementById('acctBooks').textContent=DB.books.length;
+  document.getElementById('acctLiked').textContent=DB.liked.length;
+  document.getElementById('acctSearches').textContent=localStorage.getItem('mb_total_searches')||'0';
+}
+
+function openPayment(){
+  document.getElementById('wfpModal').classList.add('open');
+  document.getElementById('wfpSubLabel').textContent=
+    currentBilling==='monthly'?'$9.99/month · Cancel anytime':'$99.99/year · Save $20';
+}
+
+function closePayment(){
+  document.getElementById('wfpModal').classList.remove('open');
+}
+
+function submitPayment(){
+  const email=document.getElementById('wfpEmail').value.trim();
+  const name=document.getElementById('wfpName').value.trim();
+  if(!email||!name){toast('Please fill in all fields');return;}
+
+  const amount=currentBilling==='monthly'?999:9999; // in kopecks
+  const currency='UAH';
+  const desc=currentBilling==='monthly'?'MoodBook Pro Monthly':'MoodBook Pro Annual';
+
+  // WayForPay form submission
+  const form=document.createElement('form');
+  form.method='POST';
+  form.action='https://secure.wayforpay.com/pay';
+  form.target='_blank';
+
+  const fields={
+    merchantAccount:'moodbook_ink', // Replace with your WayForPay merchant ID
+    merchantDomainName:'moodbook.ink',
+    authorizationType:'SimpleSignature',
+    orderReference:'MB_'+Date.now(),
+    orderDate:Math.floor(Date.now()/1000),
+    amount:currentBilling==='monthly'?9.99:99.99,
+    currency:'USD',
+    orderTimeout:49000,
+    productName:desc,
+    productCount:1,
+    productPrice:currentBilling==='monthly'?9.99:99.99,
+    clientFirstName:name.split(' ')[0]||name,
+    clientLastName:name.split(' ')[1]||'',
+    clientEmail:email,
+    language:'EN',
+  };
+
+  Object.entries(fields).forEach(([k,v])=>{
+    const input=document.createElement('input');
+    input.type='hidden';input.name=k;input.value=v;
+    form.appendChild(input);
+  });
+
+  document.body.appendChild(form);
+  form.submit();
+  document.body.removeChild(form);
+  closePayment();
+  toast('Redirecting to payment…');
+}
+
+function applyPromo(){
+  const code=document.getElementById('promoInput')?.value?.trim()||'';
+  if(activatePro(code)){
+    toast('🎉 <span class="g">Pro activated!</span>',4000);
+    renderAccount();
+    document.getElementById('promoInput').value='';
+  } else {
+    toast('Invalid promo code');
+  }
 }
 
 // ══ INIT ══
