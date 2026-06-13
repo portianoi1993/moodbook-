@@ -254,34 +254,31 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:16px 2
 nav,.page{position:relative;z-index:1}
 
 @media(min-width:520px){
-  .wrap{max-width:540px}
+  .wrap{max-width:560px}
 }
 @media(min-width:768px){
-  .wrap{max-width:680px}
-  .hero-h1{font-size:3.2rem}
-  .tracks{gap:8px}
-  .track{padding:14px 18px}
+  .wrap{max-width:700px}
+  .hero-h1{font-size:3rem}
 }
 @media(min-width:1024px){
-  .wrap{max-width:820px}
-  .hero{padding:60px 0 40px}
-  .hero-h1{font-size:3.8rem}
+  .wrap{max-width:900px}
+  .hero{padding:56px 0 36px}
+  .hero-h1{font-size:3.6rem}
   .search-card{padding:24px}
-  .tabs{margin-bottom:18px}
-  /* Desktop: two column layout for results */
-  #paneT{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
-  #tracksBody{grid-column:1}
-  .sc-player{grid-column:2;margin-bottom:0;position:sticky;top:80px}
+}
+@media(min-width:1280px){
+  .wrap{max-width:1000px}
 }
 @media(max-width:380px){
   .hero-h1{font-size:2rem}
   .nav-tabs{gap:2px}
-  .nav-tab{padding:6px 10px;font-size:.66rem}
+  .nav-tab{padding:6px 8px;font-size:.64rem}
   .chips{gap:4px}
-  .chip{font-size:.68rem;padding:4px 10px}
+  .chip{font-size:.66rem;padding:4px 9px}
+  .tab{font-size:.66rem;padding:7px 4px}
 }
-@media(min-width:520px){
-  .np{max-width:500px;left:50%;right:auto;border-radius:16px 16px 0 0;border:1px solid var(--border);border-bottom:none;transform:translateX(-50%) translateY(100%)}
+@media(min-width:600px){
+  .np{max-width:520px;left:50%;right:auto;border-radius:16px 16px 0 0;border:1px solid var(--border);border-bottom:none;transform:translateX(-50%) translateY(100%)}
   .np.up{transform:translateX(-50%) translateY(0)}
 }
 </style>
@@ -437,7 +434,7 @@ nav,.page{position:relative;z-index:1}
         <div id="scPlayer" style="display:none">
           <iframe id="scFrame" allow="autoplay;encrypted-media" style="width:1px;height:1px;opacity:0;position:absolute;pointer-events:none"></iframe>
         </div>
-        <!-- Custom visible player -->
+        <!-- Custom visible player with volume control -->
         <div id="customPlayer" style="display:none;background:var(--ink);border-radius:14px;padding:16px;margin-bottom:14px">
           <div style="display:flex;align-items:center;gap:12px">
             <div style="display:flex;align-items:flex-end;gap:2px;height:22px;flex-shrink:0">
@@ -452,16 +449,25 @@ nav,.page{position:relative;z-index:1}
               <div id="customPlayerName" style="font-size:.84rem;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></div>
               <div id="customPlayerVibe" style="font-size:.68rem;color:rgba(255,255,255,.45);margin-top:2px"></div>
             </div>
-            <button onclick="stopTrack()" style="background:rgba(255,255,255,.1);border:none;color:rgba(255,255,255,.6);border-radius:50%;width:32px;height:32px;cursor:pointer;font-size:.8rem;display:flex;align-items:center;justify-content:center">■</button>
+            <button onclick="stopTrack()" style="background:rgba(255,255,255,.1);border:none;color:rgba(255,255,255,.6);border-radius:50%;width:32px;height:32px;cursor:pointer;font-size:.8rem;display:flex;align-items:center;justify-content:center;flex-shrink:0">■</button>
           </div>
-          <!-- Progress bar (decorative - animates) -->
-          <div style="margin-top:12px;height:3px;background:rgba(255,255,255,.1);border-radius:2px;overflow:hidden">
-            <div id="progressBar" style="height:100%;background:var(--grad);width:0%;transition:none;border-radius:2px"></div>
+          <!-- Progress bar (decorative) -->
+          <div style="margin-top:14px;height:3px;background:rgba(255,255,255,.1);border-radius:2px;overflow:hidden;cursor:pointer" onclick="seekTrack(event,this)">
+            <div id="progressBar" style="height:100%;background:var(--grad);width:0%;border-radius:2px"></div>
           </div>
-          <div style="display:flex;justify-content:space-between;margin-top:4px">
-            <span id="progressTime" style="font-size:.6rem;color:rgba(255,255,255,.35)">0:00</span>
-            <span style="font-size:.6rem;color:rgba(255,255,255,.35)">live</span>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;gap:12px">
+            <span id="progressTime" style="font-size:.6rem;color:rgba(255,255,255,.35);flex-shrink:0">0:00</span>
+            <!-- Volume control -->
+            <div style="display:flex;align-items:center;gap:6px;flex:1">
+              <span style="font-size:.7rem;color:rgba(255,255,255,.4)">🔈</span>
+              <input type="range" id="volumeSlider" min="0" max="100" value="80" 
+                oninput="changeVolume(this.value)"
+                style="flex:1;height:3px;accent-color:#E8895A;cursor:pointer;background:rgba(255,255,255,.15);border-radius:2px;outline:none;-webkit-appearance:none"/>
+              <span style="font-size:.7rem;color:rgba(255,255,255,.4)">🔊</span>
+            </div>
+            <span style="font-size:.6rem;color:rgba(255,255,255,.35);flex-shrink:0" id="durationLabel">live</span>
           </div>
+          <p style="font-size:.58rem;color:rgba(255,255,255,.2);text-align:center;margin-top:8px">Powered by YouTube · Audio only mode</p>
         </div>
       </div>
       <div class="tab-pane" id="paneM">
@@ -630,7 +636,7 @@ nav,.page{position:relative;z-index:1}
     <div class="np-lbl">Now playing</div>
     <div class="np-name" id="npName">—</div>
   </div>
-  <button class="np-scroll" onclick="showPage('discover');setTimeout(()=>document.getElementById('scPlayer').scrollIntoView({behavior:'smooth',block:'center'}),120)">Show ↑</button>
+  <button class="np-scroll" onclick="showPage('discover');setTimeout(()=>document.getElementById('customPlayer')?.scrollIntoView({behavior:'smooth',block:'center'}),120)">Show ↑</button>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -984,7 +990,10 @@ async function playTrack(i){
   document.querySelectorAll('.track').forEach(el => el.classList.remove('playing'));
   const el = document.getElementById('tr'+i); if(el) el.classList.add('playing');
   document.getElementById('npName').textContent = t.name + ' — ' + t.vibe;
-  document.getElementById('np').classList.add('up');
+  // Only show bottom bar if not on discover page (it duplicates custom player)
+  if(!document.getElementById('pageDiscover').classList.contains('active')){
+    document.getElementById('np').classList.add('up');
+  }
 
   const customPlayer = document.getElementById('customPlayer');
   const customName = document.getElementById('customPlayerName');
@@ -1004,7 +1013,12 @@ async function playTrack(i){
     const d = await r.json();
     if (d.videoId) {
       document.getElementById('scFrame').src =
-        `https://www.youtube.com/embed/${d.videoId}?autoplay=1&rel=0&modestbranding=1`;
+        `https://www.youtube.com/embed/${d.videoId}?autoplay=1&rel=0&modestbranding=1&enablejsapi=1&origin=${encodeURIComponent(window.location.origin)}`;
+      // Set initial volume after load
+      setTimeout(()=>{
+        const vol=document.getElementById('volumeSlider')?.value||80;
+        changeVolume(vol);
+      },2000);
       document.getElementById('scPlayer').style.display='block';
       customVibe.textContent = t.vibe + ' · ' + (t.duration||'~1 hr');
     } else {
@@ -1043,6 +1057,33 @@ function stopTrack(){
   stopProgressAnimation();
   document.querySelectorAll('.track').forEach(el=>el.classList.remove('playing'));
   S.playing=null;
+}
+
+function changeVolume(val){
+  // YouTube iframe volume via postMessage
+  const frame=document.getElementById('scFrame');
+  if(frame && frame.contentWindow){
+    frame.contentWindow.postMessage(JSON.stringify({
+      event:'command',
+      func:'setVolume',
+      args:[parseInt(val)]
+    }),'*');
+  }
+}
+
+function seekTrack(e, bar){
+  // Visual seek on progress bar (decorative - YouTube doesn't allow JS seek without API)
+  const rect=bar.getBoundingClientRect();
+  const pct=(e.clientX-rect.left)/rect.width;
+  const bar2=document.getElementById('progressBar');
+  if(bar2) bar2.style.width=(pct*100)+'%';
+  // Update time display
+  const totalSec=3600; // assume 1hr
+  progressSeconds=Math.floor(pct*totalSec);
+  const m=Math.floor(progressSeconds/60);
+  const s=progressSeconds%60;
+  const t=document.getElementById('progressTime');
+  if(t) t.textContent=m+':'+(s<10?'0':'')+s;
 }
 
 // ══ LOAD MOODS ══
