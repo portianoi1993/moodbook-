@@ -230,14 +230,39 @@ nav,.page{position:relative;z-index:1}
   const W=window.innerWidth,H=window.innerHeight;
   const pal=[['#E8895A','#5BBFAA'],['#5BBFAA','#E8895A'],['#E8C4A8','#A8D4C8'],['#D4A07A','#7BBFB0']];
 
-  function mkSVG(c1,c2){
-    const w=40+Math.random()*20, h=w*1.4;
-    return `<svg width="${w}" height="${h}" viewBox="0 0 52 72" fill="none">
-      <rect x="8" y="2" width="40" height="68" rx="4" fill="${c1}"/>
-      <rect x="2" y="2" width="10" height="68" rx="3" fill="${c2}"/>
-      <rect x="16" y="14" width="26" height="2.5" rx="1" fill="rgba(255,255,255,0.55)"/>
-      <rect x="16" y="22" width="20" height="2" rx="1" fill="rgba(255,255,255,0.38)"/>
-      <rect x="16" y="29" width="23" height="2" rx="1" fill="rgba(255,255,255,0.28)"/>
+  // Book silhouette shapes (varied like in the reference image)
+  function mkSVG(c1,c2,type){
+    if(type===0) // Standing closed book
+      return `<svg width="38" height="52" viewBox="0 0 38 52" fill="none">
+        <rect x="5" y="0" width="33" height="52" rx="3" fill="${c1}"/>
+        <rect x="0" y="0" width="8" height="52" rx="2" fill="${c2}"/>
+        <rect x="12" y="10" width="20" height="3" rx="1.5" fill="rgba(255,255,255,0.5)"/>
+        <rect x="12" y="17" width="16" height="2" rx="1" fill="rgba(255,255,255,0.35)"/>
+        <rect x="12" y="23" width="18" height="2" rx="1" fill="rgba(255,255,255,0.25)"/>
+      </svg>`;
+    if(type===1) // Open book
+      return `<svg width="56" height="42" viewBox="0 0 56 42" fill="none">
+        <path d="M28 6 C22 4 10 4 2 6 L2 38 C10 36 22 36 28 40 C34 36 46 36 54 38 L54 6 C46 4 34 4 28 6Z" fill="${c1}"/>
+        <rect x="26" y="4" width="4" height="38" rx="2" fill="${c2}"/>
+        <line x1="8" y1="14" x2="24" y2="12" stroke="rgba(255,255,255,0.45)" stroke-width="1.5"/>
+        <line x1="8" y1="20" x2="24" y2="18" stroke="rgba(255,255,255,0.3)" stroke-width="1.2"/>
+        <line x1="32" y1="12" x2="48" y2="14" stroke="rgba(255,255,255,0.45)" stroke-width="1.5"/>
+        <line x1="32" y1="18" x2="48" y2="20" stroke="rgba(255,255,255,0.3)" stroke-width="1.2"/>
+      </svg>`;
+    if(type===2) // Stack of books
+      return `<svg width="52" height="40" viewBox="0 0 52 40" fill="none">
+        <rect x="4" y="28" width="48" height="12" rx="2" fill="${c1}"/>
+        <rect x="4" y="28" width="8" height="12" rx="2" fill="${c2}"/>
+        <rect x="8" y="15" width="40" height="13" rx="2" fill="${c2}"/>
+        <rect x="8" y="15" width="7" height="13" rx="2" fill="${c1}"/>
+        <rect x="6" y="3" width="42" height="12" rx="2" fill="${c1}" opacity="0.8"/>
+      </svg>`;
+    // type===3: tall book
+    return `<svg width="30" height="58" viewBox="0 0 30 58" fill="none">
+      <rect x="4" y="0" width="26" height="58" rx="3" fill="${c1}"/>
+      <rect x="0" y="0" width="7" height="58" rx="2" fill="${c2}"/>
+      <rect x="10" y="12" width="14" height="2.5" rx="1" fill="rgba(255,255,255,0.5)"/>
+      <rect x="10" y="19" width="10" height="2" rx="1" fill="rgba(255,255,255,0.35)"/>
     </svg>`;
   }
 
@@ -246,20 +271,20 @@ nav,.page{position:relative;z-index:1}
     const el=document.createElement('div');
     el.className='bg-book';
     const[c1,c2]=pal[Math.floor(Math.random()*pal.length)];
-    el.innerHTML=mkSVG(c1,c2);
+    el.innerHTML=mkSVG(c1,c2,i%4);
     c.appendChild(el);
 
     books.push({
       el,
       x: Math.random()*W,
-      y: H + 60 + Math.random()*H,   // start below screen
-      speed: 0.4 + Math.random()*0.7, // px per frame
-      rot: (Math.random()-0.5)*25,
-      rotSpeed: (Math.random()-0.5)*0.08,
-      scale: 0.7 + Math.random()*0.8,
+      y: H + 80 + Math.random()*H,
+      speed: 0.25 + Math.random()*0.35,  // SLOWER: was 0.4-1.1, now 0.25-0.6
+      rot: (Math.random()-0.5)*20,
+      rotSpeed: (Math.random()-0.5)*0.04, // SLOWER rotation too
+      scale: 0.7 + Math.random()*0.7,
       opacity: 0,
-      targetOp: 0.45 + Math.random()*0.35,
-      phase: 'rise', // rise → show → fade → reset
+      targetOp: 0.4 + Math.random()*0.3,
+      phase: 'rise',
     });
   }
 
@@ -303,28 +328,44 @@ nav,.page{position:relative;z-index:1}
 
 <!-- NAV -->
 <nav>
-  <span class="logo" onclick="showPage('discover')" style="display:flex;align-items:center;gap:8px">
-    <svg width="36" height="36" viewBox="0 0 120 110" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <span class="logo" onclick="showPage('discover')" style="display:flex;align-items:center;gap:9px">
+    <svg width="38" height="38" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
       <defs>
-        <linearGradient id="lg1" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#E8895A"/><stop offset="100%" stop-color="#5BBFAA"/></linearGradient>
-        <linearGradient id="lg2" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#E8895A"/><stop offset="100%" stop-color="#5BBFAA"/></linearGradient>
+        <linearGradient id="hpGrad" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stop-color="#E8895A"/>
+          <stop offset="100%" stop-color="#5BBFAA"/>
+        </linearGradient>
+        <linearGradient id="bookL" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="#E8A87C"/>
+          <stop offset="100%" stop-color="#E8895A"/>
+        </linearGradient>
+        <linearGradient id="bookR" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="#5BBFAA"/>
+          <stop offset="100%" stop-color="#3DA898"/>
+        </linearGradient>
       </defs>
-      <!-- Open book left page -->
-      <path d="M60 85 C50 80 30 78 14 80 L14 40 C30 38 50 40 60 46Z" fill="url(#lg2)" opacity="0.9"/>
-      <!-- Open book right page -->
-      <path d="M60 85 C70 80 90 78 106 80 L106 40 C90 38 70 40 60 46Z" fill="url(#lg1)" opacity="0.85"/>
-      <!-- Book spine -->
-      <line x1="60" y1="46" x2="60" y2="85" stroke="white" stroke-width="1.5" opacity="0.5"/>
-      <!-- Headphones arc -->
-      <path d="M24 62 C24 30 96 30 96 62" stroke="url(#lg1)" stroke-width="7" fill="none" stroke-linecap="round"/>
+      <!-- Headphone arc -->
+      <path d="M38 105 C38 52 162 52 162 105" stroke="url(#hpGrad)" stroke-width="14" fill="none" stroke-linecap="round"/>
       <!-- Left ear cup -->
-      <rect x="14" y="58" width="14" height="22" rx="7" fill="#E8895A"/>
+      <rect x="24" y="98" width="26" height="38" rx="13" fill="#E8895A"/>
       <!-- Right ear cup -->
-      <rect x="92" y="58" width="14" height="22" rx="7" fill="#5BBFAA"/>
-      <!-- Stars -->
-      <path d="M60 26 L61.8 31.5 L67.5 31.5 L63 34.8 L64.8 40.5 L60 37.2 L55.2 40.5 L57 34.8 L52.5 31.5 L58.2 31.5Z" fill="#E8895A" opacity="0.95"/>
-      <path d="M44 32 L45 35 L48 35 L45.8 36.8 L46.7 40 L44 38.2 L41.3 40 L42.2 36.8 L40 35 L43 35Z" fill="#5BBFAA" opacity="0.8"/>
-      <path d="M76 30 L77 33 L80 33 L77.8 34.8 L78.7 38 L76 36.2 L73.3 38 L74.2 34.8 L72 33 L75 33Z" fill="#5BBFAA" opacity="0.7"/>
+      <rect x="150" y="98" width="26" height="38" rx="13" fill="#5BBFAA"/>
+      <!-- Open book - left page (curved up) -->
+      <path d="M100 175 C90 165 65 158 30 162 L30 108 C65 104 90 111 100 122Z" fill="url(#bookL)"/>
+      <!-- Open book - right page (curved up) -->
+      <path d="M100 175 C110 165 135 158 170 162 L170 108 C135 104 110 111 100 122Z" fill="url(#bookR)"/>
+      <!-- Book pages at bottom (white) -->
+      <path d="M82 170 C88 168 94 167 100 167 C106 167 112 168 118 170 L116 178 C110 176 105 175 100 175 C95 175 90 176 84 178Z" fill="white" opacity="0.7"/>
+      <!-- Book spine line -->
+      <line x1="100" y1="122" x2="100" y2="175" stroke="white" stroke-width="2" opacity="0.4"/>
+      <!-- Big center star (4-pointed) -->
+      <path d="M100 68 L103 80 L115 80 L105 87 L108 99 L100 92 L92 99 L95 87 L85 80 L97 80Z" fill="#E8895A" opacity="0.95"/>
+      <!-- Small stars -->
+      <path d="M76 60 L77.5 65 L83 65 L78.5 68 L80 73 L76 70 L72 73 L73.5 68 L69 65 L74.5 65Z" fill="#5BBFAA" opacity="0.75" transform="scale(0.75) translate(25,15)"/>
+      <path d="M124 58 L125.5 63 L131 63 L126.5 66 L128 71 L124 68 L120 71 L121.5 66 L117 63 L122.5 63Z" fill="#5BBFAA" opacity="0.65" transform="scale(0.65) translate(70,18)"/>
+      <circle cx="85" cy="74" r="3" fill="#E8895A" opacity="0.5"/>
+      <circle cx="118" cy="72" r="2.5" fill="#5BBFAA" opacity="0.5"/>
+      <circle cx="100" cy="58" r="2" fill="white" opacity="0.4"/>
     </svg>
     <span style="font-family:'Syne',sans-serif;font-weight:800;font-size:1.2rem;letter-spacing:-.02em;color:var(--ink)">Mood<span style="background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">Book</span></span>
   </span>
