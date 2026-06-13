@@ -685,20 +685,21 @@ async function fetchBookSuggestions(q){
   }catch(e){console.warn('Book suggest error:',e);return [];}
 }
 
-function renderSuggestions(books, inputId, containerId, onSelect){
+function renderSuggestions(books, containerId, onSelectFn){
   const box=document.getElementById(containerId);
-  if(!books.length){box.style.display='none';return;}
+  if(!box||!books.length){if(box)box.style.display='none';return;}
   box.style.display='block';
-  box.innerHTML=books.map((b,i)=>`
-    <div onclick="${onSelect}(${i})" style="display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--border);transition:background .15s" 
-         onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background=''">
-      ${b.cover?`<img src="${b.cover}" style="width:28px;height:40px;object-fit:cover;border-radius:3px;flex-shrink:0">`:'<div style="width:28px;height:40px;background:var(--grad);border-radius:3px;flex-shrink:0;opacity:.4"></div>'}
-      <div style="min-width:0">
-        <div style="font-family:Syne,sans-serif;font-weight:700;font-size:.8rem;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${b.title}</div>
-        <div style="font-size:.68rem;color:var(--ink3)">${b.author}${b.year?' · '+b.year:''}</div>
-      </div>
-    </div>`).join('');
-  // Store for click handlers
+  box.innerHTML='';
+  books.forEach((b,i)=>{
+    const row=document.createElement('div');
+    row.style.cssText='display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--border);background:var(--white)';
+    row.innerHTML=(b.cover?`<img src="${b.cover}" style="width:26px;height:38px;object-fit:cover;border-radius:3px;flex-shrink:0" onerror="this.style.display='none'">`:'<div style="width:26px;height:38px;background:var(--grad);border-radius:3px;flex-shrink:0;opacity:.3"></div>')+
+      `<div style="min-width:0"><div style="font-family:Syne,sans-serif;font-weight:700;font-size:.8rem;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${b.title}</div><div style="font-size:.67rem;color:var(--ink3)">${b.author}${b.year?' · '+b.year:''}</div></div>`;
+    row.addEventListener('mousedown',()=>onSelectFn(i));
+    row.addEventListener('mouseover',()=>row.style.background='var(--bg)');
+    row.addEventListener('mouseout',()=>row.style.background='var(--white)');
+    box.appendChild(row);
+  });
   box._suggestions=books;
 }
 
@@ -709,7 +710,7 @@ async function onBookInput(q){
   suggestTimer=setTimeout(async()=>{
     const books=await fetchBookSuggestions(q);
     mainSuggestions=books;
-    renderSuggestions(books,'mainIn','bookSuggestions','selectMainBook');
+    renderSuggestions(books,'bookSuggestions',selectMainBook);
   },350);
 }
 function selectMainBook(i){
@@ -731,7 +732,7 @@ async function onLibBookInput(q){
   libSuggestTimer=setTimeout(async()=>{
     const books=await fetchBookSuggestions(q);
     libSuggestions=books;
-    renderSuggestions(books,'addInput','libBookSuggestions','selectLibBook');
+    renderSuggestions(books,'libBookSuggestions',selectLibBook);
   },350);
 }
 function selectLibBook(i){
@@ -976,31 +977,37 @@ async function playTrack(i){
   // Show inline player under this track
   const inlineEl = document.getElementById('inlinePlayer'+i);
   const playerHTML = `<div style="background:var(--ink);border-radius:0 0 14px 14px;padding:14px 16px;margin-top:-6px">
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
-      <div style="display:flex;align-items:flex-end;gap:2px;height:18px;flex-shrink:0">
+    <div style="display:flex;align-items:center;gap:10px">
+      <!-- Equalizer animation -->
+      <div style="display:flex;align-items:flex-end;gap:2px;height:18px;flex-shrink:0" id="eqAnim">
         <div class="eb" style="height:5px"></div>
         <div class="eb" style="height:13px;animation-delay:.12s"></div>
         <div class="eb" style="height:6px;animation-delay:.24s"></div>
         <div class="eb" style="height:14px;animation-delay:.08s"></div>
         <div class="eb" style="height:5px;animation-delay:.2s"></div>
       </div>
+      <!-- Track info -->
       <div style="flex:1;min-width:0">
-        <div style="font-size:.6rem;font-family:Syne,sans-serif;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--peach)">Now Playing</div>
-        <div id="inlineTrackName" style="font-size:.8rem;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${t.name}</div>
+        <div style="font-size:.58rem;font-family:Syne,sans-serif;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--peach)">Now Playing</div>
+        <div style="font-size:.8rem;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${t.name}</div>
       </div>
-      <button onclick="stopTrack()" style="background:rgba(255,255,255,.1);border:none;color:rgba(255,255,255,.6);border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:.7rem;display:flex;align-items:center;justify-content:center;flex-shrink:0">■</button>
+      <!-- Controls -->
+      <div style="display:flex;gap:6px;align-items:center;flex-shrink:0">
+        <button id="pauseBtn" onclick="togglePause()" title="Pause/Play"
+          style="background:rgba(255,255,255,.15);border:none;color:#fff;border-radius:50%;width:32px;height:32px;cursor:pointer;font-size:.75rem;display:flex;align-items:center;justify-content:center">⏸</button>
+        <button onclick="stopTrack()" title="Stop"
+          style="background:rgba(255,255,255,.08);border:none;color:rgba(255,255,255,.6);border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:.65rem;display:flex;align-items:center;justify-content:center">■</button>
+      </div>
     </div>
-    <div style="height:3px;background:rgba(255,255,255,.1);border-radius:2px;cursor:pointer;margin-bottom:8px" id="seekBar" onclick="seekTrack(event,this)">
-      <div id="progressBar" style="height:100%;background:var(--grad);width:0%;border-radius:2px;pointer-events:none"></div>
-    </div>
-    <div style="display:flex;align-items:center;gap:8px">
-      <span id="progressTime" style="font-size:.58rem;color:rgba(255,255,255,.35);flex-shrink:0;min-width:28px">0:00</span>
-      <span style="font-size:.65rem">🔈</span>
+    <!-- Volume -->
+    <div style="display:flex;align-items:center;gap:8px;margin-top:12px">
+      <span style="font-size:.7rem;flex-shrink:0">🔈</span>
       <input type="range" id="volumeSlider" min="0" max="100" value="80" oninput="changeVolume(this.value)"
-        style="flex:1;accent-color:#E8895A;cursor:pointer;height:3px"/>
-      <span style="font-size:.65rem">🔊</span>
-      <span id="durationLabel" style="font-size:.58rem;color:rgba(255,255,255,.35);flex-shrink:0">${t.duration||'~1hr'}</span>
+        style="flex:1;accent-color:#E8895A;cursor:pointer"/>
+      <span style="font-size:.7rem;flex-shrink:0">🔊</span>
+      <span id="progressTime" style="font-size:.6rem;color:rgba(255,255,255,.35);flex-shrink:0;min-width:36px;text-align:right">0:00</span>
     </div>
+    <div id="progressBar" style="display:none"></div>
   </div>`;
   if(inlineEl){
     inlineEl.innerHTML=playerHTML;
@@ -1058,14 +1065,32 @@ function stopTrack(){
   S.playing=null;
 }
 
+let S_paused = false;
+
+function togglePause(){
+  const frame = document.getElementById('scFrame');
+  const btn = document.getElementById('pauseBtn');
+  if(!frame) return;
+  if(S_paused){
+    // Resume
+    frame.contentWindow?.postMessage(JSON.stringify({event:'command',func:'playVideo',args:[]}),'*');
+    if(btn){btn.textContent='⏸';btn.title='Pause';}
+    S_paused=false;
+    startProgressAnimation();
+  } else {
+    // Pause
+    frame.contentWindow?.postMessage(JSON.stringify({event:'command',func:'pauseVideo',args:[]}),'*');
+    if(btn){btn.textContent='▶';btn.title='Play';}
+    S_paused=true;
+    stopProgressAnimation();
+  }
+}
+
 function changeVolume(val){
-  // YouTube iframe volume via postMessage
   const frame=document.getElementById('scFrame');
-  if(frame && frame.contentWindow){
+  if(frame?.contentWindow){
     frame.contentWindow.postMessage(JSON.stringify({
-      event:'command',
-      func:'setVolume',
-      args:[parseInt(val)]
+      event:'command',func:'setVolume',args:[parseInt(val)]
     }),'*');
   }
 }
@@ -1217,48 +1242,27 @@ async function addBook(){
   const q=document.getElementById('addInput').value.trim();
   if(!q)return;
   document.getElementById('addInput').value='';
+  hideLibSuggestions();
   const tempId=Date.now();
   DB.books.unshift({title:q,author:'',cover:null,id:tempId});
   saveDB();renderBooks();
+  toast(`📖 Adding "${esc(q)}"…`);
 
-  // Step 1: Ask AI to identify book (translate if needed)
-  let bookTitle=q, bookAuthor='';
+  // Search Google Books directly
+  let cover=null, finalTitle=q, finalAuthor='';
   try{
-    const r=await fetch('/api/claude',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({book:q,identifyOnly:true})
-    });
-    if(r.ok){
-      const d=await r.json();
-      if(d.title&&d.title.length>1){bookTitle=d.title;bookAuthor=d.author||'';}
+    const r=await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(q)}&maxResults=5`);
+    const d=await r.json();
+    if(d.items?.length){
+      const withCover=d.items.find(it=>it.volumeInfo?.imageLinks?.thumbnail||it.volumeInfo?.imageLinks?.smallThumbnail);
+      const best=withCover||d.items[0];
+      const v=best.volumeInfo||{};
+      finalTitle=v.title||q;
+      finalAuthor=v.authors?.[0]||'';
+      const img=v.imageLinks?.thumbnail||v.imageLinks?.smallThumbnail||null;
+      if(img) cover=img.replace('http://','https://').replace('zoom=1','zoom=2');
     }
-  }catch(e){console.warn('AI identify failed:',e);}
-
-  // Step 2: Search Google Books with English title
-  let cover=null, finalTitle=bookTitle, finalAuthor=bookAuthor;
-  const searchQueries=[
-    bookTitle+(bookAuthor?' '+bookAuthor:''),
-    bookTitle,
-    q
-  ];
-  for(const sq of searchQueries){
-    try{
-      const r=await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(sq)}&maxResults=5&langRestrict=en`);
-      const d=await r.json();
-      // Find item with cover image
-      const item=d.items?.find(i=>i.volumeInfo?.imageLinks?.thumbnail||i.volumeInfo?.imageLinks?.smallThumbnail);
-      const best=item||d.items?.[0];
-      if(best?.volumeInfo){
-        const v=best.volumeInfo;
-        finalTitle=v.title||bookTitle;
-        finalAuthor=v.authors?.[0]||bookAuthor;
-        const img=v.imageLinks?.thumbnail||v.imageLinks?.smallThumbnail||null;
-        if(img) cover=img.replace('http://','https://').replace('zoom=1','zoom=2').replace('zoom=0','zoom=2');
-        if(cover) break;
-      }
-    }catch(e){}
-  }
+  }catch(e){console.warn('Google Books error:',e);}
 
   const idx=DB.books.findIndex(b=>b.id===tempId);
   if(idx!==-1){
