@@ -1173,20 +1173,26 @@ function toggleLike(e,i){
 
 function addCurrentToLibrary(){
   if(!S.book) return;
-  const exists = DB.books.find(b=>b.title.toLowerCase()===S.bookTitle?.toLowerCase()||b.title.toLowerCase()===S.book.toLowerCase());
+  const title = S.bookTitle||S.book;
+  const exists = DB.books.find(b=>b.title.toLowerCase()===title.toLowerCase());
   if(exists){toast('Already in your library');return;}
-  const newBook={id:Date.now(),title:S.bookTitle||S.book,author:S.bookAuthor||'',cover:S.bookCover||null};
+  const newBook={id:Date.now(),title,author:S.bookAuthor||'',cover:S.bookCover||null};
   DB.books.unshift(newBook);
   saveDB();
+  renderBooks(); // Always re-render so library stays in sync
   toast(`📚 <span class="g">"${esc(newBook.title)}"</span> added to Library`);
-  // Try to fetch cover if not already
+  // Fetch cover if missing
   if(!newBook.cover){
-    fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(newBook.title)}&maxResults=1`)
+    fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(newBook.title+' '+(newBook.author||''))}&maxResults=1`)
       .then(r=>r.json()).then(d=>{
-        const img=d.items?.[0]?.volumeInfo?.imageLinks?.thumbnail;
+        const img=d.items?.[0]?.volumeInfo?.imageLinks?.thumbnail||d.items?.[0]?.volumeInfo?.imageLinks?.smallThumbnail;
         if(img){
           const idx=DB.books.findIndex(b=>b.id===newBook.id);
-          if(idx!==-1){DB.books[idx].cover=img.replace('http://','https://');saveDB();}
+          if(idx!==-1){
+            DB.books[idx].cover=img.replace('http://','https://').replace('zoom=1','zoom=2');
+            saveDB();
+            renderBooks();
+          }
         }
       }).catch(()=>{});
   }
@@ -1195,7 +1201,9 @@ function addCurrentToLibrary(){
 // ══ LIBRARY ══
 function renderBooks(){
   const grid=document.getElementById('booksGrid');
-  document.getElementById('statBooks').textContent=DB.books.length;
+  if(!grid) return;
+  const statEl=document.getElementById('statBooks');
+  if(statEl) statEl.textContent=DB.books.length;
   if(!DB.books.length){
     grid.innerHTML=`<div class="empty"><div class="empty-icon">📚</div><p class="empty-text">No books yet.<br>Add one above to get started.</p></div>`;
     return;
