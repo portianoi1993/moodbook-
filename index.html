@@ -676,7 +676,7 @@ const _suggestData={};
 
 async function _fetchBooks(q){
   try{
-    const r=await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(q)}&maxResults=6`);
+    const r=await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(q)}&maxResults=6&key=AIzaSyD_GXtmqfc_rRVc7xa3v2g8tNoh-a4yR3o`);
     const d=await r.json();
     return(d.items||[]).map(it=>({
       title:it.volumeInfo?.title||'',
@@ -843,7 +843,7 @@ async function doSearch(q){
 async function fetchBookInfo(q){
   // Try Google Books first
   try{
-    const r=await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(q)}&maxResults=1`);
+    const r=await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(q)}&maxResults=1&key=AIzaSyD_GXtmqfc_rRVc7xa3v2g8tNoh-a4yR3o`);
     const d=await r.json();
     const item=d.items?.[0]?.volumeInfo;
     if(item){
@@ -1182,7 +1182,7 @@ function addCurrentToLibrary(){
   toast(`📚 <span class="g">"${esc(newBook.title)}"</span> added to Library`);
   // Fetch cover if missing
   if(!newBook.cover){
-    fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(newBook.title+' '+(newBook.author||''))}&maxResults=1`)
+    fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(newBook.title+' '+(newBook.author||''))}&maxResults=1&key=AIzaSyD_GXtmqfc_rRVc7xa3v2g8tNoh-a4yR3o`)
       .then(r=>r.json()).then(d=>{
         const img=d.items?.[0]?.volumeInfo?.imageLinks?.thumbnail||d.items?.[0]?.volumeInfo?.imageLinks?.smallThumbnail;
         if(img){
@@ -1248,7 +1248,9 @@ document.getElementById('coverFileInput').addEventListener('change',function(){
 
 function renderLiked(){
   const el=document.getElementById('likedTracks');
-  document.getElementById('statLiked').textContent=DB.liked.length;
+  if(!el) return;
+  const statEl=document.getElementById('statLiked');
+  if(statEl) statEl.textContent=DB.liked.length;
   if(!DB.liked.length){
     el.innerHTML=`<div class="empty"><div class="empty-icon">♡</div><p class="empty-text">No liked tracks yet.<br>Heart a track while listening.</p></div>`;
     return;
@@ -1277,7 +1279,7 @@ async function addBook(){
   // Search Google Books directly
   let cover=null, finalTitle=q, finalAuthor='';
   try{
-    const r=await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(q)}&maxResults=5`);
+    const r=await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(q)}&maxResults=5&key=AIzaSyD_GXtmqfc_rRVc7xa3v2g8tNoh-a4yR3o`);
     const d=await r.json();
     if(d.items?.length){
       const withCover=d.items.find(it=>it.volumeInfo?.imageLinks?.thumbnail||it.volumeInfo?.imageLinks?.smallThumbnail);
@@ -1340,11 +1342,16 @@ function switchBilling(plan){
 
 function renderAccount(){
   const pro=isPro();
-  document.getElementById('acctBadge').textContent=pro?'✦ Pro':'Free';
-  document.getElementById('acctBadge').style.background=pro?'var(--grad)':'var(--ink3)';
-  document.getElementById('acctBooks').textContent=DB.books.length;
-  document.getElementById('acctLiked').textContent=DB.liked.length;
-  document.getElementById('acctSearches').textContent=localStorage.getItem('mb_total_searches')||'0';
+  const badge=document.getElementById('acctBadge');
+  const books=document.getElementById('acctBooks');
+  const liked=document.getElementById('acctLiked');
+  const searches=document.getElementById('acctSearches');
+  if(!badge) return;
+  badge.textContent=pro?'✦ Pro':'Free';
+  badge.style.background=pro?'var(--grad)':'var(--ink3)';
+  if(books) books.textContent=DB.books.length;
+  if(liked) liked.textContent=DB.liked.length;
+  if(searches) searches.textContent=localStorage.getItem('mb_total_searches')||'0';
 }
 
 function openPayment(){
@@ -1433,7 +1440,7 @@ async function addBookDirect(title,author,cover){
   saveDB();renderBooks();
   if(!cover){
     try{
-      const r=await fetch('https://www.googleapis.com/books/v1/volumes?q='+encodeURIComponent(title+' '+(author||''))+'&maxResults=1');
+      const r=await fetch('https://www.googleapis.com/books/v1/volumes?q='+encodeURIComponent(title+' '+(author||''))+'&maxResults=1&key=AIzaSyD_GXtmqfc_rRVc7xa3v2g8tNoh-a4yR3o');
       const d=await r.json();
       const img=d.items?.[0]?.volumeInfo?.imageLinks?.thumbnail||d.items?.[0]?.volumeInfo?.imageLinks?.smallThumbnail;
       if(img){
