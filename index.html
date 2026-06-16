@@ -409,7 +409,7 @@ nav,.page{position:relative;z-index:1}
       <div class="search-card">
         <div class="sc-lbl">What are you reading?</div>
         <div class="sc-row" style="position:relative">
-          <input class="sc-input" id="mainIn" type="text" placeholder="Book title or author…" autocomplete="off" spellcheck="false" oninput="onBookInput(this.value)" onblur="setTimeout(()=>hideSuggestions(),200)"/>
+          <input class="sc-input" id="mainIn" type="text" placeholder="Book title or author…" autocomplete="off" spellcheck="false"/>
           <div id="bookSuggestions" style="position:absolute;left:0;right:60px;top:100%;background:var(--white);border:1.5px solid var(--border);border-radius:14px;box-shadow:0 8px 24px rgba(0,0,0,.1);z-index:100;overflow:hidden;display:none;margin-top:6px;max-height:280px;overflow-y:auto"></div>
           <button class="sc-go" id="mainBtn">
             <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="22" y2="22"/></svg>
@@ -430,7 +430,10 @@ nav,.page{position:relative;z-index:1}
           <div class="bk-title" id="bkTitle">—</div>
           <div class="bk-sub" id="bkGenre">AI-curated soundtrack</div>
         </div>
-        <button class="bk-new" onclick="resetSearch()">↺ New search</button>
+        <div style="display:flex;gap:6px;flex-shrink:0">
+          <button id="addToLibBtn" onclick="addCurrentToLibrary()" style="font-family:'Syne',sans-serif;font-weight:700;font-size:.64rem;color:var(--teal);background:rgba(91,191,170,.1);border:1.5px solid rgba(91,191,170,.3);border-radius:100px;padding:6px 11px;cursor:pointer;white-space:nowrap;transition:all .2s" title="Add to Library">+ Library</button>
+          <button class="bk-new" onclick="resetSearch()">↺ New</button>
+        </div>
       </div>
       <div class="tabs">
         <button class="tab active" id="tabT" onclick="switchTab('tracks')">♫ Soundtrack</button>
@@ -495,7 +498,7 @@ nav,.page{position:relative;z-index:1}
       <p class="page-sub">Your books, your soundtracks.</p>
     </div>
     <div class="add-bar" style="position:relative">
-      <input class="add-input" id="addInput" type="text" placeholder="Add a book — title or author…" autocomplete="off" spellcheck="false" oninput="onLibBookInput(this.value)" onblur="setTimeout(()=>hideLibSuggestions(),200)"/>
+      <input class="add-input" id="addInput" type="text" placeholder="Add a book — title or author…" autocomplete="off" spellcheck="false"/>
       <div id="libBookSuggestions" style="position:absolute;left:0;right:0;top:100%;background:var(--white);border:1.5px solid var(--border);border-radius:14px;box-shadow:0 8px 24px rgba(0,0,0,.1);z-index:100;overflow:hidden;display:none;margin-top:6px;max-height:240px;overflow-y:auto"></div>
       <button class="add-btn" onclick="addBook()">+ Add</button>
     </div>
@@ -666,85 +669,111 @@ function loader(msg){return`<div class="loader"><div class="dots"><div class="do
 function saveDB(){localStorage.setItem('mb_books',JSON.stringify(DB.books));localStorage.setItem('mb_liked_tracks',JSON.stringify(DB.liked));}
 
 // ══ BOOK AUTOCOMPLETE ══
-let suggestTimer=null;
-let libSuggestTimer=null;
+const _suggestTimers={};
+const _suggestData={};
 
-async function fetchBookSuggestions(q){
-  if(!q||q.length<2) return [];
+async function _fetchBooks(q){
   try{
-    const url=`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(q)}&maxResults=6`;
-    const r=await fetch(url);
-    if(!r.ok) return [];
+    const r=await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(q)}&maxResults=6`);
     const d=await r.json();
-    return (d.items||[]).map(item=>({
-      title:item.volumeInfo?.title||'',
-      author:item.volumeInfo?.authors?.[0]||'',
-      cover:(item.volumeInfo?.imageLinks?.thumbnail||item.volumeInfo?.imageLinks?.smallThumbnail||'').replace('http://','https://'),
-      year:(item.volumeInfo?.publishedDate||'').slice(0,4)
-    })).filter(b=>b.title.length>0);
-  }catch(e){console.warn('Book suggest error:',e);return [];}
+    return(d.items||[]).map(it=>({
+      title:it.volumeInfo?.title||'',
+      author:it.volumeInfo?.authors?.[0]||'',
+      cover:(it.volumeInfo?.imageLinks?.thumbnail||'').replace('http://','https://'),
+      year:(it.volumeInfo?.publishedDate||'').slice(0,4)
+    })).filter(b=>b.title);
+  }catch(e){return[];}
 }
 
-function renderSuggestions(books, containerId, onSelectFn){
-  const box=document.getElementById(containerId);
-  if(!box||!books.length){if(box)box.style.display='none';return;}
+function _showSuggestions(books, boxId, onPick){
+  const box=document.getElementById(boxId);
+  if(!box) return;
+  if(!books.length){box.style.display='none';return;}
+  _suggestData[boxId]=books;
+  // Set styles directly (not +=)
   box.style.display='block';
-  box.innerHTML='';
-  books.forEach((b,i)=>{
-    const row=document.createElement('div');
-    row.style.cssText='display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--border);background:var(--white)';
-    row.innerHTML=(b.cover?`<img src="${b.cover}" style="width:26px;height:38px;object-fit:cover;border-radius:3px;flex-shrink:0" onerror="this.style.display='none'">`:'<div style="width:26px;height:38px;background:var(--grad);border-radius:3px;flex-shrink:0;opacity:.3"></div>')+
-      `<div style="min-width:0"><div style="font-family:Syne,sans-serif;font-weight:700;font-size:.8rem;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${b.title}</div><div style="font-size:.67rem;color:var(--ink3)">${b.author}${b.year?' · '+b.year:''}</div></div>`;
-    row.addEventListener('mousedown',()=>onSelectFn(i));
-    row.addEventListener('mouseover',()=>row.style.background='var(--bg)');
-    row.addEventListener('mouseout',()=>row.style.background='var(--white)');
-    box.appendChild(row);
+  box.style.position='absolute';
+  box.style.left='0';
+  box.style.right='0';
+  box.style.top='calc(100% + 4px)';
+  box.style.background='#fff';
+  box.style.border='1.5px solid #EDE9E3';
+  box.style.borderRadius='14px';
+  box.style.boxShadow='0 8px 24px rgba(0,0,0,.12)';
+  box.style.zIndex='9999';
+  box.style.overflow='hidden';
+  box.style.maxHeight='280px';
+  box.style.overflowY='auto';
+  box.innerHTML=books.map((b,i)=>
+    `<div data-idx="${i}" style="display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer;border-bottom:1px solid #EDE9E3;background:#fff">
+      ${b.cover?`<img src="${b.cover}" style="width:26px;height:38px;object-fit:cover;border-radius:3px;flex-shrink:0" onerror="this.style.display='none'">`:`<div style="width:26px;height:38px;background:linear-gradient(135deg,#E8895A,#5BBFAA);border-radius:3px;flex-shrink:0;opacity:.5"></div>`}
+      <div style="min-width:0">
+        <div style="font-family:Syne,sans-serif;font-weight:700;font-size:.8rem;color:#1A1714;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${b.title}</div>
+        <div style="font-size:.67rem;color:#B0A89E">${b.author}${b.year?' · '+b.year:''}</div>
+      </div>
+    </div>`
+  ).join('');
+  box.querySelectorAll('[data-idx]').forEach(row=>{
+    row.addEventListener('mousedown',e=>{e.preventDefault();onPick(parseInt(row.dataset.idx));});
+    row.addEventListener('mouseover',()=>row.style.background='#F8F5F0');
+    row.addEventListener('mouseout',()=>row.style.background='#fff');
   });
-  box._suggestions=books;
 }
 
-let mainSuggestions=[];
-async function onBookInput(q){
-  clearTimeout(suggestTimer);
-  if(!q||q.length<2){hideSuggestions();return;}
-  suggestTimer=setTimeout(async()=>{
-    const books=await fetchBookSuggestions(q);
-    mainSuggestions=books;
-    renderSuggestions(books,'bookSuggestions',selectMainBook);
-  },350);
-}
-function selectMainBook(i){
-  const b=mainSuggestions[i];
-  if(!b)return;
-  document.getElementById('mainIn').value=b.title+(b.author?' - '+b.author:'');
-  hideSuggestions();
-  doSearch(b.title+(b.author?' '+b.author:''));
-}
-function hideSuggestions(){
-  const el=document.getElementById('bookSuggestions');
-  if(el)el.style.display='none';
+function _initAutocomplete(){
+  const mainIn=document.getElementById('mainIn');
+  const mainBox=document.getElementById('bookSuggestions');
+  if(mainIn&&mainBox){
+    mainIn.addEventListener('input',function(){
+      clearTimeout(_suggestTimers.main);
+      const q=this.value.trim();
+      if(q.length<2){mainBox.style.display='none';return;}
+      _suggestTimers.main=setTimeout(async()=>{
+        const books=await _fetchBooks(q);
+        _showSuggestions(books,'bookSuggestions',(i)=>{
+          const b=_suggestData['bookSuggestions'][i];
+          mainIn.value=b.title;
+          mainBox.style.display='none';
+          doSearch(b.title+(b.author?' '+b.author:''));
+        });
+      },400);
+    });
+    mainIn.addEventListener('blur',()=>setTimeout(()=>{mainBox.style.display='none';},200));
+    mainIn.addEventListener('keydown',e=>{
+      if(e.key==='Escape') mainBox.style.display='none';
+      if(e.key==='Enter'){mainBox.style.display='none';doSearch(mainIn.value);}
+    });
+  }
+
+  const addIn=document.getElementById('addInput');
+  const addBox=document.getElementById('libBookSuggestions');
+  if(addIn&&addBox){
+    addIn.addEventListener('input',function(){
+      clearTimeout(_suggestTimers.lib);
+      const q=this.value.trim();
+      if(q.length<2){addBox.style.display='none';return;}
+      _suggestTimers.lib=setTimeout(async()=>{
+        const books=await _fetchBooks(q);
+        _showSuggestions(books,'libBookSuggestions',(i)=>{
+          const b=_suggestData['libBookSuggestions'][i];
+          // Set value BEFORE calling addBook so it can read it
+          addIn.value=b.title;
+          addBox.style.display='none';
+          // Pass book data directly to avoid reading from input
+          addBookDirect(b.title, b.author, b.cover);
+        });
+      },400);
+    });
+    addIn.addEventListener('blur',()=>setTimeout(()=>{addBox.style.display='none';},200));
+    addIn.addEventListener('keydown',e=>{
+      if(e.key==='Escape') addBox.style.display='none';
+      if(e.key==='Enter'){addBox.style.display='none';addBook();}
+    });
+  }
 }
 
-let libSuggestions=[];
-async function onLibBookInput(q){
-  clearTimeout(libSuggestTimer);
-  if(!q||q.length<2){hideLibSuggestions();return;}
-  libSuggestTimer=setTimeout(async()=>{
-    const books=await fetchBookSuggestions(q);
-    libSuggestions=books;
-    renderSuggestions(books,'libBookSuggestions',selectLibBook);
-  },350);
-}
-function selectLibBook(i){
-  const b=libSuggestions[i];
-  if(!b)return;
-  document.getElementById('addInput').value=b.title+(b.author?' - '+b.author:'');
-  hideLibSuggestions();
-}
-function hideLibSuggestions(){
-  const el=document.getElementById('libBookSuggestions');
-  if(el)el.style.display='none';
-}
+function hideSuggestions(){const el=document.getElementById('bookSuggestions');if(el)el.style.display='none';}
+function hideLibSuggestions(){const el=document.getElementById('libBookSuggestions');if(el)el.style.display='none';}
 
 // ══ BILLING ══
 let billingPlan='monthly';
@@ -823,6 +852,7 @@ async function fetchBookInfo(q){
       S.bookGenre=(item.categories||[]).join(', ')||'';
       S.bookTitle=item.title||q;
       S.bookAuthor=item.authors?.[0]||'';
+      S.bookCover=(item.imageLinks?.thumbnail||item.imageLinks?.smallThumbnail||'').replace('http://','https://').replace('zoom=1','zoom=2')||null;
       document.getElementById('bkTitle').textContent=S.bookTitle;
     }
   }catch(e){}
@@ -909,7 +939,7 @@ function renderTracks(){
               <button class="play-btn" onclick="playTrack(${i});event.stopPropagation()">▶</button>
             </div>
           </div>
-          <div id="inlinePlayer${i}" style="display:none;margin:0 0 8px 0"></div>
+          <div id="inlinePlayer${i}" style="display:none;border-radius:0 0 14px 14px;overflow:hidden;margin-bottom:8px;background:#000;aspect-ratio:16/9"></div>
         </div>`).join('')}
     </div>`;
 }
@@ -976,45 +1006,11 @@ async function playTrack(i){
 
   // Show inline player under this track
   const inlineEl = document.getElementById('inlinePlayer'+i);
-  const playerHTML = `<div style="background:var(--ink);border-radius:0 0 14px 14px;padding:14px 16px;margin-top:-6px">
-    <div style="display:flex;align-items:center;gap:10px">
-      <!-- Equalizer animation -->
-      <div style="display:flex;align-items:flex-end;gap:2px;height:18px;flex-shrink:0" id="eqAnim">
-        <div class="eb" style="height:5px"></div>
-        <div class="eb" style="height:13px;animation-delay:.12s"></div>
-        <div class="eb" style="height:6px;animation-delay:.24s"></div>
-        <div class="eb" style="height:14px;animation-delay:.08s"></div>
-        <div class="eb" style="height:5px;animation-delay:.2s"></div>
-      </div>
-      <!-- Track info -->
-      <div style="flex:1;min-width:0">
-        <div style="font-size:.58rem;font-family:Syne,sans-serif;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--peach)">Now Playing</div>
-        <div style="font-size:.8rem;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${t.name}</div>
-      </div>
-      <!-- Controls -->
-      <div style="display:flex;gap:6px;align-items:center;flex-shrink:0">
-        <button id="pauseBtn" onclick="togglePause()" title="Pause/Play"
-          style="background:rgba(255,255,255,.15);border:none;color:#fff;border-radius:50%;width:32px;height:32px;cursor:pointer;font-size:.75rem;display:flex;align-items:center;justify-content:center">⏸</button>
-        <button onclick="stopTrack()" title="Stop"
-          style="background:rgba(255,255,255,.08);border:none;color:rgba(255,255,255,.6);border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:.65rem;display:flex;align-items:center;justify-content:center">■</button>
-      </div>
-    </div>
-    <!-- Volume -->
-    <div style="display:flex;align-items:center;gap:8px;margin-top:12px">
-      <span style="font-size:.7rem;flex-shrink:0">🔈</span>
-      <input type="range" id="volumeSlider" min="0" max="100" value="80" oninput="changeVolume(this.value)"
-        style="flex:1;accent-color:#E8895A;cursor:pointer"/>
-      <span style="font-size:.7rem;flex-shrink:0">🔊</span>
-      <span id="progressTime" style="font-size:.6rem;color:rgba(255,255,255,.35);flex-shrink:0;min-width:36px;text-align:right">0:00</span>
-    </div>
-    <div id="progressBar" style="display:none"></div>
-  </div>`;
   if(inlineEl){
-    inlineEl.innerHTML=playerHTML;
     inlineEl.style.display='block';
+    inlineEl.innerHTML='<div style="display:flex;align-items:center;justify-content:center;height:180px;background:#111;color:rgba(255,255,255,.4);font-size:.8rem;font-style:italic">Loading track…</div>';
+    setTimeout(()=>inlineEl.scrollIntoView({behavior:'smooth',block:'nearest'}),150);
   }
-  startProgressAnimation();
-  setTimeout(()=>inlineEl?.scrollIntoView({behavior:'smooth',block:'nearest'}),200);
 
   // Search YouTube
   const query = encodeURIComponent((t.scQuery || t.name + ' ' + t.vibe + ' no lyrics instrumental 1 hour').toLowerCase());
@@ -1022,11 +1018,14 @@ async function playTrack(i){
     const r = await fetch('/api/search?q=' + query);
     const d = await r.json();
     if (d.videoId) {
-      document.getElementById('scFrame').src =
-        `https://www.youtube.com/embed/${d.videoId}?autoplay=1&rel=0&modestbranding=1&enablejsapi=1`;
-      document.getElementById('scPlayer').style.display='block';
-      // Set initial volume after iframe loads
-      setTimeout(()=>changeVolume(document.getElementById('volumeSlider')?.value||80),2500);
+      const slot = document.getElementById('inlinePlayer'+i);
+      if(slot){
+        slot.innerHTML=`<iframe src="https://www.youtube.com/embed/${d.videoId}?autoplay=1&rel=0&modestbranding=1" 
+          width="100%" height="100%" frameborder="0" 
+          allow="autoplay;encrypted-media;fullscreen" allowfullscreen
+          style="display:block;min-height:200px"></iframe>`;
+      }
+      document.getElementById('scPlayer').style.display='none';
     } else {
       customVibe.textContent = 'Could not load — try another track';
       stopProgressAnimation();
@@ -1058,9 +1057,8 @@ function stopProgressAnimation(){
 function stopTrack(){
   document.getElementById('scFrame').src='';
   document.getElementById('scPlayer').style.display='none';
-  document.getElementById('customPlayer').style.display='none';
   document.getElementById('np').classList.remove('up');
-  stopProgressAnimation();
+  document.querySelectorAll('[id^="inlinePlayer"]').forEach(el=>{el.style.display='none';el.innerHTML='';});
   document.querySelectorAll('.track').forEach(el=>el.classList.remove('playing'));
   S.playing=null;
 }
@@ -1171,6 +1169,27 @@ function toggleLike(e,i){
   const el=document.getElementById('tr'+i);if(!el)return;
   el.classList.toggle('liked',S.liked.has(i));
   el.querySelector('.like-btn').textContent=S.liked.has(i)?'♥':'♡';
+}
+
+function addCurrentToLibrary(){
+  if(!S.book) return;
+  const exists = DB.books.find(b=>b.title.toLowerCase()===S.bookTitle?.toLowerCase()||b.title.toLowerCase()===S.book.toLowerCase());
+  if(exists){toast('Already in your library');return;}
+  const newBook={id:Date.now(),title:S.bookTitle||S.book,author:S.bookAuthor||'',cover:S.bookCover||null};
+  DB.books.unshift(newBook);
+  saveDB();
+  toast(`📚 <span class="g">"${esc(newBook.title)}"</span> added to Library`);
+  // Try to fetch cover if not already
+  if(!newBook.cover){
+    fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(newBook.title)}&maxResults=1`)
+      .then(r=>r.json()).then(d=>{
+        const img=d.items?.[0]?.volumeInfo?.imageLinks?.thumbnail;
+        if(img){
+          const idx=DB.books.findIndex(b=>b.id===newBook.id);
+          if(idx!==-1){DB.books[idx].cover=img.replace('http://','https://');saveDB();}
+        }
+      }).catch(()=>{});
+  }
 }
 
 // ══ LIBRARY ══
@@ -1390,12 +1409,34 @@ function applyPromo(){
 
 // ══ INIT ══
 document.getElementById('mainBtn').addEventListener('click',()=>doSearch(document.getElementById('mainIn').value));
-document.getElementById('mainIn').addEventListener('keydown',e=>{if(e.key==='Enter')doSearch(e.target.value)});
+document.getElementById('mainIn').addEventListener('keydown',e=>{if(e.key==='Enter'){hideSuggestions();doSearch(e.target.value);}});
 document.querySelectorAll('.chip').forEach(c=>c.addEventListener('click',()=>{
   document.getElementById('mainIn').value=c.dataset.q;
   doSearch(c.dataset.q);
 }));
-document.getElementById('addInput').addEventListener('keydown',e=>{if(e.key==='Enter')addBook()});
+document.getElementById('addInput').addEventListener('keydown',e=>{if(e.key==='Enter'){hideLibSuggestions();addBook();}});
+
+// Init autocomplete
+_initAutocomplete();
+
+async function addBookDirect(title,author,cover){
+  document.getElementById('addInput').value='';
+  const tempId=Date.now();
+  DB.books.unshift({id:tempId,title,author:author||'',cover:cover||null});
+  saveDB();renderBooks();
+  if(!cover){
+    try{
+      const r=await fetch('https://www.googleapis.com/books/v1/volumes?q='+encodeURIComponent(title+' '+(author||''))+'&maxResults=1');
+      const d=await r.json();
+      const img=d.items?.[0]?.volumeInfo?.imageLinks?.thumbnail||d.items?.[0]?.volumeInfo?.imageLinks?.smallThumbnail;
+      if(img){
+        const idx=DB.books.findIndex(b=>b.id===tempId);
+        if(idx!==-1){DB.books[idx].cover=img.replace('http://','https://').replace('zoom=1','zoom=2');saveDB();renderBooks();}
+      }
+    }catch(e){}
+  }
+  toast('📖 <span class="g">"'+esc(title)+'"</span> added to Library');
+}
 
 if(!DB.books.length){
   DB.books=[
