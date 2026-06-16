@@ -408,13 +408,15 @@ nav,.page{position:relative;z-index:1}
       <p class="hero-sub">Tell us what you're reading — we'll find music that matches its exact world, mood, and atmosphere.</p>
       <div class="search-card">
         <div class="sc-lbl">What are you reading?</div>
-        <div class="sc-row" style="position:relative">
-          <input class="sc-input" id="mainIn" type="text" placeholder="Book title or author…" autocomplete="off" spellcheck="false"/>
-          <div id="bookSuggestions" style="position:absolute;left:0;right:60px;top:100%;background:var(--white);border:1.5px solid var(--border);border-radius:14px;box-shadow:0 8px 24px rgba(0,0,0,.1);z-index:100;overflow:hidden;display:none;margin-top:6px;max-height:280px;overflow-y:auto"></div>
-          <button class="sc-go" id="mainBtn">
-            <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="22" y2="22"/></svg>
-          </button>
-        </div>
+        <div style="position:relative">
+          <div class="sc-row">
+            <input class="sc-input" id="mainIn" type="text" placeholder="Book title or author…" autocomplete="off" spellcheck="false"/>
+            <button class="sc-go" id="mainBtn">
+              <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="22" y2="22"/></svg>
+            </button>
+          </div>
+          <div id="bookSuggestions" style="position:absolute;left:0;right:0;top:100%;z-index:9999;display:none;margin-top:4px"></div>
+        </div></div>
         <div class="chips">
           <button class="chip" data-q="Fourth Wing Rebecca Yarros">Fourth Wing</button>
           <button class="chip" data-q="Intermezzo Sally Rooney">Intermezzo</button>
@@ -499,8 +501,8 @@ nav,.page{position:relative;z-index:1}
     </div>
     <div class="add-bar" style="position:relative">
       <input class="add-input" id="addInput" type="text" placeholder="Add a book — title or author…" autocomplete="off" spellcheck="false"/>
-      <div id="libBookSuggestions" style="position:absolute;left:0;right:0;top:100%;background:var(--white);border:1.5px solid var(--border);border-radius:14px;box-shadow:0 8px 24px rgba(0,0,0,.1);z-index:100;overflow:hidden;display:none;margin-top:6px;max-height:240px;overflow-y:auto"></div>
       <button class="add-btn" onclick="addBook()">+ Add</button>
+      <div id="libBookSuggestions" style="position:absolute;left:0;right:0;top:100%;z-index:9999;display:none;margin-top:4px"></div>
     </div>
     <div class="section-label">Currently reading</div>
     <div class="books-grid" id="booksGrid"></div>
@@ -690,20 +692,12 @@ function _showSuggestions(books, boxId, onPick){
   if(!box) return;
   if(!books.length){box.style.display='none';return;}
   _suggestData[boxId]=books;
-  // Set styles directly (not +=)
-  box.style.display='block';
-  box.style.position='absolute';
-  box.style.left='0';
-  box.style.right='0';
-  box.style.top='calc(100% + 4px)';
-  box.style.background='#fff';
-  box.style.border='1.5px solid #EDE9E3';
-  box.style.borderRadius='14px';
-  box.style.boxShadow='0 8px 24px rgba(0,0,0,.12)';
-  box.style.zIndex='9999';
-  box.style.overflow='hidden';
-  box.style.maxHeight='280px';
-  box.style.overflowY='auto';
+  box.setAttribute('style',
+    'position:absolute;left:0;right:0;top:calc(100% + 4px);'+
+    'background:#fff;border:1.5px solid #EDE9E3;border-radius:14px;'+
+    'box-shadow:0 8px 24px rgba(0,0,0,.15);z-index:9999;'+
+    'overflow:hidden;max-height:280px;overflow-y:auto;display:block;margin-top:4px'
+  );
   box.innerHTML=books.map((b,i)=>
     `<div data-idx="${i}" style="display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer;border-bottom:1px solid #EDE9E3;background:#fff">
       ${b.cover?`<img src="${b.cover}" style="width:26px;height:38px;object-fit:cover;border-radius:3px;flex-shrink:0" onerror="this.style.display='none'">`:`<div style="width:26px;height:38px;background:linear-gradient(135deg,#E8895A,#5BBFAA);border-radius:3px;flex-shrink:0;opacity:.5"></div>`}
@@ -806,6 +800,11 @@ function switchTab(name){
 function showResults(){
   const r=document.getElementById('results');
   r.classList.add('visible');
+  // Hide landing sections when searching
+  ['socialProof','howItWorks'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.style.display='none';
+  });
   setTimeout(()=>r.scrollIntoView({behavior:'smooth',block:'start'}),80);
 }
 
