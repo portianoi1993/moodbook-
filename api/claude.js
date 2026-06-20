@@ -91,12 +91,23 @@ If unknown, respond: {"title":"${safeBook}","author":""}`}]
 
     if (moodsOnly) {
       prompt = `Book: "${safeBook}"
-${safeDesc ? 'Description: ' + safeDesc : ''}
+Genre: ${safeGenre || 'unknown — infer from the book'}
+${safeDesc ? 'Description: ' + safeDesc : 'Use your knowledge of this book.'}
 
-First identify what this book actually is (translate title if needed, identify genre/themes).
-Then generate 6 specific scene moods from THIS book's actual plot and atmosphere.
+Generate 6 mood/scene labels for this book. Each label represents a DIFFERENT musical direction tied to a real moment or theme in this book — not a random scene name.
 
-Respond ONLY with JSON array of 6 short phrases (2-4 words each):
+RULES:
+- Each label must clearly imply a music style when read (someone should be able to guess the soundtrack vibe just from the label)
+- Ground every label in the book's actual genre — do not invent moods that contradict the book
+- Cover a spread of energies: 1 high-energy/intense, 1 calm/reflective, 1 atmospheric/mysterious, 1 emotional, 1 focus/lofi-style, 1 matching the book's signature theme
+- Format: 2-4 words, Title Case, evocative but clear (e.g. "Epic Battle Surge", "Quiet Night Reading", "Dark Mystery Ambient", "Heartfelt Reunion", "Deep Focus Lofi")
+- If self-help/non-fiction: use focus/productivity-style labels ("Deep Focus Flow", "Morning Motivation", "Calm Concentration")
+- If fantasy: use adventure/battle-style labels ("Epic Quest Theme", "Dragon's Lair Tension")
+- If romance: use emotional/intimate labels ("First Spark", "Tender Moment")
+- If horror/thriller: use suspense/dark labels ("Creeping Dread", "Chase Through Shadows")
+- If sci-fi: use atmospheric/space labels ("Deep Space Drift", "Neon City Pulse")
+
+Respond ONLY with JSON array of exactly 6 strings, no markdown:
 ["mood 1","mood 2","mood 3","mood 4","mood 5","mood 6"]`;
     } else {
       prompt = `You are a music curator. Book: "${safeBook}"
