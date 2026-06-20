@@ -688,14 +688,22 @@ const _suggestData={};
 
 async function _fetchBooks(q){
   try{
-    const r=await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(q)}&maxResults=6&key=AIzaSyD_GXtmqfc_rRVc7xa3v2g8tNoh-a4yR3o`);
+    const r=await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(q)}&maxResults=10&orderBy=relevance&key=AIzaSyD_GXtmqfc_rRVc7xa3v2g8tNoh-a4yR3o`);
     const d=await r.json();
-    return(d.items||[]).map(it=>({
+    let books=(d.items||[]).map(it=>({
       title:it.volumeInfo?.title||'',
       author:it.volumeInfo?.authors?.[0]||'',
       cover:(it.volumeInfo?.imageLinks?.thumbnail||'').replace('http://','https://'),
-      year:(it.volumeInfo?.publishedDate||'').slice(0,4)
+      year:(it.volumeInfo?.publishedDate||'').slice(0,4),
+      hasImage:!!it.volumeInfo?.imageLinks?.thumbnail,
+      ratingsCount:it.volumeInfo?.ratingsCount||0,
     })).filter(b=>b.title);
+    // Prioritize: books with covers first, then by ratings count (popularity signal)
+    books.sort((a,b)=>{
+      if(a.hasImage!==b.hasImage) return a.hasImage?-1:1;
+      return b.ratingsCount-a.ratingsCount;
+    });
+    return books.slice(0,6);
   }catch(e){return[];}
 }
 
@@ -705,23 +713,23 @@ function _showSuggestions(books, boxId, onPick){
   if(!books.length){box.style.display='none';return;}
   _suggestData[boxId]=books;
   box.setAttribute('style',
-    'position:absolute;left:0;right:0;top:calc(100% + 4px);'+
-    'background:#fff;border:1.5px solid #EDE9E3;border-radius:14px;'+
-    'box-shadow:0 8px 24px rgba(0,0,0,.15);z-index:9999;'+
-    'overflow:hidden;max-height:280px;overflow-y:auto;display:block;margin-top:4px'
+    'position:absolute;left:0;right:0;top:calc(100% + 6px);'+
+    'background:#fff;border:1.5px solid #EDE9E3;border-radius:16px;'+
+    'box-shadow:0 12px 32px rgba(26,23,20,.14);z-index:9999;'+
+    'overflow:hidden;max-height:300px;overflow-y:auto;display:block'
   );
   box.innerHTML=books.map((b,i)=>
-    `<div data-idx="${i}" style="display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer;border-bottom:1px solid #EDE9E3;background:#fff">
-      ${b.cover?`<img src="${b.cover}" style="width:26px;height:38px;object-fit:cover;border-radius:3px;flex-shrink:0" onerror="this.style.display='none'">`:`<div style="width:26px;height:38px;background:linear-gradient(135deg,#E8895A,#5BBFAA);border-radius:3px;flex-shrink:0;opacity:.5"></div>`}
-      <div style="min-width:0">
-        <div style="font-family:Syne,sans-serif;font-weight:700;font-size:.8rem;color:#1A1714;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${b.title}</div>
-        <div style="font-size:.67rem;color:#B0A89E">${b.author}${b.year?' · '+b.year:''}</div>
+    `<div data-idx="${i}" style="display:flex;align-items:center;gap:12px;padding:11px 16px;cursor:pointer;${i<books.length-1?'border-bottom:1px solid #F2EEE8':''}">
+      ${b.cover?`<img src="${b.cover}" style="width:30px;height:43px;object-fit:cover;border-radius:4px;flex-shrink:0;box-shadow:0 2px 6px rgba(0,0,0,.12)" onerror="this.outerHTML='<div style=&quot;width:30px;height:43px;background:linear-gradient(135deg,#E8895A,#5BBFAA);border-radius:4px;flex-shrink:0;opacity:.5&quot;></div>'">`:`<div style="width:30px;height:43px;background:linear-gradient(135deg,#E8895A,#5BBFAA);border-radius:4px;flex-shrink:0;opacity:.5"></div>`}
+      <div style="min-width:0;flex:1">
+        <div style="font-family:Syne,sans-serif;font-weight:700;font-size:.82rem;color:#1A1714;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${b.title}</div>
+        <div style="font-size:.68rem;color:#B0A89E;margin-top:1px">${b.author}${b.year?' · '+b.year:''}</div>
       </div>
     </div>`
   ).join('');
   box.querySelectorAll('[data-idx]').forEach(row=>{
     row.addEventListener('mousedown',e=>{e.preventDefault();onPick(parseInt(row.dataset.idx));});
-    row.addEventListener('mouseover',()=>row.style.background='#F8F5F0');
+    row.addEventListener('mouseover',()=>row.style.background='#FBF8F4');
     row.addEventListener('mouseout',()=>row.style.background='#fff');
   });
 }
