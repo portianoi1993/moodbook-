@@ -310,6 +310,13 @@ nav,.page{position:relative;z-index:1}
 (function(){
   const c=document.getElementById('bgBooks');
   const W=window.innerWidth,H=window.innerHeight;
+
+  // Skip floating books entirely on narrow screens - no room for side margins
+  if(W < 700){
+    c.style.display='none';
+    return;
+  }
+
   const pal=[['#E8895A','#5BBFAA'],['#5BBFAA','#E8895A'],['#E8C4A8','#A8D4C8'],['#D4A07A','#7BBFB0']];
 
   function mkSVG(c1,c2,type){
@@ -336,24 +343,34 @@ nav,.page{position:relative;z-index:1}
   }
 
   const books=[];
-  for(let i=0;i<14;i++){
+  const NUM_BOOKS = 8; // fewer books
+  for(let i=0;i<NUM_BOOKS;i++){
     const el=document.createElement('div');
     el.className='bg-book';
     const[c1,c2]=pal[Math.floor(Math.random()*pal.length)];
     el.innerHTML=mkSVG(c1,c2,i%8);
     c.appendChild(el);
 
+    // Keep books in side margins only - avoid center content area
+    const isLeft = i % 2 === 0;
+    const margin = Math.min(W * 0.16, 180); // side zone width, capped
+    const x = isLeft
+      ? Math.random() * margin
+      : W - margin + Math.random() * margin;
+
     books.push({
       el,
-      x: Math.random()*W,
+      x,
       y: H + 80 + Math.random()*H,
-      speed: 0.12 + Math.random()*0.18,  // Very slow
-      rot: (Math.random()-0.5)*20,
-      rotSpeed: (Math.random()-0.5)*0.02, // Very slow rotation
-      scale: 0.8 + Math.random()*0.5,
+      speed: 0.1 + Math.random()*0.14,
+      rot: (Math.random()-0.5)*16,
+      rotSpeed: (Math.random()-0.5)*0.015,
+      scale: 0.55 + Math.random()*0.35, // smaller
       opacity: 0,
-      targetOp: 0.4 + Math.random()*0.3,
+      targetOp: 0.22 + Math.random()*0.18, // much more subtle
       phase: 'rise',
+      isLeft,
+      margin,
     });
   }
 
@@ -362,28 +379,25 @@ nav,.page{position:relative;z-index:1}
       b.y -= b.speed;
       b.rot += b.rotSpeed;
 
-      // Fade in when entering screen
       if(b.y < H*0.9 && b.phase==='rise'){
         b.phase='show';
       }
       if(b.phase==='show'){
-        b.opacity=Math.min(b.opacity+0.015, b.targetOp);
+        b.opacity=Math.min(b.opacity+0.012, b.targetOp);
       }
-      // Fade out near top
       if(b.y < H*0.15){
         b.phase='fade';
       }
       if(b.phase==='fade'){
-        b.opacity=Math.max(b.opacity-0.02, 0);
+        b.opacity=Math.max(b.opacity-0.018, 0);
       }
-      // Reset when gone
       if(b.y < -120){
         b.y = H + 60 + Math.random()*200;
-        b.x = Math.random()*W;
+        b.x = b.isLeft ? Math.random()*b.margin : W - b.margin + Math.random()*b.margin;
         b.opacity=0;
         b.phase='rise';
-        b.speed=0.4+Math.random()*0.7;
-        b.rotSpeed=(Math.random()-0.5)*0.08;
+        b.speed=0.1+Math.random()*0.14;
+        b.rotSpeed=(Math.random()-0.5)*0.015;
       }
 
       b.el.style.transform=`translate(${b.x}px,${b.y}px) rotate(${b.rot}deg) scale(${b.scale})`;
