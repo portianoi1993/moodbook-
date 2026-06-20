@@ -71,6 +71,8 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:16px 2
 
 /* TRACKS */
 .tracks{display:flex;flex-direction:column;gap:7px;margin-bottom:14px}
+.inline-player-box{display:none;border-radius:0 0 14px 14px;overflow:hidden;margin-bottom:8px;background:#000;width:100%;max-width:340px;aspect-ratio:16/9;max-height:191px}
+.inline-player-box iframe{width:100%;height:100%;display:block;border:none}
 .track{display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:14px;border:1.5px solid var(--border);background:var(--white);cursor:pointer;transition:all .2s;-webkit-tap-highlight-color:transparent}
 .track:hover{border-color:var(--peach);transform:translateX(3px);box-shadow:0 4px 14px rgba(232,137,90,.12)}
 .track.playing{background:rgba(232,137,90,.05);border-color:rgba(232,137,90,.35)}
@@ -1000,7 +1002,7 @@ function renderTracks(){
               <button class="play-btn" onclick="playTrack(${i});event.stopPropagation()">▶</button>
             </div>
           </div>
-          <div id="inlinePlayer${i}" style="display:none;border-radius:0 0 14px 14px;overflow:hidden;margin-bottom:8px;background:#000;width:100%;max-width:360px;aspect-ratio:16/9;max-height:203px"></div>
+          <div id="inlinePlayer${i}" class="inline-player-box"></div>
         </div>`).join('')}
     </div>`;
 }
