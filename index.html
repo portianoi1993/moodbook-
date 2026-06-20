@@ -155,9 +155,20 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:16px 2
 .add-input:focus{border-color:var(--peach);box-shadow:0 0 0 3px rgba(232,137,90,.1)}
 .add-btn{padding:11px 16px;background:var(--grad);color:#fff;border:none;border-radius:12px;font-family:'Syne',sans-serif;font-weight:800;font-size:.76rem;cursor:pointer;white-space:nowrap;box-shadow:0 3px 14px rgba(232,137,90,.3);transition:all .2s}
 .add-btn:hover{transform:translateY(-2px)}
-.books-grid{display:flex;flex-direction:column;gap:10px;margin-bottom:28px}
-.book-card{background:var(--white);border:1.5px solid var(--border);border-radius:16px;overflow:hidden;display:flex;align-items:stretch;box-shadow:0 2px 10px rgba(0,0,0,.05);transition:all .2s}
-.book-card:hover{border-color:rgba(232,137,90,.3);transform:translateY(-2px);box-shadow:0 6px 20px rgba(232,137,90,.1)}
+.books-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:28px}
+.book-card{cursor:pointer;position:relative}
+.book-cover-shelf{aspect-ratio:2/3;border-radius:10px;overflow:hidden;box-shadow:0 4px 14px rgba(0,0,0,.12);position:relative;background:var(--grad);transition:transform .2s,box-shadow .2s}
+.book-card:hover .book-cover-shelf{transform:translateY(-4px) scale(1.02);box-shadow:0 10px 24px rgba(0,0,0,.18)}
+.book-cover-shelf img{width:100%;height:100%;object-fit:cover;display:block}
+.book-cover-shelf .cover-fallback-shelf{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:1.8rem;color:rgba(255,255,255,.7)}
+.book-title-shelf{font-family:'Syne',sans-serif;font-weight:700;font-size:.72rem;color:var(--ink);margin-top:8px;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.book-author-shelf{font-size:.64rem;color:var(--ink3);margin-top:2px}
+.book-remove-x{position:absolute;top:6px;right:6px;width:22px;height:22px;border-radius:50%;background:rgba(0,0,0,.5);color:#fff;border:none;font-size:.7rem;cursor:pointer;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .2s}
+.book-card:hover .book-remove-x{opacity:1}
+.book-detail-panel{display:none;background:var(--white);border:1.5px solid var(--border);border-radius:18px;padding:18px;margin-bottom:20px;box-shadow:0 8px 24px rgba(0,0,0,.08)}
+.book-detail-panel.open{display:block}
+@media(min-width:600px){.books-grid{grid-template-columns:repeat(4,1fr)}}
+@media(min-width:900px){.books-grid{grid-template-columns:repeat(6,1fr)}}
 .book-cover-wrap{width:64px;flex-shrink:0;background:var(--grad);position:relative;overflow:hidden;cursor:pointer}
 .book-cover-wrap img{width:100%;height:100%;object-fit:cover;display:block}
 .book-cover-wrap .cover-fallback{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:1.6rem;opacity:.5}
@@ -505,6 +516,7 @@ nav,.page{position:relative;z-index:1}
       <div id="libBookSuggestions" style="position:absolute;left:0;right:0;top:100%;z-index:9999;display:none;margin-top:4px"></div>
     </div>
     <div class="section-label">Currently reading</div>
+    <div class="book-detail-panel" id="bookDetailPanel"></div>
     <div class="books-grid" id="booksGrid"></div>
     <div class="section-label">Liked tracks</div>
     <div class="liked-tracks" id="likedTracks"></div>
@@ -1204,28 +1216,48 @@ function renderBooks(){
   const statEl=document.getElementById('statBooks');
   if(statEl) statEl.textContent=DB.books.length;
   if(!DB.books.length){
-    grid.innerHTML=`<div class="empty"><div class="empty-icon">📚</div><p class="empty-text">No books yet.<br>Add one above to get started.</p></div>`;
+    grid.innerHTML=`<div class="empty" style="grid-column:1/-1"><div class="empty-icon">📚</div><p class="empty-text">No books yet.<br>Add one above to get started.</p></div>`;
+    closeBookDetail();
     return;
   }
   grid.innerHTML=DB.books.map((b,i)=>`
-    <div class="book-card">
-      <div class="book-cover-wrap" onclick="triggerCoverUpload(${i})">
-        ${b.cover?`<img src="${esc(b.cover)}" alt="${esc(b.title)}" onerror="this.style.display='none'">`:''}
-        <div class="cover-fallback" style="${b.cover?'display:none':''}">📖</div>
-        <div class="cover-edit-overlay">
-          <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-          <span>Change<br>cover</span>
-        </div>
+    <div class="book-card" onclick="openBookDetail(${i})">
+      <div class="book-cover-shelf">
+        ${b.cover?`<img src="${esc(b.cover)}" alt="${esc(b.title)}" onerror="this.parentElement.innerHTML='<div class=&quot;cover-fallback-shelf&quot;>📖</div>'">`:`<div class="cover-fallback-shelf">📖</div>`}
+        <button class="book-remove-x" onclick="event.stopPropagation();removeBook(${i})">✕</button>
       </div>
-      <div class="book-info">
-        <div class="book-name">${esc(b.title)}</div>
-        <div class="book-author">${esc(b.author||'Unknown author')}</div>
-        <div class="book-actions">
-          <button class="btn-play-book" onclick="playBook(${i})">▶ Play</button>
-          <button class="btn-remove" onclick="removeBook(${i})">✕</button>
-        </div>
-      </div>
+      <div class="book-title-shelf">${esc(b.title)}</div>
+      <div class="book-author-shelf">${esc(b.author||'')}</div>
     </div>`).join('');
+}
+
+function openBookDetail(i){
+  const b=DB.books[i];
+  if(!b) return;
+  S.detailIdx=i;
+  const panel=document.getElementById('bookDetailPanel');
+  panel.classList.add('open');
+  panel.innerHTML=`
+    <div style="display:flex;gap:16px;align-items:flex-start">
+      <div onclick="triggerCoverUpload(${i})" style="width:80px;aspect-ratio:2/3;border-radius:10px;overflow:hidden;flex-shrink:0;box-shadow:0 4px 14px rgba(0,0,0,.12);cursor:pointer;background:var(--grad);position:relative">
+        ${b.cover?`<img src="${esc(b.cover)}" style="width:100%;height:100%;object-fit:cover">`:`<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:1.5rem;color:rgba(255,255,255,.7)">📖</div>`}
+      </div>
+      <div style="flex:1;min-width:0">
+        <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:1rem;color:var(--ink);margin-bottom:2px">${esc(b.title)}</div>
+        <div style="font-size:.78rem;color:var(--ink2);margin-bottom:14px">${esc(b.author||'Unknown author')}</div>
+        <div style="display:flex;gap:8px">
+          <button class="btn-play-book" onclick="playBook(${i})">▶ Play soundtrack</button>
+          <button onclick="closeBookDetail()" style="background:var(--bg);border:1.5px solid var(--border);border-radius:100px;padding:9px 16px;font-family:'Syne',sans-serif;font-weight:700;font-size:.74rem;color:var(--ink2);cursor:pointer">Close</button>
+        </div>
+      </div>
+    </div>`;
+  setTimeout(()=>panel.scrollIntoView({behavior:'smooth',block:'center'}),100);
+}
+
+function closeBookDetail(){
+  const panel=document.getElementById('bookDetailPanel');
+  if(panel){panel.classList.remove('open');panel.innerHTML='';}
+  S.detailIdx=null;
 }
 
 function triggerCoverUpload(i){
@@ -1303,6 +1335,7 @@ async function addBook(){
 function removeBook(i){
   const t=DB.books[i].title;
   DB.books.splice(i,1);saveDB();renderBooks();
+  closeBookDetail();
   toast(`Removed "${esc(t)}"`);
 }
 
@@ -1460,7 +1493,7 @@ if(!DB.books.length){
   // Fetch covers async
   DB.books.forEach(async(b,i)=>{
     try{
-      const r=await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(b.title+' '+b.author)}&maxResults=1`);
+      const r=await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(b.title+' '+b.author)}&maxResults=1&key=AIzaSyD_GXtmqfc_rRVc7xa3v2g8tNoh-a4yR3o`);
       const d=await r.json();
       const item=d.items?.[0]?.volumeInfo;
       // Try thumbnail, then smallThumbnail, use zoom=2 for better quality
