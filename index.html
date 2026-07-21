@@ -71,7 +71,7 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:16px 2
 
 /* TRACKS */
 .tracks{display:flex;flex-direction:column;gap:7px;margin-bottom:14px}
-.inline-player-box{display:none;border-radius:0 0 14px 14px;overflow:hidden;margin-bottom:8px;background:#000;width:100%;max-width:340px;aspect-ratio:16/9;max-height:191px}
+.inline-player-box{display:none;border-radius:0 0 14px 14px;overflow:hidden;margin-bottom:8px;background:#000;width:100%;aspect-ratio:16/9}
 .inline-player-box iframe{width:100%;height:100%;display:block;border:none}
 .track{display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:14px;border:1.5px solid var(--border);background:var(--white);cursor:pointer;transition:all .2s;-webkit-tap-highlight-color:transparent}
 .track:hover{border-color:var(--peach);transform:translateX(3px);box-shadow:0 4px 14px rgba(232,137,90,.12)}
@@ -454,7 +454,7 @@ nav,.page{position:relative;z-index:1}
             </button>
           </div>
           <div id="bookSuggestions" style="position:absolute;left:0;right:0;top:100%;z-index:9999;display:none;margin-top:4px"></div>
-        </div></div>
+        </div>
         <div class="chips">
           <button class="chip" data-q="Fourth Wing Rebecca Yarros">Fourth Wing</button>
           <button class="chip" data-q="Intermezzo Sally Rooney">Intermezzo</button>
@@ -1020,7 +1020,7 @@ async function playTrack(i){
   const inlineEl = document.getElementById('inlinePlayer'+i);
   if(inlineEl){
     inlineEl.style.display='block';
-    inlineEl.innerHTML='<div style="display:flex;align-items:center;justify-content:center;height:180px;background:#111;color:rgba(255,255,255,.4);font-size:.8rem;font-style:italic">Loading track…</div>';
+    inlineEl.innerHTML='<div style="display:flex;align-items:center;justify-content:center;height:100%;background:#111;color:rgba(255,255,255,.4);font-size:.8rem;font-style:italic">Loading track…</div>';
     setTimeout(()=>inlineEl.scrollIntoView({behavior:'smooth',block:'nearest'}),150);
   }
 
@@ -1040,11 +1040,11 @@ async function playTrack(i){
       document.getElementById('scPlayer').style.display='none';
     } else {
       const slot = document.getElementById('inlinePlayer'+i);
-      if(slot) slot.innerHTML='<div style="display:flex;align-items:center;justify-content:center;height:180px;background:#111;color:rgba(255,255,255,.5);font-size:.8rem;font-style:italic">Could not load — try another track</div>';
+      if(slot) slot.innerHTML='<div style="display:flex;align-items:center;justify-content:center;height:100%;background:#111;color:rgba(255,255,255,.5);font-size:.8rem;font-style:italic">Could not load — try another track</div>';
     }
   } catch(e) {
     const slot = document.getElementById('inlinePlayer'+i);
-    if(slot) slot.innerHTML='<div style="display:flex;align-items:center;justify-content:center;height:180px;background:#111;color:rgba(255,255,255,.5);font-size:.8rem;font-style:italic">Error loading — try again</div>';
+    if(slot) slot.innerHTML='<div style="display:flex;align-items:center;justify-content:center;height:100%;background:#111;color:rgba(255,255,255,.5);font-size:.8rem;font-style:italic">Error loading — try again</div>';
   }
 }
 
