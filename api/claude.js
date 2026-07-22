@@ -1,31 +1,53 @@
 // In-memory rate limiter (resets on cold start, but effective for most abuse)
 const rateLimit = new Map();
 
-function checkRateLimit(ip, maxRequests = 20, windowMs = 60 * 60 * 1000) {
+function checkRateLimit(ip, maxRequests = 40, windowMs = 60 * 60 * 1000) {
   const now = Date.now();
   const key = ip;
-  
+
   if (!rateLimit.has(key)) {
     rateLimit.set(key, { count: 1, resetAt: now + windowMs });
     return { allowed: true, remaining: maxRequests - 1 };
   }
-  
+
   const record = rateLimit.get(key);
-  
+
   // Reset window if expired
   if (now > record.resetAt) {
     rateLimit.set(key, { count: 1, resetAt: now + windowMs });
     return { allowed: true, remaining: maxRequests - 1 };
   }
-  
+
   // Increment and check
   record.count++;
   if (record.count > maxRequests) {
     const retryAfter = Math.ceil((record.resetAt - now) / 1000);
     return { allowed: false, remaining: 0, retryAfter };
   }
-  
+
   return { allowed: true, remaining: maxRequests - record.count };
+}
+
+// Model always replies with a JSON object; strip fences defensively anyway.
+function parseJSON(text) {
+  return JSON.parse(String(text || '{}').replace(/```json|```/g, '').trim());
+}
+
+async function callOpenAI(key, { prompt, maxTokens, temperature }) {
+  return fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${key}`
+    },
+    body: JSON.stringify({
+      model: 'gpt-4o-mini',
+      max_tokens: maxTokens,
+      temperature,
+      response_format: { type: 'json_object' },
+      messages: [{ role: 'user', content: prompt }]
+    })
+  });
 }
 
 export default async function handler(req, res) {
@@ -35,23 +57,23 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   // Rate limiting by IP
-  const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || 
-             req.headers['x-real-ip'] || 
-             req.socket?.remoteAddress || 
+  const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() ||
+             req.headers['x-real-ip'] ||
+             req.socket?.remoteAddress ||
              'unknown';
-  
-  const limit = checkRateLimit(ip, 20, 60 * 60 * 1000); // 20 req/hour
-  
+
+  const limit = checkRateLimit(ip, 40, 60 * 60 * 1000); // 40 req/hour
+
   res.setHeader('X-RateLimit-Remaining', limit.remaining);
-  
+
   if (!limit.allowed) {
-    return res.status(429).json({ 
+    return res.status(429).json({
       error: 'Too many requests. Please try again later.',
-      retryAfter: limit.retryAfter 
+      retryAfter: limit.retryAfter
     });
   }
 
-  const { book, genre, description, mood, moodsOnly, identifyOnly } = req.body || {};
+  const { book, genre, description, mood, author, moodsOnly, identifyOnly } = req.body || {};
   if (!book) return res.status(400).json({ error: 'Missing book' });
 
   // Sanitize inputs
@@ -59,123 +81,171 @@ export default async function handler(req, res) {
   const safeGenre = String(genre || '').slice(0, 100);
   const safeDesc = String(description || '').slice(0, 800);
   const safeMood = String(mood || '').slice(0, 100);
+  const safeAuthor = String(author || '').slice(0, 120);
 
   const OPENAI_KEY = process.env.OPENAI_API_KEY;
   if (!OPENAI_KEY) {
     return res.status(500).json({ error: 'Server configuration error' });
   }
 
-  // Just identify the book (translate title, find author)
+  // ══ STEP A1 — IDENTIFY THE BOOK FROM A TITLE IN ANY LANGUAGE ══
   if (identifyOnly) {
+    const prompt = `You identify books from a title written in ANY language.
+
+Query: "${safeBook}"
+
+RULES:
+1. LANGUAGE INTEGRITY — Detect the language of the query and respect it.
+   Never resolve a query written in one language to an edition, title, or
+   author transliteration belonging to a DIFFERENT language than the user used.
+   Specifically: a Ukrainian query must NEVER be resolved to a Russian title,
+   a Russian edition, or a Russian-based transliteration. The same rule applies
+   to every language pair.
+
+2. ADAPTED TITLES — Book titles are ADAPTED per market, not translated
+   word-by-word. Identify the book by its real published identity in that
+   market, not by literal word-for-word translation of the query.
+
+3. AUTHOR TRANSLITERATION — Transliterate the author from the book's ORIGINAL
+   language, never through Russian.
+   Example: "Іван Багряний" -> "Ivan Bahriany" (NOT "Bagryany").
+
+4. ORIGINAL LANGUAGE — If the book was originally written in the query's
+   language, keep titleOriginal in that language and set originalLanguage to it.
+
+5. If you cannot confidently identify the book, set confidence to "low" and
+   echo the query back as both titles.
+
+Respond ONLY with this JSON object:
+{
+  "titleEn": "canonical English or international title used for lookup",
+  "titleOriginal": "title as published in the query's language",
+  "author": "author name in Latin script, transliterated from the original language",
+  "originalLanguage": "ISO 639-1 code of the language the book was WRITTEN in",
+  "queryLanguage": "ISO 639-1 code of the language the query is written in",
+  "confidence": "high or low"
+}`;
+
     try {
-      const r = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {'Content-Type':'application/json','Authorization':`Bearer ${OPENAI_KEY}`},
-        body: JSON.stringify({
-          model: 'gpt-4o-mini', max_tokens: 100, temperature: 0,
-          messages: [{role:'user', content:`What book is "${safeBook}"? Give me the official English title and author.
-Respond ONLY with JSON: {"title":"English title","author":"Author name"}
-If unknown, respond: {"title":"${safeBook}","author":""}`}]
-        })
-      });
+      const r = await callOpenAI(OPENAI_KEY, { prompt, maxTokens: 200, temperature: 0 });
+      if (!r.ok) throw new Error('OpenAI ' + r.status);
       const d = await r.json();
-      const text = d.choices?.[0]?.message?.content || '{}';
-      return res.status(200).json(JSON.parse(text.replace(/```json|```/g,'').trim()));
-    } catch(e) {
-      return res.status(200).json({title: safeBook, author: ''});
+      const parsed = parseJSON(d.choices?.[0]?.message?.content);
+      return res.status(200).json({
+        titleEn: parsed.titleEn || safeBook,
+        titleOriginal: parsed.titleOriginal || safeBook,
+        author: parsed.author || '',
+        originalLanguage: parsed.originalLanguage || '',
+        queryLanguage: parsed.queryLanguage || '',
+        confidence: parsed.confidence === 'high' ? 'high' : 'low'
+      });
+    } catch (e) {
+      console.error('identify error:', e);
+      // Graceful degradation: echo the query, flag it as unidentified
+      return res.status(200).json({
+        titleEn: safeBook, titleOriginal: safeBook, author: '',
+        originalLanguage: '', queryLanguage: '', confidence: 'low',
+        failed: true
+      });
     }
   }
 
   try {
-    let prompt;
+    let prompt, maxTokens, temperature;
 
     if (moodsOnly) {
+      temperature = 0.5;
+      maxTokens = 300;
       prompt = `Book: "${safeBook}"
+${safeAuthor ? 'Author: ' + safeAuthor : ''}
 Genre: ${safeGenre || 'unknown — infer from the book'}
 ${safeDesc ? 'Description: ' + safeDesc : 'Use your knowledge of this book.'}
 
-Generate 6 mood/scene labels for this book. Each label represents a DIFFERENT musical direction tied to a real moment or theme in this book — not a random scene name.
+Generate 6 mood/scene labels tied to real moments or themes in THIS specific book.
 
 RULES:
-- Each label must clearly imply a music style when read (someone should be able to guess the soundtrack vibe just from the label)
-- Ground every label in the book's actual genre — do not invent moods that contradict the book
-- Cover a spread of energies: 1 high-energy/intense, 1 calm/reflective, 1 atmospheric/mysterious, 1 emotional, 1 focus/lofi-style, 1 matching the book's signature theme
-- Format: 2-4 words, Title Case, evocative but clear (e.g. "Epic Battle Surge", "Quiet Night Reading", "Dark Mystery Ambient", "Heartfelt Reunion", "Deep Focus Lofi")
-- If self-help/non-fiction: use focus/productivity-style labels ("Deep Focus Flow", "Morning Motivation", "Calm Concentration")
-- If fantasy: use adventure/battle-style labels ("Epic Quest Theme", "Dragon's Lair Tension")
-- If romance: use emotional/intimate labels ("First Spark", "Tender Moment")
-- If horror/thriller: use suspense/dark labels ("Creeping Dread", "Chase Through Shadows")
-- If sci-fi: use atmospheric/space labels ("Deep Space Drift", "Neon City Pulse")
+- Ground every label in the book's actual plot, setting and era — never generic
+- Each label must imply a musical direction when read
+- Write the labels in ENGLISH even when the book is not English
+- Cover a spread of energies: one intense, one calm/reflective, one atmospheric,
+  one emotional, one focus-friendly, one matching the book's signature theme
+- Format: 2-4 words, Title Case
 
-Respond ONLY with JSON array of exactly 6 strings, no markdown:
-["mood 1","mood 2","mood 3","mood 4","mood 5","mood 6"]`;
+Respond ONLY with this JSON object:
+{"moods":["label 1","label 2","label 3","label 4","label 5","label 6"]}`;
     } else {
-      prompt = `You are a music curator. Book: "${safeBook}"
+      temperature = 0.3;
+      maxTokens = 900;
+      prompt = `You are a music curator selecting instrumental background music for reading.
+
+BOOK
+Title: "${safeBook}"
+${safeAuthor ? 'Author: ' + safeAuthor : ''}
 Genre: ${safeGenre || 'unknown'}
 ${safeDesc ? 'Description: ' + safeDesc : 'Use your knowledge of this book.'}
-${safeMood ? 'Scene: ' + safeMood : ''}
+${safeMood ? 'Scene focus: ' + safeMood : ''}
 
-STEP 1: Identify this book. Translate title if not in English. Determine:
-- Genre: sci-fi / fantasy / horror / romance / thriller / self-help / literary fiction / etc.
-- Dominant emotions and atmosphere
-- Setting and era
+STEP 1 — ANALYSE THE BOOK.
+Fill the "analysis" object from your knowledge of THIS specific book.
+Be concrete and factual, never generic:
+- setting: the actual place(s) the book takes place in
+- era: the actual historical period
+- culture: the cultural and musical tradition that setting belongs to
+- emotions: the dominant emotional tones of the book
+- energy: the overall intensity
 
-STEP 2: Create 5 YouTube search queries for INSTRUMENTAL background music.
+STEP 2 — DERIVE 5 SEARCH QUERIES from the analysis you just wrote.
 
-RULES:
-- "Atomic Habits" = self-help → lofi study music, focus beats, NOT epic orchestral
-- "Dune" = epic sci-fi desert → cinematic orchestral, NOT pop music  
-- "Twilight" = teen romance → romantic piano, soft strings
-- Self-help/non-fiction → lofi hip hop, focus music, study beats
-- Romance → romantic piano, soft strings, emotional
-- Horror → dark ambient, atmospheric horror
-- Epic fantasy → orchestral epic, celtic, battle music
-- Sci-fi → space ambient, electronic, synthetic
-- Korean/Asian fantasy → korean drama OST instrumental
-- NEVER suggest music that contradicts the genre
+QUERY RULES:
+- Every query must follow from your analysis. If the analysis says feudal Japan,
+  the queries must reflect Japanese instrumentation, not generic ambient.
+- Write every query in ENGLISH — YouTube's music catalogue is indexed in English
+  — even when the book is not an English book.
+- Prefer culturally specific instrumentation when the setting calls for it
+  (for example koto, shakuhachi, bandura, duduk, oud, sitar, gamelan, erhu).
+- Cover a spread: one signature theme, one calm/reflective, one tense/intense,
+  one emotional, one focus-friendly.
+- Include a lofi or study-beats query ONLY if it genuinely suits this book.
+  Do NOT force lofi onto historical, literary or classical works.
+- Never suggest music that contradicts the book's setting, era or culture.
+- Every query must end with "no lyrics instrumental" and target long videos.
 
-ALWAYS include at least ONE lofi track matching the genre:
-- Fantasy → "fantasy lofi hip hop instrumental"
-- Horror → "dark lofi ambient study music"
-- Romance → "romantic lofi chill beats"
-- Sci-fi → "space lofi beats instrumental"
-- Self-help → "focus lofi concentration beats no lyrics"
-
-Each query MUST end with "no lyrics instrumental" and target 30min+ videos.
-
-Respond ONLY with JSON array, no markdown:
-[{"name":"mood name","vibe":"2-3 words","scQuery":"specific youtube query no lyrics instrumental 1 hour","duration":"~1-2 hr"}]`;
+Respond ONLY with this JSON object, with exactly 5 tracks:
+{
+  "analysis": {
+    "genre": "...",
+    "setting": "...",
+    "era": "...",
+    "culture": "...",
+    "emotions": ["...", "..."],
+    "energy": "..."
+  },
+  "tracks": [
+    {"name":"mood name","vibe":"2-3 words","scQuery":"english youtube query no lyrics instrumental","duration":"~1-2 hr"}
+  ]
+}`;
     }
 
-    const r = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${OPENAI_KEY}`
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        max_tokens: 900,
-        temperature: 0.7,
-        messages: [{ role: 'user', content: prompt }]
-      })
-    });
+    const r = await callOpenAI(OPENAI_KEY, { prompt, maxTokens, temperature });
 
     if (!r.ok) {
-      const err = await r.json();
+      const err = await r.json().catch(() => ({}));
       console.error('OpenAI error:', err);
       return res.status(502).json({ error: 'AI service error' });
     }
 
     const d = await r.json();
-    const text = d.choices?.[0]?.message?.content || '[]';
-    const parsed = JSON.parse(text.replace(/```json|```/g, '').trim());
+    const parsed = parseJSON(d.choices?.[0]?.message?.content);
 
     if (moodsOnly) {
-      return res.status(200).json({ moods: parsed });
-    } else {
-      return res.status(200).json({ tracks: parsed });
+      const moods = Array.isArray(parsed.moods) ? parsed.moods : [];
+      if (!moods.length) return res.status(502).json({ error: 'AI returned no moods' });
+      return res.status(200).json({ moods });
     }
+
+    const tracks = Array.isArray(parsed.tracks) ? parsed.tracks : [];
+    if (!tracks.length) return res.status(502).json({ error: 'AI returned no tracks' });
+    return res.status(200).json({ tracks, analysis: parsed.analysis || null });
 
   } catch(e) {
     console.error('Claude handler error:', e);

@@ -48,15 +48,19 @@ export default async function handler(req, res) {
     const dr = await fetch(detailUrl);
     const dd = await dr.json();
 
-    const good = dd.items?.find(v =>
+    // Keep every embeddable candidate, then pick one at random so repeat
+    // searches of the same book surface different tracks from the same pool.
+    const candidates = (dd.items || []).filter(v =>
       v.status?.embeddable === true &&
       v.status?.privacyStatus === 'public'
     );
 
-    if (good) {
+    if (candidates.length) {
+      const good = candidates[Math.floor(Math.random() * candidates.length)];
       return res.status(200).json({
         videoId: good.id,
-        title: d.items.find(i => i.id.videoId === good.id)?.snippet?.title || safeQ
+        title: d.items.find(i => i.id.videoId === good.id)?.snippet?.title || safeQ,
+        poolSize: candidates.length
       });
     }
 

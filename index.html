@@ -680,16 +680,25 @@ function activatePro(code){
   return false;
 }
 
-const S={
-  book:'',bookDesc:'',bookGenre:'',
-  tracks:[],moods:[],playing:null,
-  liked:new Set(JSON.parse(localStorage.getItem('mb_liked')||'[]')),
-  editingCoverIdx:null,
-  searchCount:parseInt(localStorage.getItem('mb_searches_'+new Date().toDateString())||'0'),
-};
 const DB={
   books:JSON.parse(localStorage.getItem('mb_books')||'[]'),
   liked:JSON.parse(localStorage.getItem('mb_liked_tracks')||'[]'),
+};
+
+// Stable identity for a liked track: the book it belongs to plus the track
+// name. Never the list position — positions are reused across books, which
+// made hearts leak from one book onto unrelated tracks of the next.
+function trackKey(name,book){return String(book||'')+'::'+String(name||'')}
+
+// Drop the legacy index-based store; DB.liked is now the single source of truth.
+localStorage.removeItem('mb_liked');
+
+const S={
+  book:'',bookDesc:'',bookGenre:'',bookAuthor:'',bookCanonical:'',
+  tracks:[],moods:[],playing:null,
+  liked:new Set(DB.liked.map(t=>trackKey(t.name,t.book))),
+  editingCoverIdx:null,
+  searchCount:parseInt(localStorage.getItem('mb_searches_'+new Date().toDateString())||'0'),
 };
 
 // ══ PAGE ROUTER ══
@@ -887,9 +896,9 @@ async function doSearch(q){
   // Track search count
   const total=parseInt(localStorage.getItem('mb_total_searches')||'0')+1;
   localStorage.setItem('mb_total_searches',total);
-  S.book=q;S.playing=null;S.bookDesc='';S.bookGenre='';
+  S.book=q;S.playing=null;S.bookDesc='';S.bookGenre='';S.bookAuthor='';S.bookCanonical='';
   document.getElementById('bkTitle').textContent=q;
-  document.getElementById('bkGenre').textContent='Analysing book…';
+  document.getElementById('bkGenre').textContent='Identifying book…';
   document.getElementById('scPlayer').classList.remove('on');
   document.getElementById('np').classList.remove('up');
   document.getElementById('tracksBody').innerHTML=loader('Looking up the book…');
@@ -897,47 +906,89 @@ async function doSearch(q){
   switchTab('tracks');
   showResults();
 
-  // Step 1: Get book description from Google Books API
-  await fetchBookInfo(q);
+  // Step 1: Resolve the query — written in ANY language — to a canonical book
+  const id=await identifyBook(q);
+  S.bookCanonical=id.titleEn||q;
+  S.bookAuthor=id.author||'';
+  S.bookTitle=id.titleOriginal||q;
+  document.getElementById('bkTitle').textContent=S.bookTitle;
 
-  // Step 2: Load tracks + moods in parallel (both use book description)
+  // Step 2: Fetch catalogue metadata using the canonical identity
+  await fetchBookInfo(id);
+
+  // Step 3: Load tracks + moods in parallel (both use the resolved book)
   await Promise.all([loadTracks(), loadMoods()]);
 }
 
-async function fetchBookInfo(q){
-  // Try Google Books first
+// ══ A1 — IDENTIFY THE BOOK (accepts a title in any language) ══
+// Cached per query so repeating a search costs no extra API call.
+async function identifyBook(q){
+  const cacheKey='mb_id_'+q.trim().toLowerCase();
   try{
-    const r=await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(q)}&maxResults=1&key=AIzaSyD_GXtmqfc_rRVc7xa3v2g8tNoh-a4yR3o`);
-    const d=await r.json();
-    const item=d.items?.[0]?.volumeInfo;
-    if(item){
-      S.bookDesc=(item.description||'').slice(0,1000);
-      S.bookGenre=(item.categories||[]).join(', ')||'';
-      S.bookTitle=item.title||q;
-      S.bookAuthor=item.authors?.[0]||'';
-      S.bookCover=(item.imageLinks?.thumbnail||item.imageLinks?.smallThumbnail||'').replace('http://','https://').replace('zoom=1','zoom=2')||null;
-      document.getElementById('bkTitle').textContent=S.bookTitle;
-    }
+    const cached=localStorage.getItem(cacheKey);
+    if(cached) return JSON.parse(cached);
   }catch(e){}
 
-  // Try Open Library as fallback or supplement
-  if(!S.bookDesc){
+  try{
+    const r=await fetch('/api/claude',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({book:q,identifyOnly:true})
+    });
+    if(!r.ok) throw new Error('identify HTTP '+r.status);
+    const d=await r.json();
+    try{localStorage.setItem(cacheKey,JSON.stringify(d));}catch(e){}
+    return d;
+  }catch(e){
+    console.warn('Book identification failed:',e);
+    return {titleEn:q,titleOriginal:q,author:'',confidence:'low',failed:true};
+  }
+}
+
+// ══ A3 — CATALOGUE LOOKUP WITH HONEST ERROR REPORTING ══
+// Tries the canonical title first, then the title in the user's own language,
+// then the raw query. Failures are surfaced instead of silently swallowed.
+async function fetchBookInfo(id){
+  const attempts=[
+    [id.titleEn,id.author].filter(Boolean).join(' '),
+    [id.titleOriginal,id.author].filter(Boolean).join(' '),
+    S.book
+  ].filter((v,i,a)=>v&&a.indexOf(v)===i);
+
+  let apiFailed=false,found=false;
+
+  for(const q of attempts){
     try{
-      const r=await fetch(`https://openlibrary.org/search.json?q=${encodeURIComponent(q)}&limit=1&fields=title,author_name,subject,first_publish_year`);
+      const r=await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(q)}&maxResults=1&key=AIzaSyD_GXtmqfc_rRVc7xa3v2g8tNoh-a4yR3o`);
+      if(!r.ok){apiFailed=true;console.warn('Google Books HTTP',r.status,'for',q);continue;}
       const d=await r.json();
-      const item=d.docs?.[0];
-      if(item){
-        S.bookGenre=item.subject?.slice(0,3).join(', ')||'';
-        S.bookTitle=item.title||q;
-        document.getElementById('bkTitle').textContent=S.bookTitle;
-      }
-    }catch(e){}
+      if(d.error){apiFailed=true;console.warn('Google Books error:',d.error.message);continue;}
+      const item=d.items?.[0]?.volumeInfo;
+      if(!item) continue;
+
+      S.bookDesc=(item.description||'').slice(0,1000);
+      S.bookGenre=(item.categories||[]).join(', ')||'';
+      S.bookTitle=item.title||S.bookTitle||S.book;
+      S.bookAuthor=item.authors?.[0]||S.bookAuthor||'';
+      S.bookCover=(item.imageLinks?.thumbnail||item.imageLinks?.smallThumbnail||'').replace('http://','https://').replace('zoom=1','zoom=2')||null;
+      document.getElementById('bkTitle').textContent=S.bookTitle;
+      found=true;
+      break;
+    }catch(e){apiFailed=true;console.warn('Google Books request failed:',e);}
   }
 
-  document.getElementById('bkGenre').textContent=S.bookGenre||'AI-curated soundtrack';
+  // Tell the user what actually happened rather than pretending all is well
+  let status;
+  if(found&&S.bookGenre) status=S.bookGenre;
+  else if(found) status='AI-curated soundtrack';
+  else if(apiFailed) status='Book database unavailable — curating from AI knowledge';
+  else status='No catalogue match — curating from AI knowledge';
+  if(id.confidence==='low') status='Book not confidently identified — results may be less accurate';
+  document.getElementById('bkGenre').textContent=status;
 
-  // Log for debugging
-  console.log('Book info:', {title:S.bookTitle, genre:S.bookGenre, desc:S.bookDesc?.slice(0,100)});
+  console.log('Book resolved:',{
+    canonical:S.bookCanonical,author:S.bookAuthor,language:id.originalLanguage,
+    confidence:id.confidence,catalogueHit:found,catalogueError:apiFailed
+  });
 }
 
 // ══ LOAD TRACKS via Claude → SoundCloud search ══
@@ -956,14 +1007,18 @@ ${moodOverride?'Current scene mood: '+moodOverride:''}`;
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({
-        book:S.book,
+        book:S.bookCanonical||S.book,
+        author:S.bookAuthor||'',
         genre:S.bookGenre||'',
         description:S.bookDesc||'',
         mood:moodOverride||''
       })
     });
     const d=await r.json();
-    if(d.tracks && d.tracks.length>0) trackList=d.tracks;
+    if(d.tracks && d.tracks.length>0){
+      trackList=d.tracks;
+      if(d.analysis) console.log('Book analysis:',d.analysis);
+    }
     else console.error('AI returned no tracks:', d);
   }catch(e){
     console.error('AI error:',e);
@@ -978,17 +1033,49 @@ ${moodOverride?'Current scene mood: '+moodOverride:''}`;
     ];
   }
 
-  S.tracks=trackList;
+  S.tracks=rankByLikedStyles(trackList);
   renderTracks();
+}
+
+// ══ E2 — SOFT PERSONALISATION ══
+// Liked styles nudge the ORDER of the supporting tracks only. The model's
+// top pick is the closest match to the book itself, so it is pinned at #1
+// and personal taste never displaces it.
+const STYLE_STOPWORDS=new Set(['no','lyrics','instrumental','music','hour','hours','and','for','the','background','long','mix','version','youtube','min','minutes','soundtrack']);
+
+function likedStyleWeights(){
+  const w={};
+  DB.liked.forEach(t=>{
+    String(t.scQuery||'').toLowerCase().split(/[^a-z]+/).forEach(word=>{
+      if(word.length>2&&!STYLE_STOPWORDS.has(word)) w[word]=(w[word]||0)+1;
+    });
+  });
+  return w;
+}
+
+function rankByLikedStyles(tracks){
+  const w=likedStyleWeights();
+  if(tracks.length<3||!Object.keys(w).length) return tracks;
+  const [top,...rest]=tracks;
+  const scored=rest.map((t,i)=>({
+    t,i,
+    score:String(t.scQuery||'').toLowerCase().split(/[^a-z]+/)
+      .reduce((s,word)=>s+(w[word]||0),0)
+  }));
+  // Stable sort: equal scores keep the model's original ordering
+  scored.sort((a,b)=>b.score-a.score||a.i-b.i);
+  return [top,...scored.map(x=>x.t)];
 }
 
 // ══ RENDER TRACKS ══
 function renderTracks(){
   document.getElementById('tracksBody').innerHTML=`
     <div class="tracks">
-      ${S.tracks.map((t,i)=>`
+      ${S.tracks.map((t,i)=>{
+        const isLiked=S.liked.has(trackKey(t.name,S.book));
+        return `
         <div>
-          <div class="track${S.playing===i?' playing':''}${S.liked.has(i)?' liked':''}" id="tr${i}"
+          <div class="track${S.playing===i?' playing':''}${isLiked?' liked':''}" id="tr${i}"
                tabindex="0" onclick="playTrack(${i})">
             <span class="tn">${i+1}</span>
             <div class="ti">
@@ -997,13 +1084,13 @@ function renderTracks(){
             </div>
             <div class="tr">
               <button class="like-btn" onclick="toggleLike(event,${i})" aria-label="like">
-                ${S.liked.has(i)?'♥':'♡'}
+                ${isLiked?'♥':'♡'}
               </button>
               <button class="play-btn" onclick="playTrack(${i});event.stopPropagation()">▶</button>
             </div>
           </div>
           <div id="inlinePlayer${i}" class="inline-player-box"></div>
-        </div>`).join('')}
+        </div>`}).join('')}
     </div>`;
 }
 
@@ -1127,7 +1214,8 @@ async function loadMoods(){
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({
-        book:S.book,
+        book:S.bookCanonical||S.book,
+        author:S.bookAuthor||'',
         genre:S.bookGenre||'',
         description:S.bookDesc||'',
         moodsOnly:true
@@ -1164,23 +1252,24 @@ function pickMood(btn,mood){
 // ══ LIKE ══
 function toggleLike(e,i){
   e.stopPropagation();
-  if(S.liked.has(i)){
-    S.liked.delete(i);
+  const t=S.tracks[i];if(!t)return;
+  const key=trackKey(t.name,S.book);
+
+  if(S.liked.has(key)){
+    S.liked.delete(key);
+    // Unliking now also removes it from the Library list, which previously
+    // kept showing tracks the user had already un-hearted.
+    DB.liked=DB.liked.filter(x=>trackKey(x.name,x.book)!==key);
   } else {
-    S.liked.add(i);
+    S.liked.add(key);
     toast('♥ <span class="g">Saved to liked tracks</span>');
-    if(S.tracks[i]){
-      const t=S.tracks[i];
-      if(!DB.liked.find(x=>x.name===t.name&&x.book===S.book)){
-        DB.liked.unshift({name:t.name,book:S.book,vibe:t.vibe,scQuery:t.scQuery});
-        saveDB();
-      }
-    }
+    DB.liked.unshift({name:t.name,book:S.book,vibe:t.vibe,scQuery:t.scQuery});
   }
-  localStorage.setItem('mb_liked',JSON.stringify([...S.liked]));
+  saveDB();
+
   const el=document.getElementById('tr'+i);if(!el)return;
-  el.classList.toggle('liked',S.liked.has(i));
-  el.querySelector('.like-btn').textContent=S.liked.has(i)?'♥':'♡';
+  el.classList.toggle('liked',S.liked.has(key));
+  el.querySelector('.like-btn').textContent=S.liked.has(key)?'♥':'♡';
 }
 
 function addCurrentToLibrary(){
