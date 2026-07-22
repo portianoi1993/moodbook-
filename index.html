@@ -722,7 +722,33 @@ function saveDB(){localStorage.setItem('mb_books',JSON.stringify(DB.books));loca
 const _suggestTimers={};
 const _suggestData={};
 
-const ACADEMIC_KEYWORDS=/methodolog|methodical|посібник|методичк|методичн|підручник|workbook|curriculum|syllabus|lecture notes|study guide|teacher.?s (guide|manual)|instructor.?s manual|dissertation|thesis\b|proceedings|conference paper/i;
+const ACADEMIC_KEYWORDS=new RegExp([
+  // teaching material
+  'methodolog','methodical','посібник','методичк','методичн','підручник',
+  'workbook','curriculum','syllabus','lecture notes','study guide',
+  'teacher.?s (guide|manual)','instructor.?s manual',
+  // scholarship about a work, rather than the work itself
+  'dissertation','thesis\\b','proceedings','conference paper','congreso',
+  'conference','symposium','colloqui','studia','studies in','essays on',
+  'the influence of','a study of','critical (study|analysis|edition)',
+  'an?[aá]lisis','interpretaci[oó]n','verfahren','untersuchung','beitr[aä]ge',
+  'journal of','bulletin of','annales',
+  // Cyrillic scholarship markers
+  'проблеми','пробле́ми','вісник','вестник','збірник','сборник','науков','научн',
+  'університет','университет','академі','академи','конференц','матеріали',
+  'материалы','праці','труды','літературознав','literaturoznav','філолог','филолог'
+].join('|'),'i');
+
+// Catalogue entries whose "author" is really an organisation or a dated event
+// (e.g. "Congreso Nacional de Literatura (20th 1997 Bogotá)") are collections
+// about books, not books.
+const ORGANISATION_AUTHOR=/\(\s*\d{1,2}(st|nd|rd|th)?\s|\(\s*\d{4}\s*[):]|congreso|conference|symposium|university|universit[ée]|інститут|институт|академі|академи|товариство|society|association|editor|\bed\.\b|comp\./i;
+
+function _isAcademicNoise(title,author,meta){
+  if(ACADEMIC_KEYWORDS.test(((title||'')+' '+(meta||'')).toLowerCase())) return true;
+  if(author&&ORGANISATION_AUTHOR.test(author)) return true;
+  return false;
+}
 
 // Real published book signal: has cover > has ratings/editions > has author
 function _rankBooks(books){
@@ -755,11 +781,7 @@ async function _fetchFromGoogleBooks(q){
         categories:(v.categories||[]).join(' '),
         desc:v.description||'',
       };
-    }).filter(b=>{
-      if(!b.title) return false;
-      // Drop obvious academic/methodical materials
-      return !ACADEMIC_KEYWORDS.test((b.title+' '+b.categories+' '+b.desc).toLowerCase());
-    });
+    }).filter(b=>b.title&&!_isAcademicNoise(b.title,b.author,b.categories+' '+b.desc));
     return {books:_rankBooks(books).slice(0,6),unavailable:false};
   }catch(e){
     console.warn('Google Books request failed:',e);
@@ -784,7 +806,7 @@ async function _fetchFromOpenLibrary(q){
       year:String(it.first_publish_year||''),
       hasImage:!!it.cover_i,
       ratingsCount:it.edition_count||0,
-    })).filter(b=>b.title&&!ACADEMIC_KEYWORDS.test(b.title.toLowerCase()));
+    })).filter(b=>b.title&&!_isAcademicNoise(b.title,b.author,''));
     return {books:_rankBooks(books).slice(0,6),unavailable:false};
   }catch(e){
     console.warn('Open Library request failed:',e);
@@ -792,16 +814,22 @@ async function _fetchFromOpenLibrary(q){
   }
 }
 
-// Returns {books, unavailable} so the UI can tell "nothing found" apart
-// from "the lookup service is down".
+// Three distinct outcomes so the UI never renders a dead lookup as "no matches":
+//   unavailable - every source errored
+//   degraded    - the main catalogue is down and the backup found nothing
+//   neither     - sources answered fine, the book genuinely isn't there
 async function _fetchBooks(q){
   const google=await _fetchFromGoogleBooks(q);
-  if(google.books.length) return google;
+  if(google.books.length) return {...google,degraded:false};
 
   const openLib=await _fetchFromOpenLibrary(q);
-  if(openLib.books.length) return openLib;
+  if(openLib.books.length) return {...openLib,degraded:google.unavailable};
 
-  return {books:[],unavailable:google.unavailable&&openLib.unavailable};
+  return {
+    books:[],
+    unavailable:google.unavailable&&openLib.unavailable,
+    degraded:google.unavailable&&!openLib.unavailable
+  };
 }
 
 const SUGGEST_BOX_STYLE=
@@ -819,9 +847,14 @@ function _showSuggestions(result, boxId, onPick){
   const books=(result&&result.books)||[];
 
   if(!books.length){
-    if(result&&result.unavailable){
+    const note=result&&result.unavailable
+      ? 'Suggestions unavailable — type the full title and press Enter'
+      : result&&result.degraded
+        ? 'Main catalogue is down — no backup matches. Type the full title and press Enter'
+        : null;
+    if(note){
       box.setAttribute('style',SUGGEST_BOX_STYLE);
-      box.innerHTML='<div style="padding:12px 16px;font-size:.74rem;color:#B0A89E">Suggestions unavailable — type the full title and press Enter</div>';
+      box.innerHTML='<div style="padding:12px 16px;font-size:.74rem;color:#B0A89E">'+note+'</div>';
     } else {
       box.style.display='none';
     }
@@ -947,12 +980,19 @@ function resetSearch(){
 }
 
 // ══ MAIN SEARCH FLOW ══
+// Every run takes a ticket. If a newer search starts, older runs abandon
+// themselves instead of overwriting the shared S state half-way through.
+let _searchSeq=0;
+
 async function doSearch(q){
   if(!q.trim())return;
-  // Track search count
+  const seq=++_searchSeq;
+  const stale=()=>seq!==_searchSeq;
+
   const total=parseInt(localStorage.getItem('mb_total_searches')||'0')+1;
   localStorage.setItem('mb_total_searches',total);
   S.book=q;S.playing=null;S.bookDesc='';S.bookGenre='';S.bookAuthor='';S.bookCanonical='';
+  S.bookVerified=false;
   document.getElementById('bkTitle').textContent=q;
   document.getElementById('bkGenre').textContent='Identifying book…';
   document.getElementById('scPlayer').classList.remove('on');
@@ -964,40 +1004,103 @@ async function doSearch(q){
 
   // Step 1: Resolve the query — written in ANY language — to a canonical book
   const id=await identifyBook(q);
-  S.bookCanonical=id.titleEn||q;
-  S.bookAuthor=id.author||'';
+  if(stale())return;
+
+  S.bookVerified=!!id.verified;
+  // An unverified identification may be an invention, so the fabricated author
+  // is dropped and the curator receives the raw query instead of a guess.
+  S.bookCanonical=id.verified?(id.titleEn||q):q;
+  S.bookAuthor=id.verified?(id.author||''):'';
   S.bookTitle=id.titleOriginal||q;
   document.getElementById('bkTitle').textContent=S.bookTitle;
 
   // Step 2: Fetch catalogue metadata using the canonical identity
   await fetchBookInfo(id);
+  if(stale())return;
 
   // Step 3: Load tracks + moods in parallel (both use the resolved book)
   await Promise.all([loadTracks(), loadMoods()]);
 }
 
 // ══ A1 — IDENTIFY THE BOOK (accepts a title in any language) ══
-// Cached per query so repeating a search costs no extra API call.
+// The model states an identity; the catalogue is the referee. Only identities
+// the catalogue backs are trusted and cached, because the model will invent a
+// plausible author with "high" confidence rather than admit it doesn't know.
+const IDENTIFY_CACHE_PREFIX='mb_id2_';
+
+// Old cache used a different prefix and stored unverified guesses forever.
+Object.keys(localStorage).filter(k=>k.startsWith('mb_id_')).forEach(k=>localStorage.removeItem(k));
+
+function _normaliseForMatch(s){
+  return String(s||'').toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/[^a-z0-9\u0400-\u04ff ]+/g,' ')
+    .replace(/\s+/g,' ').trim();
+}
+
+function _looksLikeSameBook(claimTitle,claimAuthor,found){
+  const a=_normaliseForMatch(claimTitle).split(' ').filter(w=>w.length>3);
+  const b=_normaliseForMatch(found.title);
+  const titleHit=a.length?a.filter(w=>b.includes(w)).length/a.length>=0.5:false;
+
+  const surname=_normaliseForMatch(claimAuthor).split(' ').filter(Boolean).pop();
+  const authorHit=!!surname&&surname.length>2&&_normaliseForMatch(found.author).includes(surname);
+
+  return titleHit||authorHit;
+}
+
+// Returns {verified, catalogueAvailable}
+async function _verifyAgainstCatalogue(id){
+  const probe=[id.titleEn,id.author].filter(Boolean).join(' ').trim();
+  if(!probe) return {verified:false,catalogueAvailable:true};
+
+  const res=await _fetchBooks(probe);
+  // Nothing to check against — don't punish the model for a dead catalogue
+  if(res.unavailable||(!res.books.length&&res.degraded)){
+    return {verified:false,catalogueAvailable:false};
+  }
+  const verified=res.books.some(b=>_looksLikeSameBook(id.titleEn,id.author,b));
+  return {verified,catalogueAvailable:true,match:res.books.find(b=>_looksLikeSameBook(id.titleEn,id.author,b))||null};
+}
+
 async function identifyBook(q){
-  const cacheKey='mb_id_'+q.trim().toLowerCase();
+  const cacheKey=IDENTIFY_CACHE_PREFIX+q.trim().toLowerCase();
   try{
     const cached=localStorage.getItem(cacheKey);
     if(cached) return JSON.parse(cached);
   }catch(e){}
 
+  let d;
   try{
     const r=await fetch('/api/claude',{
       method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({book:q,identifyOnly:true})
     });
     if(!r.ok) throw new Error('identify HTTP '+r.status);
-    const d=await r.json();
-    try{localStorage.setItem(cacheKey,JSON.stringify(d));}catch(e){}
-    return d;
+    d=await r.json();
   }catch(e){
     console.warn('Book identification failed:',e);
-    return {titleEn:q,titleOriginal:q,author:'',confidence:'low',failed:true};
+    return {titleEn:q,titleOriginal:q,author:'',confidence:'low',verified:false,failed:true};
   }
+
+  const check=await _verifyAgainstCatalogue(d);
+  d.verified=check.verified;
+  d.catalogueAvailable=check.catalogueAvailable;
+  // Prefer the catalogue's own spelling once it has confirmed the book
+  if(check.verified&&check.match){
+    d.titleEn=check.match.title||d.titleEn;
+    d.author=check.match.author||d.author;
+  }
+  if(!check.verified){
+    console.warn('Unverified identification for',q,'- model claimed:',d.titleEn,'/',d.author,
+                 check.catalogueAvailable?'(catalogue found no match)':'(catalogue unavailable)');
+  }
+
+  // Only confirmed identities are cached, so one bad guess cannot freeze
+  if(d.verified){
+    try{localStorage.setItem(cacheKey,JSON.stringify(d));}catch(e){}
+  }
+  return d;
 }
 
 // ══ A3 — CATALOGUE LOOKUP WITH HONEST ERROR REPORTING ══
@@ -1038,7 +1141,13 @@ async function fetchBookInfo(id){
   else if(found) status='AI-curated soundtrack';
   else if(apiFailed) status='Book database unavailable — curating from AI knowledge';
   else status='No catalogue match — curating from AI knowledge';
-  if(id.confidence==='low') status='Book not confidently identified — results may be less accurate';
+  // An unconfirmed identity outranks any of the above: the user should know
+  // the match is a guess before they judge the soundtrack.
+  if(!id.verified){
+    status=id.catalogueAvailable===false
+      ? 'Could not verify this book (catalogue offline) — using neutral picks'
+      : 'Could not identify this book — using neutral picks';
+  }
   document.getElementById('bkGenre').textContent=status;
 
   console.log('Book resolved:',{
@@ -1067,7 +1176,8 @@ ${moodOverride?'Current scene mood: '+moodOverride:''}`;
         author:S.bookAuthor||'',
         genre:S.bookGenre||'',
         description:S.bookDesc||'',
-        mood:moodOverride||''
+        mood:moodOverride||'',
+        unverified:!S.bookVerified
       })
     });
     const d=await r.json();
@@ -1602,12 +1712,13 @@ function applyPromoAccount(){
 
 // ══ INIT ══
 document.getElementById('mainBtn').addEventListener('click',()=>doSearch(document.getElementById('mainIn').value));
-document.getElementById('mainIn').addEventListener('keydown',e=>{if(e.key==='Enter'){hideSuggestions();doSearch(e.target.value);}});
+// Enter on #mainIn and #addInput is handled once, inside _initAutocomplete.
+// Duplicate listeners used to live here and fired doSearch/addBook twice per
+// keypress, letting two concurrent runs overwrite each other's state.
 document.querySelectorAll('.chip').forEach(c=>c.addEventListener('click',()=>{
   document.getElementById('mainIn').value=c.dataset.q;
   doSearch(c.dataset.q);
 }));
-document.getElementById('addInput').addEventListener('keydown',e=>{if(e.key==='Enter'){hideLibSuggestions();addBook();}});
 
 // Init autocomplete
 _initAutocomplete();

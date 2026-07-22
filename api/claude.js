@@ -73,7 +73,7 @@ export default async function handler(req, res) {
     });
   }
 
-  const { book, genre, description, mood, author, moodsOnly, identifyOnly } = req.body || {};
+  const { book, genre, description, mood, author, unverified, moodsOnly, identifyOnly } = req.body || {};
   if (!book) return res.status(400).json({ error: 'Missing book' });
 
   // Sanitize inputs
@@ -95,26 +95,33 @@ export default async function handler(req, res) {
 Query: "${safeBook}"
 
 RULES:
-1. LANGUAGE INTEGRITY — Detect the language of the query and respect it.
-   Never resolve a query written in one language to an edition, title, or
-   author transliteration belonging to a DIFFERENT language than the user used.
-   Specifically: a Ukrainian query must NEVER be resolved to a Russian title,
-   a Russian edition, or a Russian-based transliteration. The same rule applies
-   to every language pair.
+1. TRANSLATIONS FIRST — A title written in Cyrillic, or in any script or
+   language other than English, is very often a TRANSLATION of a foreign book.
+   Do NOT infer the author's nationality from the language of the query.
+   Always consider first whether this is a translated foreign title.
 
-2. ADAPTED TITLES — Book titles are ADAPTED per market, not translated
+2. ADMIT IGNORANCE — If you are not certain this is a real, published book that
+   you actually know, set "confidence" to "low" and leave "author" EMPTY.
+   Inventing a plausible-sounding author is a FAILURE. An empty author with low
+   confidence is the CORRECT answer when you are unsure. Never guess an author
+   just because the title looks like it belongs to a particular country.
+
+3. LANGUAGE INTEGRITY — Never resolve a query written in one language to an
+   edition, title, or author transliteration belonging to a DIFFERENT language
+   than the user used. Specifically: a Ukrainian query must NEVER be resolved
+   to a Russian title, a Russian edition, or a Russian-based transliteration.
+   The same rule applies to every language pair.
+
+4. ADAPTED TITLES — Book titles are ADAPTED per market, not translated
    word-by-word. Identify the book by its real published identity in that
    market, not by literal word-for-word translation of the query.
 
-3. AUTHOR TRANSLITERATION — Transliterate the author from the book's ORIGINAL
+5. AUTHOR TRANSLITERATION — Transliterate the author from the book's ORIGINAL
    language, never through Russian.
    Example: "Іван Багряний" -> "Ivan Bahriany" (NOT "Bagryany").
 
-4. ORIGINAL LANGUAGE — If the book was originally written in the query's
-   language, keep titleOriginal in that language and set originalLanguage to it.
-
-5. If you cannot confidently identify the book, set confidence to "low" and
-   echo the query back as both titles.
+6. ORIGINAL LANGUAGE — "originalLanguage" is the language the book was WRITTEN
+   in, which is frequently NOT the language of the query.
 
 Respond ONLY with this JSON object:
 {
@@ -176,8 +183,22 @@ Respond ONLY with this JSON object:
     } else {
       temperature = 0.3;
       maxTokens = 900;
+      // When the catalogue could not confirm the book, the model must not
+      // reconstruct a culture from the script the title happens to be in —
+      // that is what turned a Ukrainian-titled space opera into folk music.
+      const unverifiedNote = unverified ? `
+IMPORTANT — THIS BOOK COULD NOT BE VERIFIED.
+The title below was not confirmed against any book catalogue and may be a book
+you do not know. Therefore:
+- Do NOT infer culture, nationality, setting or era from the language or script
+  the title is written in. A non-English title is usually a TRANSLATION.
+- If you do not genuinely recognise this book, do NOT invent a cultural
+  tradition. Choose neutral, widely-appealing instrumental reading music
+  (calm piano, ambient, cinematic strings, gentle focus music) instead.
+- Put "unknown" in any analysis field you cannot determine honestly.
+` : '';
       prompt = `You are a music curator selecting instrumental background music for reading.
-
+${unverifiedNote}
 BOOK
 Title: "${safeBook}"
 ${safeAuthor ? 'Author: ' + safeAuthor : ''}
