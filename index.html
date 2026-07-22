@@ -722,13 +722,27 @@ function saveDB(){localStorage.setItem('mb_books',JSON.stringify(DB.books));loca
 const _suggestTimers={};
 const _suggestData={};
 
-async function _fetchBooks(q){
+const ACADEMIC_KEYWORDS=/methodolog|methodical|посібник|методичк|методичн|підручник|workbook|curriculum|syllabus|lecture notes|study guide|teacher.?s (guide|manual)|instructor.?s manual|dissertation|thesis\b|proceedings|conference paper/i;
+
+// Real published book signal: has cover > has ratings/editions > has author
+function _rankBooks(books){
+  return books.sort((a,b)=>{
+    if(a.hasImage!==b.hasImage) return a.hasImage?-1:1;
+    if((a.ratingsCount>0)!==(b.ratingsCount>0)) return a.ratingsCount>0?-1:1;
+    if(!!a.author!==!!b.author) return a.author?-1:1;
+    return b.ratingsCount-a.ratingsCount;
+  });
+}
+
+async function _fetchFromGoogleBooks(q){
   try{
     const r=await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(q)}&maxResults=12&orderBy=relevance&printType=books&key=AIzaSyD_GXtmqfc_rRVc7xa3v2g8tNoh-a4yR3o`);
-    const d=await r.json();
-    const academicKeywords=/methodolog|methodical|посібник|методичк|методичн|підручник|workbook|curriculum|syllabus|lecture notes|study guide|teacher.?s (guide|manual)|instructor.?s manual|dissertation|thesis\b|proceedings|conference paper/i;
-
-    let books=(d.items||[]).map(it=>{
+    const d=await r.json().catch(()=>({}));
+    if(!r.ok||d.error){
+      console.warn('Google Books unavailable:',r.status,d.error?.message||'');
+      return {books:[],unavailable:true};
+    }
+    const books=(d.items||[]).map(it=>{
       const v=it.volumeInfo||{};
       return{
         title:v.title||'',
@@ -737,47 +751,89 @@ async function _fetchBooks(q){
         year:(v.publishedDate||'').slice(0,4),
         hasImage:!!v.imageLinks?.thumbnail,
         ratingsCount:v.ratingsCount||0,
+        // Kept only for the academic filter below, not rendered anywhere
         categories:(v.categories||[]).join(' '),
         desc:v.description||'',
       };
     }).filter(b=>{
       if(!b.title) return false;
       // Drop obvious academic/methodical materials
-      const text=(b.title+' '+b.categories+' '+b.desc).toLowerCase();
-      if(academicKeywords.test(text)) return false;
-      return true;
+      return !ACADEMIC_KEYWORDS.test((b.title+' '+b.categories+' '+b.desc).toLowerCase());
     });
-
-    // Prioritize: has cover > has ratings > has author (real published book signal)
-    books.sort((a,b)=>{
-      if(a.hasImage!==b.hasImage) return a.hasImage?-1:1;
-      if((a.ratingsCount>0)!==(b.ratingsCount>0)) return a.ratingsCount>0?-1:1;
-      if(!!a.author!==!!b.author) return a.author?-1:1;
-      return b.ratingsCount-a.ratingsCount;
-    });
-
-    return books.slice(0,6);
-  }catch(e){return[];}
+    return {books:_rankBooks(books).slice(0,6),unavailable:false};
+  }catch(e){
+    console.warn('Google Books request failed:',e);
+    return {books:[],unavailable:true};
+  }
 }
 
-function _showSuggestions(books, boxId, onPick){
+// Free, key-less fallback so suggestions survive Google Books outages
+// and daily-quota exhaustion.
+async function _fetchFromOpenLibrary(q){
+  try{
+    const r=await fetch(`https://openlibrary.org/search.json?q=${encodeURIComponent(q)}&limit=12&fields=title,author_name,first_publish_year,cover_i,edition_count`);
+    if(!r.ok){
+      console.warn('Open Library unavailable:',r.status);
+      return {books:[],unavailable:true};
+    }
+    const d=await r.json();
+    const books=(d.docs||[]).map(it=>({
+      title:it.title||'',
+      author:it.author_name?.[0]||'',
+      cover:it.cover_i?`https://covers.openlibrary.org/b/id/${it.cover_i}-M.jpg`:'',
+      year:String(it.first_publish_year||''),
+      hasImage:!!it.cover_i,
+      ratingsCount:it.edition_count||0,
+    })).filter(b=>b.title&&!ACADEMIC_KEYWORDS.test(b.title.toLowerCase()));
+    return {books:_rankBooks(books).slice(0,6),unavailable:false};
+  }catch(e){
+    console.warn('Open Library request failed:',e);
+    return {books:[],unavailable:true};
+  }
+}
+
+// Returns {books, unavailable} so the UI can tell "nothing found" apart
+// from "the lookup service is down".
+async function _fetchBooks(q){
+  const google=await _fetchFromGoogleBooks(q);
+  if(google.books.length) return google;
+
+  const openLib=await _fetchFromOpenLibrary(q);
+  if(openLib.books.length) return openLib;
+
+  return {books:[],unavailable:google.unavailable&&openLib.unavailable};
+}
+
+const SUGGEST_BOX_STYLE=
+  'position:absolute;left:0;right:0;top:calc(100% + 6px);'+
+  'background:#fff;border:1.5px solid #EDE9E3;border-radius:16px;'+
+  'box-shadow:0 12px 32px rgba(26,23,20,.14);z-index:9999;'+
+  'overflow:hidden;max-height:300px;overflow-y:auto;display:block';
+
+// Suggestions stay deliberately minimal: title + author only. Covers are still
+// fetched and kept in _suggestData because the Library needs them on pick —
+// they are just never rendered in the dropdown.
+function _showSuggestions(result, boxId, onPick){
   const box=document.getElementById(boxId);
   if(!box) return;
-  if(!books.length){box.style.display='none';return;}
+  const books=(result&&result.books)||[];
+
+  if(!books.length){
+    if(result&&result.unavailable){
+      box.setAttribute('style',SUGGEST_BOX_STYLE);
+      box.innerHTML='<div style="padding:12px 16px;font-size:.74rem;color:#B0A89E">Suggestions unavailable — type the full title and press Enter</div>';
+    } else {
+      box.style.display='none';
+    }
+    return;
+  }
+
   _suggestData[boxId]=books;
-  box.setAttribute('style',
-    'position:absolute;left:0;right:0;top:calc(100% + 6px);'+
-    'background:#fff;border:1.5px solid #EDE9E3;border-radius:16px;'+
-    'box-shadow:0 12px 32px rgba(26,23,20,.14);z-index:9999;'+
-    'overflow:hidden;max-height:300px;overflow-y:auto;display:block'
-  );
+  box.setAttribute('style',SUGGEST_BOX_STYLE);
   box.innerHTML=books.map((b,i)=>
-    `<div data-idx="${i}" style="display:flex;align-items:center;gap:12px;padding:11px 16px;cursor:pointer;${i<books.length-1?'border-bottom:1px solid #F2EEE8':''}">
-      ${b.cover?`<img src="${b.cover}" style="width:30px;height:43px;object-fit:cover;border-radius:4px;flex-shrink:0;box-shadow:0 2px 6px rgba(0,0,0,.12)" onerror="this.outerHTML='<div style=&quot;width:30px;height:43px;background:linear-gradient(135deg,#E8895A,#5BBFAA);border-radius:4px;flex-shrink:0;opacity:.5&quot;></div>'">`:`<div style="width:30px;height:43px;background:linear-gradient(135deg,#E8895A,#5BBFAA);border-radius:4px;flex-shrink:0;opacity:.5"></div>`}
-      <div style="min-width:0;flex:1">
-        <div style="font-family:Syne,sans-serif;font-weight:700;font-size:.82rem;color:#1A1714;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${b.title}</div>
-        <div style="font-size:.68rem;color:#B0A89E;margin-top:1px">${b.author}${b.year?' · '+b.year:''}</div>
-      </div>
+    `<div data-idx="${i}" style="padding:10px 16px;cursor:pointer;${i<books.length-1?'border-bottom:1px solid #F2EEE8':''}">
+      <div style="font-family:Syne,sans-serif;font-weight:700;font-size:.84rem;color:#1A1714;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(b.title)}</div>
+      ${b.author?`<div style="font-size:.7rem;color:#B0A89E;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(b.author)}</div>`:''}
     </div>`
   ).join('');
   box.querySelectorAll('[data-idx]').forEach(row=>{
@@ -796,8 +852,8 @@ function _initAutocomplete(){
       const q=this.value.trim();
       if(q.length<2){mainBox.style.display='none';return;}
       _suggestTimers.main=setTimeout(async()=>{
-        const books=await _fetchBooks(q);
-        _showSuggestions(books,'bookSuggestions',(i)=>{
+        const result=await _fetchBooks(q);
+        _showSuggestions(result,'bookSuggestions',(i)=>{
           const b=_suggestData['bookSuggestions'][i];
           mainIn.value=b.title;
           mainBox.style.display='none';
@@ -820,8 +876,8 @@ function _initAutocomplete(){
       const q=this.value.trim();
       if(q.length<2){addBox.style.display='none';return;}
       _suggestTimers.lib=setTimeout(async()=>{
-        const books=await _fetchBooks(q);
-        _showSuggestions(books,'libBookSuggestions',(i)=>{
+        const result=await _fetchBooks(q);
+        _showSuggestions(result,'libBookSuggestions',(i)=>{
           const b=_suggestData['libBookSuggestions'][i];
           // Set value BEFORE calling addBook so it can read it
           addIn.value=b.title;
