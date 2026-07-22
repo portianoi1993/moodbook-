@@ -469,6 +469,7 @@ nav,.page{position:relative;z-index:1}
         <div>
           <div class="bk-title" id="bkTitle">—</div>
           <div class="bk-sub" id="bkGenre">AI-curated soundtrack</div>
+          <button id="bkCorrect" onclick="correctBook()" style="display:none;background:none;border:none;padding:2px 0 0;margin:0;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:.64rem;color:var(--peach);text-decoration:underline;text-underline-offset:2px">Not this book?</button>
         </div>
         <div style="display:flex;gap:6px;flex-shrink:0">
           <button id="addToLibBtn" onclick="addCurrentToLibrary()" style="font-family:'Syne',sans-serif;font-weight:700;font-size:.64rem;color:var(--teal);background:rgba(91,191,170,.1);border:1.5px solid rgba(91,191,170,.3);border-radius:100px;padding:6px 11px;cursor:pointer;white-space:nowrap;transition:all .2s" title="Add to Library">+ Library</button>
@@ -733,6 +734,11 @@ const ACADEMIC_KEYWORDS=new RegExp([
   'the influence of','a study of','critical (study|analysis|edition)',
   'an?[aá]lisis','interpretaci[oó]n','verfahren','untersuchung','beitr[aä]ge',
   'journal of','bulletin of','annales',
+  // the same scholarship markers transliterated into Latin script
+  'naukov','nauchn','visnyk','vestnik','zbirnyk','sbornik','problemy',
+  'universytet','universitet','akademi','konferents','materialy','pratsi',
+  'trudy','literaturoznav','filolog','issledovan','monografi','dysertats',
+  'dissertats','avtoreferat','vymiri','vysokoho','sarmats',
   // Cyrillic scholarship markers
   'проблеми','пробле́ми','вісник','вестник','збірник','сборник','науков','научн',
   'університет','университет','академі','академи','конференц','матеріали',
@@ -1026,7 +1032,76 @@ async function doSearch(q){
 // The model states an identity; the catalogue is the referee. Only identities
 // the catalogue backs are trusted and cached, because the model will invent a
 // plausible author with "high" confidence rather than admit it doesn't know.
-const IDENTIFY_CACHE_PREFIX='mb_id2_';
+const IDENTIFY_CACHE_PREFIX='mb_id3_';
+
+// ── Wikidata: the only identity source that cannot invent a book ───────────
+// It either holds the entity or honestly returns nothing, and it is built for
+// exactly the hard part here — the same work under different titles in
+// different languages. Free, key-less, no quota.
+const WD_WORK_TYPES=new Set([
+  'Q571',      // book
+  'Q7725634',  // literary work
+  'Q8261',     // novel
+  'Q47461344', // written work
+  'Q49084',    // short story
+  'Q1667921',  // novel series
+  'Q5185279',  // poem
+  'Q3331189',  // version, edition or translation
+  'Q25379'     // play
+]);
+
+function _guessQueryLang(q){
+  if(/[Ѐ-ӿ]/.test(q)) return 'uk';   // Cyrillic: try Ukrainian before Russian
+  if(/[฀-๿]/.test(q)) return 'th';
+  if(/[぀-ヿ]/.test(q)) return 'ja';
+  if(/[一-鿿]/.test(q)) return 'zh';
+  if(/[؀-ۿ]/.test(q)) return 'ar';
+  if(/[֐-׿]/.test(q)) return 'he';
+  if(/[Ͱ-Ͽ]/.test(q)) return 'el';
+  if(/[Ⴀ-ჿ]/.test(q)) return 'ka';
+  return 'en';
+}
+
+async function _wdJson(params){
+  const r=await fetch('https://www.wikidata.org/w/api.php?origin=*&format=json&'+params);
+  if(!r.ok) throw new Error('wikidata HTTP '+r.status);
+  return r.json();
+}
+
+async function _resolveViaWikidata(q){
+  const langs=[..._guessQueryLang(q)==='uk'?['uk','ru']:[_guessQueryLang(q)],'en']
+    .filter((v,i,a)=>a.indexOf(v)===i);
+  try{
+    for(const lang of langs){
+      const s=await _wdJson(`action=wbsearchentities&type=item&limit=6&language=${lang}&uselang=${lang}&search=${encodeURIComponent(q)}`);
+      const ids=(s.search||[]).map(x=>x.id);
+      if(!ids.length) continue;
+
+      const e=await _wdJson(`action=wbgetentities&props=labels|claims|descriptions&languages=en|${lang}&ids=${ids.join('|')}`);
+      for(const id of ids){
+        const ent=e.entities?.[id]; if(!ent) continue;
+        const types=(ent.claims?.P31||[]).map(c=>c.mainsnak?.datavalue?.value?.id);
+        // Reject films, series and games that share a title with the book
+        if(!types.some(t=>WD_WORK_TYPES.has(t))) continue;
+
+        const authorId=ent.claims?.P50?.[0]?.mainsnak?.datavalue?.value?.id;
+        let author='';
+        if(authorId){
+          const a=await _wdJson(`action=wbgetentities&props=labels&languages=en&ids=${authorId}`);
+          author=a.entities?.[authorId]?.labels?.en?.value||'';
+        }
+        const titleEn=ent.labels?.en?.value||ent.labels?.[lang]?.value||q;
+        return {
+          titleEn, titleOriginal:ent.labels?.[lang]?.value||q, author,
+          originalLanguage:'', queryLanguage:lang,
+          description:ent.descriptions?.en?.value||'',
+          confidence:'high', verified:true, catalogueAvailable:true, source:'wikidata'
+        };
+      }
+    }
+  }catch(e){ console.warn('Wikidata lookup failed:',e); }
+  return null;
+}
 
 // Old cache used a different prefix and stored unverified guesses forever.
 Object.keys(localStorage).filter(k=>k.startsWith('mb_id_')).forEach(k=>localStorage.removeItem(k));
@@ -1049,18 +1124,19 @@ function _looksLikeSameBook(claimTitle,claimAuthor,found){
   return titleHit||authorHit;
 }
 
-// Returns {verified, catalogueAvailable}
-async function _verifyAgainstCatalogue(id){
-  const probe=[id.titleEn,id.author].filter(Boolean).join(' ').trim();
-  if(!probe) return {verified:false,catalogueAvailable:true};
+// Does the model's answer actually appear among what the catalogue returns for
+// the USER'S OWN words? Searching for the model's answer instead only proves
+// that the invented book exists somewhere, which is how gibberish once
+// resolved to "The Master and Margarita" and passed as verified.
+async function _verifyAgainstCatalogue(id,rawQuery){
+  const res=await _fetchBooks(rawQuery);
+  if(res.unavailable) return {verified:false,catalogueAvailable:false};
 
-  const res=await _fetchBooks(probe);
-  // Nothing to check against — don't punish the model for a dead catalogue
-  if(res.unavailable||(!res.books.length&&res.degraded)){
-    return {verified:false,catalogueAvailable:false};
-  }
-  const verified=res.books.some(b=>_looksLikeSameBook(id.titleEn,id.author,b));
-  return {verified,catalogueAvailable:true,match:res.books.find(b=>_looksLikeSameBook(id.titleEn,id.author,b))||null};
+  const match=res.books.find(b=>_looksLikeSameBook(id.titleEn,id.author,b));
+  if(match) return {verified:true,catalogueAvailable:true,match};
+
+  // The catalogue answered but holds nothing resembling the claim
+  return {verified:false,catalogueAvailable:true};
 }
 
 async function identifyBook(q){
@@ -1070,6 +1146,16 @@ async function identifyBook(q){
     if(cached) return JSON.parse(cached);
   }catch(e){}
 
+  // 1. Wikidata first: it cannot fabricate, and it is built for the same work
+  //    appearing under different titles in different languages.
+  const wd=await _resolveViaWikidata(q);
+  if(wd){
+    try{localStorage.setItem(cacheKey,JSON.stringify(wd));}catch(e){}
+    return wd;
+  }
+
+  // 2. Fall back to the model, which is the only thing that knows some
+  //    translated titles — but is also the only thing that invents them.
   let d;
   try{
     const r=await fetch('/api/claude',{
@@ -1080,27 +1166,34 @@ async function identifyBook(q){
     d=await r.json();
   }catch(e){
     console.warn('Book identification failed:',e);
-    return {titleEn:q,titleOriginal:q,author:'',confidence:'low',verified:false,failed:true};
+    return {titleEn:q,titleOriginal:q,author:'',confidence:'low',verified:false,failed:true,source:'none'};
   }
+  d.source='model';
 
-  const check=await _verifyAgainstCatalogue(d);
+  const check=await _verifyAgainstCatalogue(d,q);
   d.verified=check.verified;
   d.catalogueAvailable=check.catalogueAvailable;
-  // Prefer the catalogue's own spelling once it has confirmed the book
   if(check.verified&&check.match){
     d.titleEn=check.match.title||d.titleEn;
     d.author=check.match.author||d.author;
   }
   if(!check.verified){
     console.warn('Unverified identification for',q,'- model claimed:',d.titleEn,'/',d.author,
-                 check.catalogueAvailable?'(catalogue found no match)':'(catalogue unavailable)');
+                 check.catalogueAvailable?'(no catalogue match for the query)':'(catalogue unavailable)');
   }
 
-  // Only confirmed identities are cached, so one bad guess cannot freeze
   if(d.verified){
     try{localStorage.setItem(cacheKey,JSON.stringify(d));}catch(e){}
   }
   return d;
+}
+
+function correctBook(){
+  const input=document.getElementById('mainIn');
+  input.value='';
+  input.focus();
+  window.scrollTo({top:0,behavior:'smooth'});
+  toast('Try the original title, or add the author's name');
 }
 
 // ══ A3 — CATALOGUE LOOKUP WITH HONEST ERROR REPORTING ══
@@ -1136,19 +1229,26 @@ async function fetchBookInfo(id){
   }
 
   // Tell the user what actually happened rather than pretending all is well
+  // The identification result decides the message. The metadata lookup is a
+  // separate request and must never contradict a confirmed identity.
   let status;
-  if(found&&S.bookGenre) status=S.bookGenre;
-  else if(found) status='AI-curated soundtrack';
-  else if(apiFailed) status='Book database unavailable — curating from AI knowledge';
-  else status='No catalogue match — curating from AI knowledge';
-  // An unconfirmed identity outranks any of the above: the user should know
-  // the match is a guess before they judge the soundtrack.
   if(!id.verified){
     status=id.catalogueAvailable===false
       ? 'Could not verify this book (catalogue offline) — using neutral picks'
       : 'Could not identify this book — using neutral picks';
+  } else if(S.bookGenre){
+    status=S.bookGenre;
+  } else {
+    status='AI-curated soundtrack';
   }
-  document.getElementById('bkGenre').textContent=status;
+  document.getElementById('bkGenre').textContent=
+    (S.bookAuthor?S.bookAuthor+' · ':'')+status;
+
+  // A guess must be visible and correctable. Wikidata answers are trustworthy
+  // enough to stay quiet; anything the model produced gets an escape hatch,
+  // because a confident wrong answer is indistinguishable from a right one.
+  const correctBtn=document.getElementById('bkCorrect');
+  if(correctBtn) correctBtn.style.display=(id.source==='wikidata')?'none':'block';
 
   console.log('Book resolved:',{
     canonical:S.bookCanonical,author:S.bookAuthor,language:id.originalLanguage,
