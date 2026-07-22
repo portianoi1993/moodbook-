@@ -208,7 +208,12 @@ ${safeMood ? 'Scene focus: ' + safeMood : ''}
 
 STEP 1 — ANALYSE THE BOOK.
 Fill the "analysis" object from your knowledge of THIS specific book.
-Be concrete and factual, never generic:
+Be concrete and factual, never generic — but never invent detail either.
+Name a specific place, region or landmark ONLY if you are certain it appears
+in THIS book. If you are unsure, describe the setting in general terms
+("a coastal town", "a rural region") rather than guessing a name. A wrong
+place name is worse than a vague one, and do not borrow settings from other
+books by the same author.
 - setting: the actual place(s) the book takes place in
 - era: the actual historical period
 - culture: the cultural and musical tradition that setting belongs to

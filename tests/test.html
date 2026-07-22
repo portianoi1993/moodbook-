@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>MoodBook — browser tests</title>
+<style>
+  body{font-family:ui-monospace,Menlo,Consolas,monospace;background:#F8F5F0;color:#1A1714;
+       max-width:860px;margin:0 auto;padding:24px 20px 60px}
+  h1{font-size:1.1rem;margin-bottom:4px}
+  p.lead{color:#7A7068;font-size:.82rem;margin-bottom:18px;line-height:1.5}
+  .row{padding:7px 10px;border-radius:6px;margin-bottom:3px;font-size:.8rem;
+       display:flex;gap:10px;align-items:baseline}
+  .pass{background:#e8f5ee}.fail{background:#fdeaea}
+  .tag{font-weight:700;flex-shrink:0}
+  .pass .tag{color:#1a7f4b}.fail .tag{color:#c0392b}
+  .detail{color:#7A7068;font-size:.74rem;margin:2px 0 0 62px}
+  #summary{margin-top:16px;font-weight:700}
+  button{margin-top:18px;padding:9px 16px;border-radius:8px;border:1.5px solid #EDE9E3;
+         background:#fff;cursor:pointer;font-family:inherit;font-size:.78rem}
+  iframe{display:none}
+</style>
+</head>
+<body>
+<h1>MoodBook browser tests</h1>
+<p class="lead">
+  Loads <code>../index.html</code> in a hidden iframe and exercises its live functions.
+  Open this page through the dev/preview server — <code>/tests/test.html</code> — not
+  from the filesystem, or the iframe stays cross-origin and nothing can be read.
+  These tests make no network calls; the live-API checks are behind the button.
+</p>
+<div id="out"></div>
+<div id="summary">running…</div>
+<button id="liveBtn">Run live API checks (uses OpenAI quota)</button>
+<iframe id="app" src="../index.html"></iframe>
+
+<script>
+const out=document.getElementById('out');
+let passed=0,failed=0;
+
+function record(name,ok,detail){
+  const d=document.createElement('div');
+  d.className='row '+(ok?'pass':'fail');
+  d.innerHTML='<span class="tag">'+(ok?'PASS':'FAIL')+'</span><span>'+name+'</span>';
+  out.appendChild(d);
+  if(!ok&&detail){
+    const e=document.createElement('div');
+    e.className='detail'; e.textContent=detail; out.appendChild(e);
+  }
+  ok?passed++:failed++;
+}
+function is(name,actual,expected){
+  const ok=JSON.stringify(actual)===JSON.stringify(expected);
+  record(name,ok,ok?'':'got '+JSON.stringify(actual)+', expected '+JSON.stringify(expected));
+}
+function ok(name,cond,detail){record(name,!!cond,detail);}
+
+function summarise(){
+  const s=document.getElementById('summary');
+  s.textContent=passed+' passed, '+failed+' failed';
+  s.style.color=failed?'#c0392b':'#1a7f4b';
+}
+
+document.getElementById('app').addEventListener('load',()=>{
+  const w=document.getElementById('app').contentWindow;
+
+  // ── page integrity ────────────────────────────────────────────────────
+  // A single unescaped quote once left every one of these undefined.
+  ['doSearch','identifyBook','renderTracks','toggleLike','trackKey','esc',
+   '_fetchBooks','stripLofiFromSeriousBooks','correctBook']
+    .forEach(fn=>ok('function exists: '+fn,typeof w[fn]==='function',
+                    'typeof '+fn+' = '+typeof w[fn]));
+
+  // ── escaping ──────────────────────────────────────────────────────────
+  ok("esc() escapes double quotes", w.esc('say "hi"').indexOf('"')===-1);
+  ok("esc() escapes angle brackets", w.esc('<img src=x>').indexOf('<')===-1);
+  ok("esc() leaves apostrophes readable", w.esc("Tam O'Shanter").includes("O'"));
+  ok("esc() handles null safely", w.esc(null)==='');
+
+  // ── liked-track identity ──────────────────────────────────────────────
+  // Keys used to be list positions, so a heart leaked onto unrelated books.
+  ok('trackKey is book-scoped',
+     w.trackKey('Theme','Book A')!==w.trackKey('Theme','Book B'));
+  ok('trackKey is stable for the same pair',
+     w.trackKey('Theme','Book A')===w.trackKey('Theme','Book A'));
+
+  // ── lofi guard ────────────────────────────────────────────────────────
+  const lofiTracks=()=>[
+    {name:'A',scQuery:'japanese koto music no lyrics instrumental'},
+    {name:'B',scQuery:'lofi study beats no lyrics instrumental'},
+    {name:'C',scQuery:'chillhop beats no lyrics instrumental'}
+  ];
+  const historical={genre:'historical fiction',era:'late 18th century',culture:'Japanese'};
+  const modern={genre:'self-help',era:'contemporary',culture:'American'};
+
+  let r=w.stripLofiFromSeriousBooks(lofiTracks(),historical);
+  ok('lofi removed for a historical book',
+     !r.some(t=>/lo-?fi|chillhop|study beats/i.test(t.scQuery)),
+     JSON.stringify(r.map(t=>t.scQuery)));
+  is('lofi guard keeps the track count',r.length,3);
+  ok('lofi guard leaves non-lofi tracks untouched',
+     r[0].scQuery==='japanese koto music no lyrics instrumental');
+  ok('lofi replacement borrows the book culture',
+     /japanese/i.test(r[1].scQuery),r[1].scQuery);
+
+  r=w.stripLofiFromSeriousBooks(lofiTracks(),modern);
+  ok('lofi kept for a contemporary self-help book',
+     r.some(t=>/lofi/i.test(t.scQuery)));
+
+  ok('era alone marks a book as serious',
+     w.isSeriousBook({genre:'fiction',era:'Edo period'}));
+  ok('a modern novel is not marked serious',
+     !w.isSeriousBook({genre:'thriller',era:'present day'}));
+
+  // ── academic noise filter ─────────────────────────────────────────────
+  ok('drops Cyrillic scholarship',
+     w._isAcademicNoise('Проблеми сучасного літературознавства','',''));
+  ok('drops transliterated scholarship',
+     w._isAcademicNoise('Ivan Mazepa v sarmatskomy vymiri vysokoho baroko','',''));
+  ok('drops conference proceedings by organisation author',
+     w._isAcademicNoise('Memorias','Congreso Nacional de Literatura (20th 1997 Bogota)',''));
+  ok('keeps an ordinary novel',
+     !w._isAcademicNoise('Dune','Frank Herbert',''));
+
+  // ── neutral fallback ──────────────────────────────────────────────────
+  // top-level const is a lexical global, not a window property, so read it
+  // through the frame's own eval rather than off the window object
+  const neutral=w.eval('NEUTRAL_READING_TRACKS');
+  is('neutral set has five tracks',neutral.length,5);
+  ok('neutral set contains no lofi',
+     !neutral.some(t=>/lo-?fi|study beats/i.test(t.scQuery)));
+  ok('neutral set names no culture or country',
+     !neutral.some(t=>/japanese|ukrainian|thai|korean|spanish/i.test(t.scQuery)));
+
+  summarise();
+});
+
+// ── live checks: real API calls, run only on demand ─────────────────────
+document.getElementById('liveBtn').addEventListener('click',async()=>{
+  const w=document.getElementById('app').contentWindow;
+  const btn=document.getElementById('liveBtn');
+  btn.disabled=true; btn.textContent='running…';
+
+  const gibberish='Кзвнрщп Флмывпнк Ттт';
+  Object.keys(w.localStorage).filter(k=>k.startsWith('mb_id'))
+        .forEach(k=>w.localStorage.removeItem(k));
+
+  const bad=await w.identifyBook(gibberish);
+  ok('gibberish is not accepted as a real book',bad.verified===false,
+     JSON.stringify({titleEn:bad.titleEn,verified:bad.verified}));
+  ok('gibberish identification is not cached',
+     !w.localStorage.getItem('mb_id3_'+gibberish.toLowerCase()));
+
+  const good=await w.identifyBook('Тигролови');
+  ok('a real book is identified and verified',good.verified===true,
+     JSON.stringify({titleEn:good.titleEn,author:good.author}));
+  ok('verified book carries an author',!!good.author,good.author||'(empty)');
+
+  summarise();
+  btn.textContent='Run live API checks (uses OpenAI quota)';
+  btn.disabled=false;
+});
+</script>
+</body>
+</html>

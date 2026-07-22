@@ -1175,7 +1175,9 @@ async function identifyBook(q){
   d.catalogueAvailable=check.catalogueAvailable;
   if(check.verified&&check.match){
     d.titleEn=check.match.title||d.titleEn;
-    d.author=check.match.author||d.author;
+    // The author must come from a source that can be held to it. If the
+    // catalogue entry has none, an empty field beats the model's invention.
+    d.author=check.match.author||'';
   }
   if(!check.verified){
     console.warn('Unverified identification for',q,'- model claimed:',d.titleEn,'/',d.author,
@@ -1265,8 +1267,16 @@ Genre: ${S.bookGenre||'unknown'}
 Description: ${S.bookDesc||'No description available'}
 ${moodOverride?'Current scene mood: '+moodOverride:''}`;
 
-  // Call /api/claude proxy (GPT-4o-mini)
-  let trackList=[];
+  // An unidentified book never reaches the curator — not even as raw text.
+  // Given a title it does not recognise, the model will confabulate a book
+  // and a culture to match it, so the only safe input is no input at all.
+  if(!S.bookVerified){
+    S.tracks=rankByLikedStyles(NEUTRAL_READING_TRACKS.map(t=>({...t})));
+    renderTracks();
+    return;
+  }
+
+  let trackList=[],analysis=null;
   try{
     const r=await fetch('/api/claude',{
       method:'POST',
@@ -1276,31 +1286,61 @@ ${moodOverride?'Current scene mood: '+moodOverride:''}`;
         author:S.bookAuthor||'',
         genre:S.bookGenre||'',
         description:S.bookDesc||'',
-        mood:moodOverride||'',
-        unverified:!S.bookVerified
+        mood:moodOverride||''
       })
     });
     const d=await r.json();
     if(d.tracks && d.tracks.length>0){
       trackList=d.tracks;
-      if(d.analysis) console.log('Book analysis:',d.analysis);
+      analysis=d.analysis||null;
+      if(analysis) console.log('Book analysis:',analysis);
     }
     else console.error('AI returned no tracks:', d);
   }catch(e){
     console.error('AI error:',e);
   }
-  if(!trackList.length){
-    trackList=[
-      {name:'Deep Atmosphere',vibe:'Immersive focus',scQuery:'ambient instrumental reading music 1 hour',duration:'~1 hr'},
-      {name:'Cinematic Journey',vibe:'Epic & grand',scQuery:'cinematic orchestral instrumental 2 hours',duration:'~2 hr'},
-      {name:'Dark Tension',vibe:'Tense & moody',scQuery:'dark suspense instrumental ambient',duration:'~1 hr'},
-      {name:'Quiet Reflection',vibe:'Calm & peaceful',scQuery:'peaceful piano instrumental 1 hour',duration:'~1 hr'},
-      {name:'Mysterious Depths',vibe:'Mysterious & deep',scQuery:'mysterious atmospheric instrumental music',duration:'~1 hr'},
-    ];
-  }
+  if(!trackList.length) trackList=NEUTRAL_READING_TRACKS.map(t=>({...t}));
 
-  S.tracks=rankByLikedStyles(trackList);
+  S.tracks=rankByLikedStyles(stripLofiFromSeriousBooks(trackList,analysis));
   renderTracks();
+}
+
+// Used whenever there is no trustworthy book to curate for.
+const NEUTRAL_READING_TRACKS=[
+  {name:'Deep Atmosphere',vibe:'Immersive focus',scQuery:'ambient instrumental reading music 1 hour',duration:'~1 hr'},
+  {name:'Cinematic Journey',vibe:'Epic & grand',scQuery:'cinematic orchestral instrumental 2 hours',duration:'~2 hr'},
+  {name:'Dark Tension',vibe:'Tense & moody',scQuery:'dark suspense instrumental ambient',duration:'~1 hr'},
+  {name:'Quiet Reflection',vibe:'Calm & peaceful',scQuery:'peaceful piano instrumental 1 hour',duration:'~1 hr'},
+  {name:'Mysterious Depths',vibe:'Mysterious & deep',scQuery:'mysterious atmospheric instrumental music',duration:'~1 hr'},
+];
+
+// ══ LOFI GUARD ══
+// The prompt already asks for no lofi on historical or literary works and the
+// model ignores it anyway, so the rule is enforced here in code as well.
+const LOFI_PATTERN=/\b(lo-?fi|study beats|chill ?beats|chillhop|hip ?hop|boom bap)\b/i;
+const SERIOUS_GENRE=/histor|classic|literary|literature|epic|myth|medieval|victorian|renaissance|antiquity|philosoph|poetry|tragedy|\bwar\b/i;
+const OLD_ERA=/\b(1[0-9]|[1-9])(st|nd|rd|th) century\b|\bancient\b|\bmedieval\b|\bedo\b|\bvictorian\b|\brenaissance\b|\bantiquity\b|\b1[0-8]\d{2}\b/i;
+
+function isSeriousBook(analysis){
+  const genre=[analysis&&analysis.genre,S.bookGenre].filter(Boolean).join(' ');
+  const era=String(analysis&&analysis.era||'');
+  if(SERIOUS_GENRE.test(genre)) return true;
+  if(OLD_ERA.test(era)) return true;
+  return false;
+}
+
+function stripLofiFromSeriousBooks(tracks,analysis){
+  if(!isSeriousBook(analysis)) return tracks;
+  const culture=String(analysis&&analysis.culture||'').split(/[,(]/)[0].trim();
+  // Replace rather than drop, so the list keeps its five entries
+  const substitute=culture
+    ? culture+' instrumental music for reading no lyrics instrumental'
+    : 'calm instrumental music for reading no lyrics instrumental';
+  return tracks.map(t=>{
+    if(!LOFI_PATTERN.test(String(t.scQuery||''))) return t;
+    console.warn('Lofi guard: replaced',t.scQuery);
+    return {...t,scQuery:substitute,vibe:t.vibe||'calm, focused'};
+  });
 }
 
 // ══ E2 — SOFT PERSONALISATION ══
@@ -1474,7 +1514,15 @@ function seekTrack(e, bar){
 }
 
 // ══ LOAD MOODS ══
+const NEUTRAL_MOODS=['Opening Scene','Rising Action','Dark Turn','Quiet Moment','Climax','Resolution'];
+
 async function loadMoods(){
+  // Same rule as the tracks: no trustworthy book, no model call.
+  if(!S.bookVerified){
+    S.moods=NEUTRAL_MOODS.slice();
+    renderMoods();
+    return;
+  }
   try{
     const r=await fetch('/api/claude',{
       method:'POST',
