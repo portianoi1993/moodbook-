@@ -766,33 +766,67 @@ function _rankBooks(books){
   });
 }
 
-async function _fetchFromGoogleBooks(q){
-  try{
-    const r=await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(q)}&maxResults=12&orderBy=relevance&printType=books&key=AIzaSyD_GXtmqfc_rRVc7xa3v2g8tNoh-a4yR3o`);
-    const d=await r.json().catch(()=>({}));
-    if(!r.ok||d.error){
-      console.warn('Google Books unavailable:',r.status,d.error?.message||'');
-      return {books:[],unavailable:true};
+// ── Google Books with retry + per-session cache ───────────────────────────
+// The service intermittently answers 503 backendFailed while the very same URL
+// succeeds on the next attempt, so every Google Books request goes through here:
+// it retries the transient failures, caches successes for the session, and is
+// the single place the API key lives (staged for a later move to env vars).
+const GBOOKS_KEY='AIzaSyD_GXtmqfc_rRVc7xa3v2g8tNoh-a4yR3o';
+const _gbCache=new Map();
+const _gbStats={cacheHits:0,retriesUsed:0,recovered503:0,failures:0};
+const _gbSleep=ms=>new Promise(r=>setTimeout(r,ms));
+
+// Resolves to the parsed Google Books response, or {items:null,_unavailable:true}
+// once retries are exhausted. Never throws, so callers can stay simple.
+async function _googleBooks(q,params={}){
+  const cacheKey=new URLSearchParams({q,key:GBOOKS_KEY,...params}).toString();
+  if(_gbCache.has(cacheKey)){_gbStats.cacheHits++;return _gbCache.get(cacheKey);}
+
+  let hadRetryable=false;
+  for(let attempt=0;attempt<3;attempt++){
+    if(attempt>0){_gbStats.retriesUsed++;await _gbSleep(400);}
+    try{
+      const r=await fetch('https://www.googleapis.com/books/v1/volumes?'+cacheKey);
+      const d=await r.json().catch(()=>({}));
+      if(r.ok&&!d.error){
+        if(hadRetryable) _gbStats.recovered503++;   // a 503 was silently absorbed
+        _gbCache.set(cacheKey,d);
+        return d;
+      }
+      const reason=d.error?.errors?.[0]?.reason||'';
+      // 503/500/backendFailed are transient; quota (429) or bad request are not
+      if(!(r.status===503||r.status===500||reason==='backendFailed')){
+        console.warn('Google Books error (not retried):',r.status,d.error?.message||'');
+        return {items:null,_unavailable:true,_error:d.error||{code:r.status}};
+      }
+      hadRetryable=true;
+    }catch(e){
+      hadRetryable=true;   // network blip — worth another try
     }
-    const books=(d.items||[]).map(it=>{
-      const v=it.volumeInfo||{};
-      return{
-        title:v.title||'',
-        author:v.authors?.[0]||'',
-        cover:(v.imageLinks?.thumbnail||'').replace('http://','https://'),
-        year:(v.publishedDate||'').slice(0,4),
-        hasImage:!!v.imageLinks?.thumbnail,
-        ratingsCount:v.ratingsCount||0,
-        // Kept only for the academic filter below, not rendered anywhere
-        categories:(v.categories||[]).join(' '),
-        desc:v.description||'',
-      };
-    }).filter(b=>b.title&&!_isAcademicNoise(b.title,b.author,b.categories+' '+b.desc));
-    return {books:_rankBooks(books).slice(0,6),unavailable:false};
-  }catch(e){
-    console.warn('Google Books request failed:',e);
-    return {books:[],unavailable:true};
   }
+  _gbStats.failures++;
+  console.warn('Google Books unavailable after retries for:',q);
+  return {items:null,_unavailable:true};
+}
+
+async function _fetchFromGoogleBooks(q){
+  const d=await _googleBooks(q,{maxResults:12,orderBy:'relevance',printType:'books'});
+  if(d._unavailable) return {books:[],unavailable:true};
+  const books=(d.items||[]).map(it=>{
+    const v=it.volumeInfo||{};
+    return{
+      title:v.title||'',
+      author:v.authors?.[0]||'',
+      cover:(v.imageLinks?.thumbnail||'').replace('http://','https://'),
+      year:(v.publishedDate||'').slice(0,4),
+      hasImage:!!v.imageLinks?.thumbnail,
+      ratingsCount:v.ratingsCount||0,
+      // Kept only for the academic filter below, not rendered anywhere
+      categories:(v.categories||[]).join(' '),
+      desc:v.description||'',
+    };
+  }).filter(b=>b.title&&!_isAcademicNoise(b.title,b.author,b.categories+' '+b.desc));
+  return {books:_rankBooks(books).slice(0,6),unavailable:false};
 }
 
 // Free, key-less fallback so suggestions survive Google Books outages
@@ -1211,23 +1245,19 @@ async function fetchBookInfo(id){
   let apiFailed=false,found=false;
 
   for(const q of attempts){
-    try{
-      const r=await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(q)}&maxResults=1&key=AIzaSyD_GXtmqfc_rRVc7xa3v2g8tNoh-a4yR3o`);
-      if(!r.ok){apiFailed=true;console.warn('Google Books HTTP',r.status,'for',q);continue;}
-      const d=await r.json();
-      if(d.error){apiFailed=true;console.warn('Google Books error:',d.error.message);continue;}
-      const item=d.items?.[0]?.volumeInfo;
-      if(!item) continue;
+    const d=await _googleBooks(q,{maxResults:1});
+    if(d._unavailable){apiFailed=true;continue;}
+    const item=d.items?.[0]?.volumeInfo;
+    if(!item) continue;
 
-      S.bookDesc=(item.description||'').slice(0,1000);
-      S.bookGenre=(item.categories||[]).join(', ')||'';
-      S.bookTitle=item.title||S.bookTitle||S.book;
-      S.bookAuthor=item.authors?.[0]||S.bookAuthor||'';
-      S.bookCover=(item.imageLinks?.thumbnail||item.imageLinks?.smallThumbnail||'').replace('http://','https://').replace('zoom=1','zoom=2')||null;
-      document.getElementById('bkTitle').textContent=S.bookTitle;
-      found=true;
-      break;
-    }catch(e){apiFailed=true;console.warn('Google Books request failed:',e);}
+    S.bookDesc=(item.description||'').slice(0,1000);
+    S.bookGenre=(item.categories||[]).join(', ')||'';
+    S.bookTitle=item.title||S.bookTitle||S.book;
+    S.bookAuthor=item.authors?.[0]||S.bookAuthor||'';
+    S.bookCover=(item.imageLinks?.thumbnail||item.imageLinks?.smallThumbnail||'').replace('http://','https://').replace('zoom=1','zoom=2')||null;
+    document.getElementById('bkTitle').textContent=S.bookTitle;
+    found=true;
+    break;
   }
 
   // Tell the user what actually happened rather than pretending all is well
@@ -1598,18 +1628,17 @@ function addCurrentToLibrary(){
   toast(`📚 <span class="g">"${esc(newBook.title)}"</span> added to Library`);
   // Fetch cover if missing
   if(!newBook.cover){
-    fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(newBook.title+' '+(newBook.author||''))}&maxResults=1&key=AIzaSyD_GXtmqfc_rRVc7xa3v2g8tNoh-a4yR3o`)
-      .then(r=>r.json()).then(d=>{
-        const img=d.items?.[0]?.volumeInfo?.imageLinks?.thumbnail||d.items?.[0]?.volumeInfo?.imageLinks?.smallThumbnail;
-        if(img){
-          const idx=DB.books.findIndex(b=>b.id===newBook.id);
-          if(idx!==-1){
-            DB.books[idx].cover=img.replace('http://','https://').replace('zoom=1','zoom=2');
-            saveDB();
-            renderBooks();
-          }
+    _googleBooks(newBook.title+' '+(newBook.author||''),{maxResults:1}).then(d=>{
+      const img=d.items?.[0]?.volumeInfo?.imageLinks?.thumbnail||d.items?.[0]?.volumeInfo?.imageLinks?.smallThumbnail;
+      if(img){
+        const idx=DB.books.findIndex(b=>b.id===newBook.id);
+        if(idx!==-1){
+          DB.books[idx].cover=img.replace('http://','https://').replace('zoom=1','zoom=2');
+          saveDB();
+          renderBooks();
         }
-      }).catch(()=>{});
+      }
+    });
   }
 }
 
@@ -1714,19 +1743,16 @@ async function addBook(){
 
   // Search Google Books directly
   let cover=null, finalTitle=q, finalAuthor='';
-  try{
-    const r=await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(q)}&maxResults=5&key=AIzaSyD_GXtmqfc_rRVc7xa3v2g8tNoh-a4yR3o`);
-    const d=await r.json();
-    if(d.items?.length){
-      const withCover=d.items.find(it=>it.volumeInfo?.imageLinks?.thumbnail||it.volumeInfo?.imageLinks?.smallThumbnail);
-      const best=withCover||d.items[0];
-      const v=best.volumeInfo||{};
-      finalTitle=v.title||q;
-      finalAuthor=v.authors?.[0]||'';
-      const img=v.imageLinks?.thumbnail||v.imageLinks?.smallThumbnail||null;
-      if(img) cover=img.replace('http://','https://').replace('zoom=1','zoom=2');
-    }
-  }catch(e){console.warn('Google Books error:',e);}
+  const d=await _googleBooks(q,{maxResults:5});
+  if(d.items?.length){
+    const withCover=d.items.find(it=>it.volumeInfo?.imageLinks?.thumbnail||it.volumeInfo?.imageLinks?.smallThumbnail);
+    const best=withCover||d.items[0];
+    const v=best.volumeInfo||{};
+    finalTitle=v.title||q;
+    finalAuthor=v.authors?.[0]||'';
+    const img=v.imageLinks?.thumbnail||v.imageLinks?.smallThumbnail||null;
+    if(img) cover=img.replace('http://','https://').replace('zoom=1','zoom=2');
+  }
 
   const idx=DB.books.findIndex(b=>b.id===tempId);
   if(idx!==-1){
@@ -1877,15 +1903,12 @@ async function addBookDirect(title,author,cover){
   DB.books.unshift({id:tempId,title,author:author||'',cover:cover||null});
   saveDB();renderBooks();
   if(!cover){
-    try{
-      const r=await fetch('https://www.googleapis.com/books/v1/volumes?q='+encodeURIComponent(title+' '+(author||''))+'&maxResults=1&key=AIzaSyD_GXtmqfc_rRVc7xa3v2g8tNoh-a4yR3o');
-      const d=await r.json();
-      const img=d.items?.[0]?.volumeInfo?.imageLinks?.thumbnail||d.items?.[0]?.volumeInfo?.imageLinks?.smallThumbnail;
-      if(img){
-        const idx=DB.books.findIndex(b=>b.id===tempId);
-        if(idx!==-1){DB.books[idx].cover=img.replace('http://','https://').replace('zoom=1','zoom=2');saveDB();renderBooks();}
-      }
-    }catch(e){}
+    const d=await _googleBooks(title+' '+(author||''),{maxResults:1});
+    const img=d.items?.[0]?.volumeInfo?.imageLinks?.thumbnail||d.items?.[0]?.volumeInfo?.imageLinks?.smallThumbnail;
+    if(img){
+      const idx=DB.books.findIndex(b=>b.id===tempId);
+      if(idx!==-1){DB.books[idx].cover=img.replace('http://','https://').replace('zoom=1','zoom=2');saveDB();renderBooks();}
+    }
   }
   toast('📖 <span class="g">"'+esc(title)+'"</span> added to Library');
 }
@@ -1897,20 +1920,17 @@ if(!DB.books.length){
   ];
   // Fetch covers async
   DB.books.forEach(async(b,i)=>{
-    try{
-      const r=await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(b.title+' '+b.author)}&maxResults=1&key=AIzaSyD_GXtmqfc_rRVc7xa3v2g8tNoh-a4yR3o`);
-      const d=await r.json();
-      const item=d.items?.[0]?.volumeInfo;
-      // Try thumbnail, then smallThumbnail, use zoom=2 for better quality
-      let cover=item?.imageLinks?.thumbnail||item?.imageLinks?.smallThumbnail||null;
-      if(cover){
-        cover=cover.replace('http://','https://').replace('zoom=1','zoom=2');
-        DB.books[i].cover=cover;
-        DB.books[i].title=item.title||b.title;
-        DB.books[i].author=item.authors?.[0]||b.author;
-        saveDB();renderBooks();
-      }
-    }catch(e){}
+    const d=await _googleBooks(b.title+' '+b.author,{maxResults:1});
+    const item=d.items?.[0]?.volumeInfo;
+    // Try thumbnail, then smallThumbnail, use zoom=2 for better quality
+    let cover=item?.imageLinks?.thumbnail||item?.imageLinks?.smallThumbnail||null;
+    if(cover){
+      cover=cover.replace('http://','https://').replace('zoom=1','zoom=2');
+      DB.books[i].cover=cover;
+      DB.books[i].title=item.title||b.title;
+      DB.books[i].author=item.authors?.[0]||b.author;
+      saveDB();renderBooks();
+    }
   });
   saveDB();
 }
