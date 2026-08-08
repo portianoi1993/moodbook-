@@ -1,1 +1,6 @@
 .claude/skills/
+
+# ruflo / claude-flow artifacts (not part of MoodBook)
+.claude-flow/
+.swarm/
+ruvector.db
