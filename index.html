@@ -60,6 +60,62 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:#160e08;color:var(--c
 .fallback h2{font-family:'Fraunces',serif;font-size:1.4rem;color:var(--cream)}
 .fallback p{font-size:.85rem;color:var(--cream-dk);max-width:420px;line-height:1.6}
 
+/* ---- PHYSICAL BOOK (Phase 2): closed cover with search + open spread ---- */
+.bookLayer{position:fixed;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;padding:20px;
+  opacity:0;pointer-events:none;transition:opacity .5s ease;
+  background:radial-gradient(60% 60% at 50% 50%, rgba(10,6,2,.12), rgba(8,4,1,.5))}
+.bookLayer.show{opacity:1;pointer-events:auto}
+.pbook{position:relative;width:min(880px,94vw);height:min(560px,80vh);perspective:2200px}
+.pbook-cover{position:absolute;inset:0;border-radius:10px;background:linear-gradient(135deg,#b0472a,#8a3a22);
+  border:4px solid var(--ink);box-shadow:0 30px 70px rgba(0,0,0,.55),inset 0 0 0 10px rgba(255,220,170,.12),inset 0 0 60px rgba(0,0,0,.35);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;
+  transform-origin:left center;transition:transform .9s cubic-bezier(.7,0,.2,1);backface-visibility:hidden;z-index:3}
+.pbook.open .pbook-cover{transform:rotateY(-172deg)}
+.pbook-cover::before{content:"";position:absolute;left:14px;top:14px;right:14px;bottom:14px;border:2px solid rgba(255,220,170,.35);border-radius:6px;pointer-events:none}
+.pbook-emblem{font-family:'Fraunces',serif;font-weight:600;font-size:2.4rem;color:#f7e6c8;text-shadow:0 2px 0 rgba(0,0,0,.3)}
+.pbook-emblem em{font-style:italic;color:var(--amber)}
+.pbook-search{display:flex;gap:8px;width:min(78%,440px)}
+.pbook-search input{flex:1;border:2px solid var(--ink);border-radius:100px;padding:12px 18px;font-family:'Fraunces',serif;font-style:italic;font-size:1rem;background:#f7ecd6;color:#3a2a1c;outline:none;min-width:0}
+.pbook-search button{border:2px solid var(--ink);border-radius:100px;padding:0 18px;background:var(--amber);color:var(--ink);font-family:'DM Sans';font-weight:700;font-size:.8rem;cursor:pointer;white-space:nowrap}
+.pbook-hint{font-family:'DM Sans';font-size:.74rem;color:rgba(255,230,200,.8);min-height:1.2em}
+.pbook-cover.loading .pbook-search{opacity:.5;pointer-events:none}
+.spread{position:absolute;inset:0;display:flex;border-radius:10px;overflow:hidden;background:#f6ecd6;
+  border:4px solid var(--ink);box-shadow:0 30px 70px rgba(0,0,0,.5);opacity:0;transform:scale(.97);
+  transition:opacity .5s ease .25s,transform .5s ease .25s}
+.pbook.open .spread{opacity:1;transform:scale(1)}
+.page{flex:1;padding:22px 24px;min-width:0;color:#3a2a1c;position:relative;overflow-y:auto}
+.page-l{background:linear-gradient(90deg,#f6ecd6,#f6ecd6 88%,#ddc9a4);border-right:2px solid #d8c4a0}
+.page-r{background:linear-gradient(270deg,#f6ecd6,#f6ecd6 88%,#ddc9a4);display:flex;flex-direction:column}
+.pg-eyebrow{font-family:'DM Sans';font-size:.58rem;letter-spacing:.18em;text-transform:uppercase;color:#a07a4a;margin:0 0 8px}
+.bk-name{font-family:'Fraunces',serif;font-weight:600;font-size:1.5rem;line-height:1.05;color:#2c1e12}
+.bk-author{font-family:'Fraunces',serif;font-style:italic;font-size:.85rem;color:#8a6a44;margin:2px 0 14px}
+.tracks{display:flex;flex-direction:column;gap:2px}
+.track{display:flex;align-items:center;gap:10px;padding:9px 4px;border-bottom:1px dashed #cbb68c;cursor:pointer}
+.track:hover{background:rgba(0,0,0,.03)}
+.track .n{font-family:'Fraunces',serif;font-weight:600;color:#b0472a;width:16px;text-align:center;flex-shrink:0}
+.track .info{flex:1;min-width:0}
+.track .tt{font-size:.86rem;font-weight:500;color:#2c1e12;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.track .tv{font-size:.66rem;color:#9a7c50}
+.track .play{width:26px;height:26px;border-radius:50%;background:var(--amber);border:2px solid var(--ink);color:var(--ink);display:flex;align-items:center;justify-content:center;font-size:.6rem;flex-shrink:0}
+.track.playing{background:rgba(240,185,104,.18)}
+.track.playing .play{background:#3e7a72;color:#fff}
+.pill-row{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:16px}
+.pill{font-family:'DM Sans';font-size:.74rem;padding:6px 13px;border:2px solid var(--ink);border-radius:100px;background:#f6ecd6;color:#3a2a1c;cursor:pointer}
+.pill:hover{background:#fff}
+.pill.on{background:var(--amber)}
+.pill.on.g{background:#3e7a72;color:#fff}
+.np{margin-top:auto;display:flex;align-items:center;gap:10px;border-top:2px solid #d8c4a0;padding-top:12px}
+.np-eq{display:flex;gap:2px;align-items:flex-end;height:16px;flex-shrink:0}
+.np-eq i{width:3px;height:6px;background:#3e7a72;animation:eqb .8s ease-in-out infinite alternate}
+.np-eq i:nth-child(2){animation-delay:.15s}.np-eq i:nth-child(3){animation-delay:.3s}
+@keyframes eqb{from{height:4px}to{height:16px}}
+.np-name{flex:1;min-width:0;font-size:.74rem;color:#5a4630;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.np-stop{border:2px solid var(--ink);background:#f6ecd6;border-radius:100px;padding:4px 12px;font-size:.7rem;cursor:pointer;flex-shrink:0}
+.spread-close{position:absolute;top:10px;right:12px;z-index:4;width:30px;height:30px;border-radius:50%;background:#f6ecd6;border:2px solid var(--ink);cursor:pointer;font-size:.85rem}
+.book-msg{font-size:.78rem;color:#9a3b2a;margin-top:10px}
+.mini-spin{width:16px;height:16px;border-radius:50%;border:3px solid rgba(0,0,0,.15);border-top-color:#b0472a;animation:spin .9s linear infinite;display:inline-block;vertical-align:middle}
+@media(max-width:640px){.pbook{height:84vh}.spread{flex-direction:column}.page-r{border-top:2px solid #d8c4a0}.pbook-emblem{font-size:1.8rem}}
+
 /* ---- cinematic grade over the 3D canvas (vignette + paper grain) ---- */
 .grade{position:fixed;inset:0;pointer-events:none;z-index:5}
 .grade::before{content:"";position:absolute;inset:0;
@@ -75,7 +131,7 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:#160e08;color:var(--c
 <div class="grade"></div>
 
 <div class="ui">
-  <div class="badge">МАКЕТ • <b>MoodBook</b> Immersive · Фаза 1</div>
+  <div class="badge">МАКЕТ • <b>MoodBook</b> Immersive · Фаза 2</div>
   <div class="title" id="title">
     <div class="m">Mood<em>Book</em></div>
     <div class="tag">Музика для кожної сторінки</div>
@@ -84,6 +140,42 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:#160e08;color:var(--c
   <div class="hint" id="hint">Клікни на <b>стіл із книгою</b> — камера підійде ближче. Тягни мишею — роззирнись.</div>
 </div>
 <div class="tooltip" id="tooltip"></div>
+
+<!-- PHYSICAL BOOK (Phase 2) -->
+<div class="bookLayer" id="bookLayer">
+  <div class="pbook" id="pbook">
+    <div class="spread" id="spread">
+      <button class="spread-close" id="spreadClose" title="Закрити книгу">✕</button>
+      <div class="page page-l">
+        <div class="pg-eyebrow">Книга</div>
+        <div class="bk-name" id="bkName">—</div>
+        <div class="bk-author" id="bkAuthor"></div>
+        <div class="tracks" id="tracksBody"></div>
+        <div class="book-msg" id="bookMsg"></div>
+      </div>
+      <div class="page page-r">
+        <div class="pg-eyebrow">Настрій</div>
+        <div class="pill-row" id="moodRow"></div>
+        <div class="pg-eyebrow">Жанр</div>
+        <div class="pill-row" id="genreRow"></div>
+        <div class="np" id="np" style="display:none">
+          <div class="np-eq"><i></i><i></i><i></i></div>
+          <div class="np-name" id="npName"></div>
+          <button class="np-stop" id="npStop">Стоп</button>
+        </div>
+      </div>
+    </div>
+    <div class="pbook-cover" id="pbookCover">
+      <div class="pbook-emblem">Mood<em>Book</em></div>
+      <form class="pbook-search" id="pbookSearch">
+        <input id="pbookInput" type="text" placeholder="Яку книгу читаєш?" autocomplete="off" spellcheck="false"/>
+        <button type="submit">Розгорнути ✦</button>
+      </form>
+      <div class="pbook-hint" id="pbookHint">Впиши назву — і книга розкриється</div>
+    </div>
+  </div>
+</div>
+<iframe id="ytFrame" allow="autoplay; encrypted-media" title="player" style="position:fixed;width:1px;height:1px;left:-10px;bottom:-10px;opacity:0;pointer-events:none;border:0"></iframe>
 
 <div class="loader" id="loader"><div class="spark"></div><div class="lm">Заходимо до бібліотеки…</div></div>
 <div class="fallback" id="fallback">
@@ -369,6 +461,7 @@ function goTo(state){
   rig.dur=(state==='bookTop'||state==='room')?1.7:1.1;
   if(reduceMotion){rig.t=1;applyPath(1);rig.active=false;}
   updateUI(state);
+  if(reduceMotion)bookOnArrive(state);
 }
 function applyPath(tt){
   const path=rig.path; if(!path)return;
@@ -384,6 +477,7 @@ function updateUI(state){
   titleEl.classList.toggle('show',state==='bookTop');
   backBtn.classList.toggle('show',state!=='room');
   hintEl.style.opacity=(state==='room')?'1':'0';
+  bookOnState(state);
 }
 backBtn.addEventListener('click',()=>goTo('room'));
 window.addEventListener('keydown',e=>{if(e.key==='Escape')goTo('room');});
@@ -416,14 +510,17 @@ canvas.addEventListener('pointermove',e=>{
     tooltip.innerHTML='<small>'+o.userData.sub+'</small>'+o.userData.label;tooltip.style.opacity='1';}
   else tooltip.style.opacity='0';
 });
-let downX=0,downY=0,dragging=false;
+let downX=0,downY=0,dragging=false,lastNav=0;
+function navHotspot(cx,cy){
+  if(dragging||rig.state!=='room'||rig.active)return;
+  const o=pickAt(cx,cy);
+  if(o){tooltip.style.opacity='0';lastNav=Date.now();goTo(o.userData.action);}
+}
 canvas.addEventListener('pointerdown',e=>{downX=e.clientX;downY=e.clientY;dragging=false;});
 canvas.addEventListener('pointermove',e=>{if(Math.abs(e.clientX-downX)>6||Math.abs(e.clientY-downY)>6)dragging=true;});
-canvas.addEventListener('pointerup',e=>{
-  if(dragging||rig.state!=='room'||rig.active)return;
-  const o=pickAt(e.clientX,e.clientY);
-  if(o){tooltip.style.opacity='0';goTo(o.userData.action);}
-});
+canvas.addEventListener('pointerup',e=>navHotspot(e.clientX,e.clientY));
+// fallback for environments where pointer events don't fire (some automation, older touch)
+canvas.addEventListener('click',e=>{if(Date.now()-lastNav<500)return;navHotspot(e.clientX,e.clientY);});
 
 /* ============================================================
    MOUSE PARALLAX (subtle look-around in room)
@@ -457,7 +554,7 @@ function tick(){
   if(rig.active){
     rig.elapsed+=dt; rig.t=Math.min(rig.elapsed/rig.dur,1);
     applyPath(rig.t);
-    if(rig.t>=1)rig.active=false;
+    if(rig.t>=1){rig.active=false;bookOnArrive(rig.state);}
   }
   px+=(tpx-px)*0.05; py+=(tpy-py)*0.05;
   const par=(rig.state==='room'&&!rig.active)?1:0;
@@ -469,13 +566,128 @@ function tick(){
   requestAnimationFrame(tick);
 }
 
+/* ============================================================
+   PHYSICAL BOOK — search + open + tracklist (Phase 2)
+   Reuses the real serverless API: /api/claude + /api/search
+============================================================ */
+const bookLayer=document.getElementById('bookLayer');
+const pbook=document.getElementById('pbook');
+const pbookCover=document.getElementById('pbookCover');
+const pbookInput=document.getElementById('pbookInput');
+const pbookHint=document.getElementById('pbookHint');
+const bkName=document.getElementById('bkName');
+const bkAuthor=document.getElementById('bkAuthor');
+const tracksBody=document.getElementById('tracksBody');
+const moodRow=document.getElementById('moodRow');
+const genreRow=document.getElementById('genreRow');
+const npBar=document.getElementById('np');
+const npName=document.getElementById('npName');
+const ytFrame=document.getElementById('ytFrame');
+
+const BST={info:null,tracks:[],moods:[],activeMood:null,activeGenre:null};
+const GENRES=['Амбієнт','Піано','Лоу-фай','Струнні','Класика','Гітара'];
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+async function api(path,opts){const r=await fetch(path,opts);if(!r.ok)throw{status:r.status};return r.json();}
+const CORE={
+  identify:q=>api('/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({book:q,identifyOnly:true})}),
+  tracks:(info,focus)=>api('/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({book:info.titleEn,author:info.author,mood:focus||'',unverified:info.confidence!=='high'})}),
+  moods:info=>api('/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({book:info.titleEn,author:info.author,moodsOnly:true})}),
+  video:q=>api('/api/search?q='+encodeURIComponent(q)),
+};
+
+function bookOnState(state){ if(state!=='bookTop') closeBook(); }
+function bookOnArrive(state){ if(state==='bookTop') openSearch(); }
+function openSearch(){
+  pbook.classList.remove('open');
+  bookLayer.classList.add('show');
+  setTimeout(()=>{try{pbookInput.focus({preventScroll:true});}catch(e){}},350);
+}
+function closeBook(){ bookLayer.classList.remove('show'); pbook.classList.remove('open'); stopPlay(); }
+
+document.getElementById('spreadClose').addEventListener('click',()=>goTo('room'));
+document.getElementById('pbookSearch').addEventListener('submit',e=>{e.preventDefault();const q=pbookInput.value.trim();if(q)runSearch(q);});
+document.getElementById('npStop').addEventListener('click',stopPlay);
+
+async function runSearch(q){
+  pbookCover.classList.add('loading');
+  pbookHint.innerHTML='<span class="mini-spin"></span> Шукаю книгу…';
+  try{
+    let info=null; try{info=await CORE.identify(q);}catch(e){}
+    if(!info||!info.titleEn){info={titleEn:q,titleOriginal:q,author:'',confidence:'low'};}
+    BST.info=info; BST.activeMood=null; BST.activeGenre=null;
+    const [tr,md]=await Promise.all([CORE.tracks(info).catch(()=>null),CORE.moods(info).catch(()=>null)]);
+    if(!tr||!tr.tracks||!tr.tracks.length)throw{status:'empty'};
+    BST.tracks=tr.tracks; BST.moods=(md&&md.moods)||[];
+    bkName.textContent=info.titleOriginal||info.titleEn||q;
+    bkAuthor.textContent=info.author?('— '+info.author):(info.confidence==='low'?'— автор невідомий':'');
+    document.getElementById('bookMsg').textContent='';
+    renderTracks(); renderMoods(); renderGenres();
+    pbook.classList.add('open');
+    pbookHint.innerHTML='Впиши назву — і книга розкриється';
+  }catch(err){
+    pbookHint.textContent=(err&&err.status===429)?'Забагато запитів — спробуй за хвилину.':'Не вдалося. Спробуй іншу назву.';
+  }finally{
+    pbookCover.classList.remove('loading');
+  }
+}
+function renderTracks(){
+  tracksBody.innerHTML='';
+  BST.tracks.forEach((t,i)=>{
+    const el=document.createElement('div');el.className='track';el.dataset.i=i;
+    el.innerHTML='<span class="n">'+(i+1)+'</span><div class="info"><div class="tt">'+esc(t.name)+'</div><div class="tv">'+esc(t.vibe||'')+'</div></div><button class="play" aria-label="Грати">▶</button>';
+    el.addEventListener('click',()=>playTrack(i));
+    tracksBody.appendChild(el);
+  });
+}
+function renderMoods(){
+  moodRow.innerHTML='';
+  if(!BST.moods.length){moodRow.innerHTML='<span style="font-size:.72rem;color:#a07a4a">—</span>';return;}
+  BST.moods.forEach(m=>{
+    const b=document.createElement('button');b.className='pill'+(BST.activeMood===m?' on':'');b.textContent=m;
+    b.addEventListener('click',()=>requery(m,null));moodRow.appendChild(b);
+  });
+}
+function renderGenres(){
+  genreRow.innerHTML='';
+  GENRES.forEach(g=>{
+    const b=document.createElement('button');b.className='pill'+(BST.activeGenre===g?' on g':'');b.textContent=g;
+    b.addEventListener('click',()=>requery(null,g));genreRow.appendChild(b);
+  });
+}
+async function requery(mood,genre){
+  if(!BST.info)return;
+  BST.activeMood=mood; BST.activeGenre=genre; renderMoods(); renderGenres();
+  tracksBody.innerHTML='<div style="padding:18px;text-align:center"><span class="mini-spin"></span></div>';
+  try{const tr=await CORE.tracks(BST.info,mood||genre||'');BST.tracks=(tr&&tr.tracks)||[];renderTracks();}
+  catch(e){tracksBody.innerHTML='<div class="book-msg">Не вдалося оновити треки.</div>';}
+}
+async function playTrack(i){
+  const t=BST.tracks[i]; if(!t)return;
+  document.querySelectorAll('.track').forEach(el=>el.classList.remove('playing'));
+  const row=document.querySelector('.track[data-i="'+i+'"]');
+  if(row){row.classList.add('playing');row.querySelector('.play').innerHTML='<span class="mini-spin" style="width:12px;height:12px;border-width:2px"></span>';}
+  try{
+    const v=await CORE.video(t.scQuery||t.name);
+    if(v&&v.videoId){
+      ytFrame.src='https://www.youtube.com/embed/'+v.videoId+'?autoplay=1&rel=0&modestbranding=1&playsinline=1';
+      npBar.style.display='flex'; npName.textContent=t.name;
+      if(row)row.querySelector('.play').innerHTML='❚❚';
+    }else if(row){row.querySelector('.play').innerHTML='▶';}
+  }catch(e){ if(row)row.querySelector('.play').innerHTML='▶'; }
+}
+function stopPlay(){
+  ytFrame.src=''; npBar.style.display='none';
+  document.querySelectorAll('.track.playing').forEach(el=>{el.classList.remove('playing');const p=el.querySelector('.play');if(p)p.innerHTML='▶';});
+}
+
 /* boot */
 resize();
 rig.path=[curKF(),KF.room];
 rig.curPos.copy(KF.room.pos);rig.curTgt.copy(KF.room.tgt);rig.curFov=KF.room.fov;
 requestAnimationFrame(tick);
 setTimeout(()=>loader.classList.add('hide'),450);
-window.MOODBOOK={goTo,rig,KF,renderer,scene,camera,proxies,bookCount:bookMatrices.length};
+window.MOODBOOK={goTo,rig,KF,renderer,scene,camera,proxies,bookCount:bookMatrices.length,
+  book:{openSearch,runSearch,closeBook,playTrack,BST}};
 })();
 </script>
 </body>
