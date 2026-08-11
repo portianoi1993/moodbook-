@@ -683,12 +683,12 @@ const CSS_S=2.1/560;                    // px→world: the cover element is 560p
 const coverObj=new THREE.CSS3DObject(pbookCover);
 coverObj.scale.setScalar(CSS_S);
 coverObj.position.set(0,BOOKY+0.17,DESK_Z);
-coverObj.rotation.set(-Math.PI/2,0,Math.PI);       // lie flat on the desk, facing up
+coverObj.rotation.set(-Math.PI/2,0,0);       // lie flat on the desk, facing up
 coverObj.visible=false; cssScene.add(coverObj);
 const spreadObj=new THREE.CSS3DObject(spreadEl);
 spreadObj.scale.setScalar(CSS_S);
 spreadObj.position.set(0,BOOKY+0.19,DESK_Z);
-spreadObj.rotation.set(-Math.PI/2,0,Math.PI);
+spreadObj.rotation.set(-Math.PI/2,0,0);
 spreadObj.visible=false; cssScene.add(spreadObj);
 
 function openSearch(){
