@@ -123,7 +123,7 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:#160e08;color:var(--c
 #pbookCover .pbook-search button{font-size:1.05rem;padding:0 24px}
 #pbookCover .pbook-hint{font-size:1.05rem}
 #spread{width:1160px;height:772px;position:relative;inset:auto;opacity:1;transform:none;pointer-events:auto;
-  border:8px solid var(--ink);border-radius:14px;box-shadow:0 40px 90px rgba(0,0,0,.55)}
+  border:8px solid var(--ink);border-radius:14px;box-shadow:0 40px 90px rgba(0,0,0,.55);transition:opacity .5s ease}
 #spread .page{padding:34px 40px}
 #spread .bk-name{font-size:2rem}
 #spread .track .tt{font-size:1.1rem}
@@ -531,7 +531,7 @@ makeWindow(RIGHTX,SWINY,0.4, SWINW, upperH*0.62, -Math.PI/2); // right side wall
 /* ============================================================
    DESK + CLOSED BOOK  (center, against back wall)
 ============================================================ */
-const DESK_Z=BACK+2.4, DESK_H=3.0;
+const DESK_Z=-6.5, DESK_H=3.0;   // desk moved forward onto the rug — the centerpiece, not tucked at the back wall
 const desk=new THREE.Group();landmarks.add(desk);
 box(5.8,0.22,2.8,M.deskTop,0,DESK_H,DESK_Z,desk);              // top (larger, clearer anchor)
 box(0.24,DESK_H,0.24,M.post,-2.6,DESK_H/2,DESK_Z-1.1,desk);    // legs
@@ -563,9 +563,10 @@ let coverT=0, coverTarget=0;   // 3D cover open state: 0 closed → 1 open
 const lampGlow=new THREE.PointLight(0xffb060, 7, 10, 2.0);
 lampGlow.position.set(-1.7,DESK_H+1.3,DESK_Z-0.4);atmosphere.add(lampGlow);
 
-/* floor lamp (торшер) — the physical day/night switch */
+/* floor lamp (торшер) — stands beside the desk on the RIGHT; the physical day/night switch */
+const LAMP_X=3.9, LAMP_Z=DESK_Z+0.4;
 (function(){
-  const g=new THREE.Group();g.position.set(-4.8,0,2.0);landmarks.add(g);
+  const g=new THREE.Group();g.position.set(LAMP_X,0,LAMP_Z);landmarks.add(g);
   box(0.9,0.16,0.9,M.post,0,0.08,0,g);              // base
   box(0.14,4.4,0.14,M.post,0,2.2,0,g);              // stem
   const shade=new THREE.Mesh(new THREE.ConeGeometry(0.95,1.1,18,1,true),toon(0xd9a441));
@@ -591,7 +592,7 @@ if(!isMobile){sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);
   sun.shadow.bias=-0.0004;}
 const winGlow=new THREE.PointLight(0xffca6e,3.6,36,2);winGlow.position.set(0,WINY,BACK+3);atmosphere.add(winGlow);
 const fill=new THREE.PointLight(0xffc079,0.4,34,1.8);fill.position.set(0,7,-2);scene.add(fill);
-floorLampGlow=new THREE.PointLight(0xffbf7a,0,18,2);floorLampGlow.position.set(-4.8,4.3,2.0);atmosphere.add(floorLampGlow);
+floorLampGlow=new THREE.PointLight(0xffbf7a,0,18,2);floorLampGlow.position.set(LAMP_X,4.3,LAMP_Z);atmosphere.add(floorLampGlow);
 applyEnv();  // sync the day baseline now that all lights/materials exist
 
 /* dust motes */
@@ -609,8 +610,8 @@ applyEnv();  // sync the day baseline now that all lights/materials exist
 ============================================================ */
 const V=(x,y,z)=>new THREE.Vector3(x,y,z);
 const KF={
-  room:    { pos:V(0,5.8,12),  tgt:V(0,7.6,-9), fov:58 },
-  approach:{ pos:V(0,4.8,-1),  tgt:V(0,3.4,DESK_Z), fov:52 },
+  room:    { pos:V(0,5.0,9),  tgt:V(0,3.6,DESK_Z), fov:54 },
+  approach:{ pos:V(0,6.4,2.5),  tgt:V(0,3.2,DESK_Z), fov:50 },
   bookTop: { pos:V(0,BOOKY+5.4,DESK_Z+0.7), tgt:V(0,BOOKY-0.05,DESK_Z), fov:42 },
   library: { pos:V(-1.2,5.4,3.5), tgt:V(LEFTX+2.2,5.4,-4), fov:62 },
   profile: { pos:V(1.2,5.4,3.5),  tgt:V(RIGHTX-2.2,5.4,-4), fov:62 },
@@ -675,7 +676,7 @@ function makeAction(w,h,d,x,y,z,onClick,label,sub){
   const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),new THREE.MeshBasicMaterial({visible:false}));
   m.position.set(x,y,z);m.userData={type:'action',onClick,label,sub};scene.add(m);actionProxies.push(m);return m;
 }
-makeAction(1.9,5.6,1.9, -4.8,2.8,2.0, toggleMode, 'Світло: день / ніч','Торшер');
+makeAction(1.9,5.6,1.9, LAMP_X,2.8,LAMP_Z, toggleMode, 'Світло: день / ніч','Торшер');
 const hotspots=proxies.concat(actionProxies);
 function pickAt(cx,cy){
   ndc.x=(cx/window.innerWidth)*2-1; ndc.y=-(cy/window.innerHeight)*2+1;
@@ -722,10 +723,10 @@ function resize(){
   cssRenderer.setSize(w,h);
   camera.aspect=w/h;
   const asp=w/h, wide=asp>1.7, narrow=w<720;
-  // centered on the desk, aimed low enough that the desk stays in view; window sits above
-  KF.room.pos.set(0, wide?4.4:4.9, (wide?12.5:11)*(narrow?1.1:1));
-  KF.room.tgt.set(0, wide?5.4:6.4, DESK_Z);
-  KF.room.fov=(wide?46:52)*(narrow?1.08:1);
+  // frame the DESK as the centered hero on the rug; shelves wrap the sides, window in the upper background
+  KF.room.pos.set(0, wide?4.7:5.1, (wide?10:9)*(narrow?1.12:1));
+  KF.room.tgt.set(0, 3.7, DESK_Z);
+  KF.room.fov=(wide?50:56)*(narrow?1.06:1);
   if(rig.state==='room'&&!rig.active){rig.curPos.copy(KF.room.pos);rig.curTgt.copy(KF.room.tgt);rig.curFov=KF.room.fov;}
   camera.updateProjectionMatrix();
 }
@@ -807,10 +808,19 @@ spreadObj.rotation.set(-Math.PI/2,0,0);
 spreadObj.visible=false; cssScene.add(spreadObj);
 
 function openSearch(){
-  coverObj.visible=true; spreadObj.visible=false; coverTarget=0;
+  coverObj.visible=true; spreadObj.visible=false; spreadEl.style.opacity='0'; coverTarget=0;
   setTimeout(()=>{try{pbookInput.focus({preventScroll:true});}catch(e){}},550);
 }
-function closeBook(){ coverObj.visible=false; spreadObj.visible=false; coverTarget=0; stopPlay(); }
+function closeBook(){ coverObj.visible=false; spreadObj.visible=false; spreadEl.style.opacity='0'; coverTarget=0; stopPlay(); }
+// reveal the printed spread only after the cover has swung up, so it reads as the book opening (not a panel popping in)
+function openSpreadSequenced(){
+  spreadEl.style.opacity='0';
+  const delay=reduceMotion?0:520;
+  setTimeout(()=>{
+    spreadObj.visible=true;
+    requestAnimationFrame(()=>{ spreadEl.style.opacity='1'; });
+  }, delay);
+}
 
 document.getElementById('spreadClose').addEventListener('click',()=>goTo('room'));
 document.getElementById('pbookSearch').addEventListener('submit',e=>{e.preventDefault();const q=pbookInput.value.trim();if(q)runSearch(q);});
@@ -830,7 +840,11 @@ async function runSearch(q){
     bkAuthor.textContent=info.author?('— '+info.author):(info.confidence==='low'?'— автор невідомий':'');
     document.getElementById('bookMsg').textContent='';
     renderTracks(); renderMoods(); renderGenres();
-    coverObj.visible=false; spreadObj.visible=true; playPageSound(); coverTarget=1;   // open the 3D book
+    // PHYSICAL OPENING: the front cover flips first, then the printed spread settles onto the pages
+    coverObj.visible=false;      // remove the search face from the cover
+    coverTarget=1;               // 3D front cover physically swings open about the spine
+    playPageSound();             // page-turn sound at the start of the opening
+    openSpreadSequenced();
     pbookHint.innerHTML='Впиши назву — і книга розкриється';
   }catch(err){
     pbookHint.textContent=(err&&err.status===429)?'Забагато запитів — спробуй за хвилину.':'Не вдалося. Спробуй іншу назву.';
