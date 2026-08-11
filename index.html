@@ -61,11 +61,10 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:#160e08;color:var(--c
 .fallback p{font-size:.85rem;color:var(--cream-dk);max-width:420px;line-height:1.6}
 
 /* ---- PHYSICAL BOOK (Phase 2): closed cover with search + open spread ---- */
-.bookLayer{position:fixed;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;padding:20px;
-  opacity:0;pointer-events:none;transition:opacity .5s ease;
-  background:radial-gradient(60% 60% at 50% 50%, rgba(10,6,2,.12), rgba(8,4,1,.5))}
+.bookLayer{position:fixed;inset:0;z-index:20;opacity:0;pointer-events:none;transition:opacity .4s ease}
 .bookLayer.show{opacity:1;pointer-events:auto}
-.pbook{position:relative;width:min(880px,94vw);height:min(560px,80vh);perspective:2200px}
+.pbook{position:absolute;perspective:1600px;
+  transition:left .55s cubic-bezier(.2,1,.3,1),top .55s cubic-bezier(.2,1,.3,1),width .55s cubic-bezier(.2,1,.3,1),height .55s cubic-bezier(.2,1,.3,1)}
 .pbook-cover{position:absolute;inset:0;border-radius:10px;background:linear-gradient(135deg,#b0472a,#8a3a22);
   border:4px solid var(--ink);box-shadow:0 30px 70px rgba(0,0,0,.55),inset 0 0 0 10px rgba(255,220,170,.12),inset 0 0 60px rgba(0,0,0,.35);
   display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;
@@ -478,7 +477,7 @@ const V=(x,y,z)=>new THREE.Vector3(x,y,z);
 const KF={
   room:    { pos:V(0,5.8,12),  tgt:V(0,7.6,-9), fov:58 },
   approach:{ pos:V(0,4.8,-1),  tgt:V(0,3.4,DESK_Z), fov:52 },
-  bookTop: { pos:V(0,8.6,DESK_Z+1.6), tgt:V(0,3.05,DESK_Z-0.25), fov:46 },
+  bookTop: { pos:V(0,BOOKY+6.2,DESK_Z+1.05), tgt:V(0,BOOKY-0.1,DESK_Z-0.05), fov:44 },
   library: { pos:V(-1.2,5.4,3.5), tgt:V(LEFTX+2.2,5.4,-4), fov:62 },
   profile: { pos:V(1.2,5.4,3.5),  tgt:V(RIGHTX-2.2,5.4,-4), fov:62 },
 };
@@ -583,6 +582,7 @@ function resize(){
   KF.room.fov=(wide?46:52)*(narrow?1.08:1);
   if(rig.state==='room'&&!rig.active){rig.curPos.copy(KF.room.pos);rig.curTgt.copy(KF.room.tgt);rig.curFov=KF.room.fov;}
   camera.updateProjectionMatrix();
+  try{ if(bookLayer.classList.contains('show')) placeBook(pbook.classList.contains('open')); }catch(e){}
 }
 window.addEventListener('resize',resize);
 
@@ -640,10 +640,35 @@ const CORE={
 
 function bookOnState(state){ if(state!=='bookTop') closeBook(); }
 function bookOnArrive(state){ if(state==='bookTop') openSearch(); }
+
+// page-turn sound — hook ready; drop the file at assets/sfx/page-turn.mp3 and set the src below
+let pageSound=null; // e.g. pageSound=new Audio('assets/sfx/page-turn.mp3');
+function playPageSound(){ if(pageSound){ try{ pageSound.currentTime=0; const p=pageSound.play(); if(p&&p.catch)p.catch(()=>{}); }catch(e){} } }
+
+// align the DOM book exactly onto the physical 3D book on the desk (top-down view)
+function bookRect(open){
+  const cam=camera.clone();
+  cam.position.copy(KF.bookTop.pos); cam.lookAt(KF.bookTop.tgt);
+  cam.fov=KF.bookTop.fov; cam.aspect=window.innerWidth/window.innerHeight;
+  cam.updateProjectionMatrix(); cam.updateMatrixWorld();
+  const y=BOOKY+0.2, hw=open?2.2:1.15, hd=1.55;
+  const P=(x,z)=>{const v=new THREE.Vector3(x,y,z).project(cam);return[(v.x*0.5+0.5)*window.innerWidth,(-v.y*0.5+0.5)*window.innerHeight];};
+  const pts=[P(-hw,DESK_Z-hd),P(hw,DESK_Z-hd),P(hw,DESK_Z+hd),P(-hw,DESK_Z+hd)];
+  let a=[1e9,1e9,-1e9,-1e9];
+  pts.forEach(p=>{a[0]=Math.min(a[0],p[0]);a[1]=Math.min(a[1],p[1]);a[2]=Math.max(a[2],p[0]);a[3]=Math.max(a[3],p[1]);});
+  const px=(a[2]-a[0])*0.04, py=(a[3]-a[1])*0.04;
+  return {left:a[0]-px, top:a[1]-py, w:(a[2]-a[0])+2*px, h:(a[3]-a[1])+2*py};
+}
+function placeBook(open){
+  const r=bookRect(open);
+  pbook.style.left=r.left+'px'; pbook.style.top=r.top+'px';
+  pbook.style.width=r.w+'px'; pbook.style.height=r.h+'px';
+}
 function openSearch(){
   pbook.classList.remove('open');
+  placeBook(false);
   bookLayer.classList.add('show');
-  setTimeout(()=>{try{pbookInput.focus({preventScroll:true});}catch(e){}},350);
+  setTimeout(()=>{try{pbookInput.focus({preventScroll:true});}catch(e){}},400);
 }
 function closeBook(){ bookLayer.classList.remove('show'); pbook.classList.remove('open'); stopPlay(); }
 
@@ -665,6 +690,7 @@ async function runSearch(q){
     bkAuthor.textContent=info.author?('— '+info.author):(info.confidence==='low'?'— автор невідомий':'');
     document.getElementById('bookMsg').textContent='';
     renderTracks(); renderMoods(); renderGenres();
+    placeBook(true); playPageSound();
     pbook.classList.add('open');
     pbookHint.innerHTML='Впиши назву — і книга розкриється';
   }catch(err){
