@@ -148,13 +148,13 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:#160e08;color:var(--c
 <div class="grade"></div>
 
 <div class="ui">
-  <div class="badge">МАКЕТ • <b>MoodBook</b> Immersive · Фаза 3</div>
+  <div class="badge">МАКЕТ • <b>MoodBook</b> Immersive · Фаза 4</div>
   <div class="title" id="title">
     <div class="m">Mood<em>Book</em></div>
     <div class="tag">Музика для кожної сторінки</div>
   </div>
   <button class="back-btn" id="backBtn">← До кімнати</button>
-  <div class="hint" id="hint">Клікни на <b>стіл із книгою</b> — камера підійде ближче. Тягни мишею — роззирнись.</div>
+  <div class="hint" id="hint">Клікни на <b>стіл із книгою</b>, щоб шукати. Клікни на <b>торшер</b> — день ⇄ ніч. Тягни мишею — роззирнись.</div>
 </div>
 <div class="tooltip" id="tooltip"></div>
 
@@ -215,6 +215,83 @@ const tooltip=document.getElementById('tooltip');
 const reduceMotion=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 if(typeof THREE==='undefined'||!window.WebGLRenderingContext){fallback.classList.add('show');loader.classList.add('hide');return;}
+
+/* ============================================================
+   PHASE 0 — app state + central audio-event system
+   All sound goes through SFX.play(name). Drop a file, set its src
+   in `defs` (or via SFX.set), and every hook picks it up. No file = silent no-op.
+============================================================ */
+const APP={ mode:'day', savedBooks:[], user:null };
+
+const SFX=(function(){
+  const defs={
+    'page-turn':{src:null,vol:0.85},   // assets/sfx/page-turn.mp3
+    'purr':     {src:null,vol:0.70},   // assets/sfx/purr.mp3
+    'pop':      {src:null,vol:0.60},   // assets/sfx/pop.mp3
+    'lamp':     {src:null,vol:0.45},   // assets/sfx/lamp-switch.mp3
+  };
+  const pool={};
+  return {
+    defs,
+    set(name,src,vol){ defs[name]=defs[name]||{src:null,vol:0.7}; defs[name].src=src; if(vol!=null)defs[name].vol=vol; delete pool[name]; },
+    play(name){
+      const d=defs[name]; if(!d||!d.src)return;
+      let a=pool[name]; if(!a){a=new Audio(d.src);a.volume=d.vol;pool[name]=a;}
+      try{a.currentTime=0;const p=a.play();if(p&&p.catch)p.catch(()=>{});}catch(e){}
+    }
+  };
+})();
+
+/* ============================================================
+   PHASE 1 — day/night environment: two profiles + a lerped transition.
+   setMode('day'|'night') tweens lights, fog, sky glass & stars together —
+   a real environmental change, not a boolean flip. Driven by the floor lamp.
+============================================================ */
+const DAY={
+  sun:1.95, sunCol:0xffc266, hemi:0.24, amb:0.14, winGlow:3.6, fill:0.40,
+  deskLamp:0.0, floorLamp:0.0, bg:0x1a0f05, fog:0x241305,
+  winGlass:0xffd47e, winGlowCol:0xffcf7a, winGlowOpacity:0.40, stars:0.0, exposure:0.84,
+};
+const NIGHT={
+  sun:0.30, sunCol:0x9fb4d8, hemi:0.12, amb:0.07, winGlow:0.70, fill:0.14,
+  deskLamp:7.0, floorLamp:6.0, bg:0x0a0812, fog:0x0b0a1a,
+  winGlass:0x101a3a, winGlowCol:0x2a3a66, winGlowOpacity:0.55, stars:1.0, exposure:0.95,
+};
+const ENV_NUM=['sun','hemi','amb','winGlow','fill','deskLamp','floorLamp','winGlowOpacity','stars','exposure'];
+const ENV_COL=['sunCol','bg','fog','winGlass','winGlowCol'];
+const curEnv=Object.assign({},DAY);
+let winGlassMats=[], winGlowMats=[], starsMats=[], floorLampGlow=null, floorBulbMat=null;
+const _ecA=new THREE.Color(), _ecB=new THREE.Color();
+function applyEnv(){
+  sun.intensity=curEnv.sun; sun.color.setHex(curEnv.sunCol);
+  hemi.intensity=curEnv.hemi; amb.intensity=curEnv.amb;
+  winGlow.intensity=curEnv.winGlow; fill.intensity=curEnv.fill;
+  lampGlow.intensity=curEnv.deskLamp;
+  if(floorLampGlow)floorLampGlow.intensity=curEnv.floorLamp;
+  scene.background.setHex(curEnv.bg); scene.fog.color.setHex(curEnv.fog);
+  winGlassMats.forEach(m=>m.color.setHex(curEnv.winGlass));
+  winGlowMats.forEach(m=>{m.color.setHex(curEnv.winGlowCol);m.opacity=curEnv.winGlowOpacity;});
+  starsMats.forEach(m=>{m.opacity=curEnv.stars;});
+  if(floorBulbMat)floorBulbMat.opacity=Math.min(1,curEnv.floorLamp/5);
+  renderer.toneMappingExposure=curEnv.exposure;
+}
+let envFrom=null, envElapsed=0, envDur=1.6, envActive=false;
+function setMode(mode){
+  if(mode!=='day'&&mode!=='night')return;
+  APP.mode=mode; envFrom=Object.assign({},curEnv); envElapsed=0; envActive=true;
+  SFX.play('lamp');
+  if(reduceMotion){Object.assign(curEnv, mode==='night'?NIGHT:DAY);applyEnv();envActive=false;}
+}
+function toggleMode(){ setMode(APP.mode==='day'?'night':'day'); }
+function tickEnv(dt){
+  if(!envActive)return;
+  envElapsed+=dt; let t=Math.min(envElapsed/envDur,1); t=easeInOut(t);
+  const to=(APP.mode==='night')?NIGHT:DAY;
+  ENV_NUM.forEach(k=>curEnv[k]=envFrom[k]+(to[k]-envFrom[k])*t);
+  ENV_COL.forEach(k=>{_ecA.setHex(envFrom[k]);_ecB.setHex(to[k]);_ecA.lerp(_ecB,t);curEnv[k]=_ecA.getHex();});
+  applyEnv();
+  if(t>=1)envActive=false;
+}
 
 /* ============================================================
    RENDERER + SCENE
@@ -376,6 +453,7 @@ function buildBookcase(x,z,rotY, width, height, _rows, yBase){
 // two-story shelving: lower tier, a gallery walkway, then an upper tier
 const TIER=8.6, LEDGE=0.9, upperH=H-TIER-LEDGE;
 const WINW=6.0, WINY=TIER+LEDGE+upperH*0.44;     // centered back-wall window (above the desk)
+const SWINW=5.0, SWINY=TIER+LEDGE+upperH*0.5;    // side window on the right wall (day/night sky)
 function ledgeBeam(w,x,z,rotY){                    // real gallery balcony: walkway slab + railing
   const g=new THREE.Group();g.position.set(x,TIER,z);g.rotation.y=rotY;landmarks.add(g);
   box(w,0.5,1.4,M.plank,0,0.25,0.5,g);             // walkway floor jutting into the room
@@ -394,26 +472,38 @@ buildBookcase(LEFTX+0.42, 0.4, Math.PI/2, D-0.8, TIER, 0);
 buildBookcase(LEFTX+0.42, 0.4, Math.PI/2, D-0.8, upperH, 0, TIER+LEDGE);
 ledgeBeam(D-0.8, LEFTX+0.9, 0.4, Math.PI/2);
 buildBookcase(RIGHTX-0.42, 0.4, -Math.PI/2, D-0.8, TIER, 0);
-buildBookcase(RIGHTX-0.42, 0.4, -Math.PI/2, D-0.8, upperH, 0, TIER+LEDGE);
+// upper right tier split into two segments, leaving a centered gap for the side window
+const rSegW=((D-0.8)-SWINW-0.7)/2, rSegOff=SWINW/2+0.35+rSegW/2;
+buildBookcase(RIGHTX-0.42, 0.4-rSegOff, -Math.PI/2, rSegW, upperH, 0, TIER+LEDGE);
+buildBookcase(RIGHTX-0.42, 0.4+rSegOff, -Math.PI/2, rSegW, upperH, 0, TIER+LEDGE);
 ledgeBeam(D-0.8, RIGHTX-0.9, 0.4, -Math.PI/2);
-// CENTERED WINDOW high on the back wall, above the desk (reference-style focal point)
-(function(){
-  const wh=upperH*0.82;
-  const glass=new THREE.Mesh(new THREE.PlaneGeometry(WINW,wh),new THREE.MeshBasicMaterial({color:0xffd47e}));
-  glass.position.set(0,WINY,BACK+0.12);landmarks.add(glass);
-  const glow=new THREE.Mesh(new THREE.PlaneGeometry(WINW+3.5,wh+3.5),
-    new THREE.MeshBasicMaterial({color:0xffcf7a,transparent:true,opacity:0.4,blending:THREE.AdditiveBlending,depthWrite:false}));
-  glow.position.set(0,WINY,BACK+0.22);landmarks.add(glow);
-  const fr=new THREE.Group();fr.position.set(0,WINY,BACK+0.16);landmarks.add(fr);
-  box(WINW+0.8,0.5,0.5,M.post,0,wh/2+0.28,0,fr);
-  box(WINW+0.8,0.5,0.5,M.post,0,-wh/2-0.28,0,fr);
-  box(0.5,wh+1.1,0.5,M.post,WINW/2+0.28,0,0,fr);
-  box(0.5,wh+1.1,0.5,M.post,-WINW/2-0.28,0,0,fr);
-  box(0.16,wh,0.3,M.post,0,0,0,fr);
-  box(WINW,0.16,0.3,M.post,0,0,0,fr);
-  box(WINW,0.16,0.3,M.post,0,wh/4,0,fr);
-  box(WINW,0.16,0.3,M.post,0,-wh/4,0,fr);
-})();
+// WINDOWS — reusable frame+glass+glow+stars; glass/glow react to day/night, stars fade in at night
+function makeStars(parent,w,h,zoff){
+  const N=90,g=new THREE.BufferGeometry(),p=new Float32Array(N*3);
+  for(let i=0;i<N;i++){p[i*3]=(Math.random()-0.5)*w;p[i*3+1]=(Math.random()-0.5)*h;p[i*3+2]=zoff+Math.random()*0.3;}
+  g.setAttribute('position',new THREE.BufferAttribute(p,3));
+  const m=new THREE.PointsMaterial({color:0xfff3d0,size:0.09,transparent:true,opacity:0,depthWrite:false,blending:THREE.AdditiveBlending});
+  parent.add(new THREE.Points(g,m));starsMats.push(m);
+}
+function makeWindow(cx,cy,cz,w,h,rotY){
+  const grp=new THREE.Group();grp.position.set(cx,cy,cz);grp.rotation.y=rotY;landmarks.add(grp);
+  const glassMat=new THREE.MeshBasicMaterial({color:DAY.winGlass});
+  const glass=new THREE.Mesh(new THREE.PlaneGeometry(w,h),glassMat);glass.position.z=0.12;grp.add(glass);
+  const glowMat=new THREE.MeshBasicMaterial({color:DAY.winGlowCol,transparent:true,opacity:DAY.winGlowOpacity,blending:THREE.AdditiveBlending,depthWrite:false});
+  const glow=new THREE.Mesh(new THREE.PlaneGeometry(w+3.5,h+3.5),glowMat);glow.position.z=0.22;grp.add(glow);
+  box(w+0.8,0.5,0.5,M.post,0,h/2+0.28,0.16,grp);
+  box(w+0.8,0.5,0.5,M.post,0,-h/2-0.28,0.16,grp);
+  box(0.5,h+1.1,0.5,M.post,w/2+0.28,0,0.16,grp);
+  box(0.5,h+1.1,0.5,M.post,-w/2-0.28,0,0.16,grp);
+  box(0.16,h,0.3,M.post,0,0,0.16,grp);
+  box(w,0.16,0.3,M.post,0,0,0.16,grp);
+  box(w,0.16,0.3,M.post,0,h/4,0.16,grp);
+  box(w,0.16,0.3,M.post,0,-h/4,0.16,grp);
+  makeStars(grp,w*0.9,h*0.9,0.4);
+  winGlassMats.push(glassMat);winGlowMats.push(glowMat);
+}
+makeWindow(0,WINY,BACK, WINW, upperH*0.82, 0);               // back wall (the focal window above the desk)
+makeWindow(RIGHTX,SWINY,0.4, SWINW, upperH*0.62, -Math.PI/2); // right side wall
 
 /* create the single InstancedMesh for all books (+ ink outline hull) */
 (function(){
@@ -473,11 +563,23 @@ let coverT=0, coverTarget=0;   // 3D cover open state: 0 closed → 1 open
 const lampGlow=new THREE.PointLight(0xffb060, 7, 10, 2.0);
 lampGlow.position.set(-1.7,DESK_H+1.3,DESK_Z-0.4);atmosphere.add(lampGlow);
 
+/* floor lamp (торшер) — the physical day/night switch */
+(function(){
+  const g=new THREE.Group();g.position.set(-4.8,0,2.0);landmarks.add(g);
+  box(0.9,0.16,0.9,M.post,0,0.08,0,g);              // base
+  box(0.14,4.4,0.14,M.post,0,2.2,0,g);              // stem
+  const shade=new THREE.Mesh(new THREE.ConeGeometry(0.95,1.1,18,1,true),toon(0xd9a441));
+  shade.position.set(0,4.55,0);g.add(shade);        // open cone shade
+  const bulb=new THREE.Mesh(new THREE.CircleGeometry(0.8,20),
+    new THREE.MeshBasicMaterial({color:0xffe6a8,transparent:true,opacity:0,depthWrite:false,side:THREE.DoubleSide}));
+  bulb.rotation.x=Math.PI/2;bulb.position.set(0,4.05,0);g.add(bulb);floorBulbMat=bulb.material; // glows at night
+})();
+
 /* ============================================================
    LIGHTING
 ============================================================ */
-scene.add(new THREE.HemisphereLight(0x3a2610,0x120a03,0.24));
-scene.add(new THREE.AmbientLight(0xffc070,0.14));
+const hemi=new THREE.HemisphereLight(0x3a2610,0x120a03,0.24); scene.add(hemi);
+const amb=new THREE.AmbientLight(0xffc070,0.14); scene.add(amb);
 // warm daylight through the centered back window (from behind & above)
 const sun=new THREE.DirectionalLight(0xffc266, 1.95);
 sun.position.set(2.5, WINY+7, BACK-9);
@@ -489,6 +591,8 @@ if(!isMobile){sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);
   sun.shadow.bias=-0.0004;}
 const winGlow=new THREE.PointLight(0xffca6e,3.6,36,2);winGlow.position.set(0,WINY,BACK+3);atmosphere.add(winGlow);
 const fill=new THREE.PointLight(0xffc079,0.4,34,1.8);fill.position.set(0,7,-2);scene.add(fill);
+floorLampGlow=new THREE.PointLight(0xffbf7a,0,18,2);floorLampGlow.position.set(-4.8,4.3,2.0);atmosphere.add(floorLampGlow);
+applyEnv();  // sync the day baseline now that all lights/materials exist
 
 /* dust motes */
 (function(){
@@ -558,17 +662,25 @@ const raycaster=new THREE.Raycaster();
 const ndc=new THREE.Vector2();
 function makeProxy(w,h,d,x,y,z,action,label,sub){
   const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),new THREE.MeshBasicMaterial({visible:false}));
-  m.position.set(x,y,z);m.userData={action,label,sub};scene.add(m);return m;
+  m.position.set(x,y,z);m.userData={type:'nav',action,label,sub};scene.add(m);return m;
 }
 const proxies=[
   makeProxy(8,7,6, 0,3.2,DESK_Z, 'bookTop','Знайти книгу','Стіл'),
   makeProxy(1.8,H,D*0.7, LEFTX+1.4,H/2,-1, 'library','Моя бібліотека','Ліва стіна'),
   makeProxy(1.8,H,D*0.7, RIGHTX-1.4,H/2,-1, 'profile','Профіль','Права стіна'),
 ];
+// action hotspots — trigger an effect (not navigation); active in room view
+const actionProxies=[];
+function makeAction(w,h,d,x,y,z,onClick,label,sub){
+  const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),new THREE.MeshBasicMaterial({visible:false}));
+  m.position.set(x,y,z);m.userData={type:'action',onClick,label,sub};scene.add(m);actionProxies.push(m);return m;
+}
+makeAction(1.9,5.6,1.9, -4.8,2.8,2.0, toggleMode, 'Світло: день / ніч','Торшер');
+const hotspots=proxies.concat(actionProxies);
 function pickAt(cx,cy){
   ndc.x=(cx/window.innerWidth)*2-1; ndc.y=-(cy/window.innerHeight)*2+1;
   raycaster.setFromCamera(ndc,camera);
-  const hit=raycaster.intersectObjects(proxies,false)[0];
+  const hit=raycaster.intersectObjects(hotspots,false)[0];
   return hit?hit.object:null;
 }
 canvas.addEventListener('pointermove',e=>{
@@ -583,7 +695,10 @@ let downX=0,downY=0,dragging=false,lastNav=0;
 function navHotspot(cx,cy){
   if(dragging||rig.state!=='room'||rig.active)return;
   const o=pickAt(cx,cy);
-  if(o){tooltip.style.opacity='0';lastNav=Date.now();goTo(o.userData.action);}
+  if(!o)return;
+  tooltip.style.opacity='0'; lastNav=Date.now();
+  if(o.userData.type==='action')o.userData.onClick();
+  else goTo(o.userData.action);
 }
 canvas.addEventListener('pointerdown',e=>{downX=e.clientX;downY=e.clientY;dragging=false;});
 canvas.addEventListener('pointermove',e=>{if(Math.abs(e.clientX-downX)>6||Math.abs(e.clientY-downY)>6)dragging=true;});
@@ -629,6 +744,7 @@ function tick(){
     applyPath(rig.t);
     if(rig.t>=1){rig.active=false;bookOnArrive(rig.state);}
   }
+  tickEnv(dt);
   px+=(tpx-px)*0.05; py+=(tpy-py)*0.05;
   const par=(rig.state==='room'&&!rig.active)?1:0;
   camera.position.set(rig.curPos.x+px*0.3*par, rig.curPos.y-py*0.18*par, rig.curPos.z);
@@ -673,9 +789,8 @@ const CORE={
 function bookOnState(state){ if(state!=='bookTop') closeBook(); }
 function bookOnArrive(state){ if(state==='bookTop') openSearch(); }
 
-// page-turn sound — hook ready; drop the file at assets/sfx/page-turn.mp3 and set the src below
-let pageSound=null; // e.g. pageSound=new Audio('assets/sfx/page-turn.mp3');
-function playPageSound(){ if(pageSound){ try{ pageSound.currentTime=0; const p=pageSound.play(); if(p&&p.catch)p.catch(()=>{}); }catch(e){} } }
+// page-turn sound — routes through the central audio system (SFX.set('page-turn', 'assets/sfx/page-turn.mp3'))
+function playPageSound(){ SFX.play('page-turn'); }
 
 // ---- book pages as REAL DOM in 3D space (CSS3D), sitting on the physical book ----
 const spreadEl=document.getElementById('spread');
@@ -780,6 +895,7 @@ rig.curPos.copy(KF.room.pos);rig.curTgt.copy(KF.room.tgt);rig.curFov=KF.room.fov
 requestAnimationFrame(tick);
 setTimeout(()=>loader.classList.add('hide'),450);
 window.MOODBOOK={goTo,rig,KF,renderer,scene,camera,cssRenderer,cssScene,proxies,bookCount:bookMatrices.length,
+  APP,SFX,setMode,toggleMode,curEnv,applyEnv,_stepEnv:tickEnv,DAY,NIGHT,
   book:{openSearch,runSearch,closeBook,playTrack,BST,coverObj,spreadObj}};
 })();
 </script>
