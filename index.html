@@ -478,7 +478,7 @@ const V=(x,y,z)=>new THREE.Vector3(x,y,z);
 const KF={
   room:    { pos:V(0,5.8,12),  tgt:V(0,7.6,-9), fov:58 },
   approach:{ pos:V(0,4.8,-1),  tgt:V(0,3.4,DESK_Z), fov:52 },
-  bookTop: { pos:V(0,BOOKY+6.2,DESK_Z+1.05), tgt:V(0,BOOKY-0.1,DESK_Z-0.05), fov:44 },
+  bookTop: { pos:V(0,BOOKY+3.6,DESK_Z+0.5), tgt:V(0,BOOKY-0.05,DESK_Z), fov:40 },
   library: { pos:V(-1.2,5.4,3.5), tgt:V(LEFTX+2.2,5.4,-4), fov:62 },
   profile: { pos:V(1.2,5.4,3.5),  tgt:V(RIGHTX-2.2,5.4,-4), fov:62 },
 };
@@ -514,7 +514,7 @@ function applyPath(tt){
 }
 
 function updateUI(state){
-  titleEl.classList.toggle('show',state==='bookTop');
+  titleEl.classList.remove('show');   // no separate title overlay — the book itself is the focus
   backBtn.classList.toggle('show',state!=='room');
   hintEl.style.opacity=(state==='room')?'1':'0';
   bookOnState(state);
