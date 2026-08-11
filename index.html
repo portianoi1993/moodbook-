@@ -68,8 +68,8 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:#160e08;color:var(--c
 .pbook-cover{position:absolute;inset:0;border-radius:10px;background:linear-gradient(135deg,#b0472a,#8a3a22);
   border:4px solid var(--ink);box-shadow:0 30px 70px rgba(0,0,0,.55),inset 0 0 0 10px rgba(255,220,170,.12),inset 0 0 60px rgba(0,0,0,.35);
   display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;
-  transform-origin:left center;transition:transform .9s cubic-bezier(.7,0,.2,1);backface-visibility:hidden;z-index:3}
-.pbook.open .pbook-cover{transform:rotateY(-172deg)}
+  transform-origin:left center;transition:transform .9s cubic-bezier(.7,0,.2,1),opacity .4s ease .5s;backface-visibility:hidden;z-index:3}
+.pbook.open .pbook-cover{transform:rotateY(-172deg);opacity:0;pointer-events:none}
 .pbook-cover::before{content:"";position:absolute;left:14px;top:14px;right:14px;bottom:14px;border:2px solid rgba(255,220,170,.35);border-radius:6px;pointer-events:none}
 .pbook-emblem{font-family:'Fraunces',serif;font-weight:600;font-size:2.4rem;color:#f7e6c8;text-shadow:0 2px 0 rgba(0,0,0,.3)}
 .pbook-emblem em{font-style:italic;color:var(--amber)}
