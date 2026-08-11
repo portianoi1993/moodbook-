@@ -6,11 +6,17 @@
       "dest": "/api/$1"
     },
     {
+      "src": "/",
+      "headers": { "cache-control": "no-store, max-age=0, must-revalidate" },
+      "continue": true
+    },
+    {
       "handle": "filesystem"
     },
     {
       "src": "/(.*)",
-      "dest": "/index.html"
+      "dest": "/index.html",
+      "headers": { "cache-control": "no-store, max-age=0, must-revalidate" }
     }
   ]
 }
