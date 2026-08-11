@@ -833,7 +833,7 @@ function openSpreadSequenced(){
   setTimeout(()=>{
     closedBook.visible=false; openBook.visible=true;           // swap the closed book for the open spread base
     spreadObj.visible=true;
-    requestAnimationFrame(()=>{ spreadEl.style.opacity='1'; });
+    setTimeout(()=>{ spreadEl.style.opacity='1'; }, 40);        // RAF-independent fade so it can't get stuck at 0
   }, delay);
 }
 
