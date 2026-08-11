@@ -59,11 +59,20 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:#160e08;color:var(--c
 .fallback.show{display:flex}
 .fallback h2{font-family:'Fraunces',serif;font-size:1.4rem;color:var(--cream)}
 .fallback p{font-size:.85rem;color:var(--cream-dk);max-width:420px;line-height:1.6}
+
+/* ---- cinematic grade over the 3D canvas (vignette + paper grain) ---- */
+.grade{position:fixed;inset:0;pointer-events:none;z-index:5}
+.grade::before{content:"";position:absolute;inset:0;
+  box-shadow:inset 0 0 240px 80px rgba(12,6,2,.82);
+  background:radial-gradient(120% 90% at 50% 42%, rgba(255,214,150,.08), rgba(20,10,4,.28) 70%)}
+.grade::after{content:"";position:absolute;inset:0;opacity:.08;mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
 </style>
 </head>
 <body>
 
 <canvas id="scene"></canvas>
+<div class="grade"></div>
 
 <div class="ui">
   <div class="badge">МАКЕТ • <b>MoodBook</b> Immersive · Фаза 1</div>
@@ -110,13 +119,13 @@ const DPR=Math.min(window.devicePixelRatio||1, isMobile?1.5:1.9);
 renderer.setPixelRatio(DPR);
 renderer.outputColorSpace=THREE.SRGBColorSpace;
 renderer.toneMapping=THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure=1.05;
+renderer.toneMappingExposure=0.92;
 renderer.shadowMap.enabled=!isMobile;
 renderer.shadowMap.type=THREE.PCFSoftShadowMap;
 
 const scene=new THREE.Scene();
-scene.background=new THREE.Color(0x160e08);
-scene.fog=new THREE.Fog(0x2a1a10, 14, 42);
+scene.background=new THREE.Color(0x120a05);
+scene.fog=new THREE.Fog(0x1e1207, 13, 44);
 
 const camera=new THREE.PerspectiveCamera(52, window.innerWidth/window.innerHeight, 0.1, 200);
 
@@ -133,29 +142,43 @@ worldRoot.add(architecture,landmarks,atmosphere);
 const W=16, H=9.5, D=22;         // room width, height, depth
 const BACK=-D/2, FRONT=D/2, LEFTX=-W/2, RIGHTX=W/2;
 
-/* ---- materials ---- */
+/* ---- toon cel-shading ramp (bold flat bands, storybook look) ---- */
+function toonRamp(steps){
+  const arr=new Uint8Array(steps);
+  for(let i=0;i<steps;i++)arr[i]=Math.round(255*(0.34+0.66*(i/(steps-1))));
+  const tex=new THREE.DataTexture(arr,steps,1,THREE.RedFormat);
+  tex.needsUpdate=true;tex.minFilter=THREE.NearestFilter;tex.magFilter=THREE.NearestFilter;
+  return tex;
+}
+const RAMP=toonRamp(4);
+const INK=0x1b1109;
+const lineMat=new THREE.LineBasicMaterial({color:INK});
+function toon(color){return new THREE.MeshToonMaterial({color:color,gradientMap:RAMP});}
+
 const M={
-  floor:new THREE.MeshStandardMaterial({color:0x5b3d28,roughness:.92,metalness:0}),
-  wall:new THREE.MeshStandardMaterial({color:0x3a2718,roughness:.95,metalness:0}),
-  ceiling:new THREE.MeshStandardMaterial({color:0x2c1d12,roughness:1,metalness:0}),
-  post:new THREE.MeshStandardMaterial({color:0x5a3b26,roughness:.85,metalness:0}),
-  plank:new THREE.MeshStandardMaterial({color:0x6e4a30,roughness:.8,metalness:0}),
-  deskTop:new THREE.MeshStandardMaterial({color:0x7a5233,roughness:.7,metalness:0}),
-  bookCover:new THREE.MeshStandardMaterial({color:0xb5502f,roughness:.6,metalness:0}),
-  pages:new THREE.MeshStandardMaterial({color:0xf2e4ce,roughness:.9,metalness:0}),
-  rug:new THREE.MeshStandardMaterial({color:0x9c4030,roughness:.95,metalness:0}),
+  floor:toon(0x6b4a2e),
+  wall:toon(0x3d2817),
+  ceiling:toon(0x2a1a0f),
+  post:toon(0x5a3a24),
+  plank:toon(0x6e4830),
+  deskTop:toon(0x8a5a34),
+  bookCover:toon(0xb0472a),
+  pages:toon(0xecdcbe),
+  rug:toon(0xa5432f),
 };
 
-function box(w,h,d,mat,x,y,z,parent){
-  const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);
+function box(w,h,d,mat,x,y,z,parent,noEdge){
+  const geo=new THREE.BoxGeometry(w,h,d);
+  const m=new THREE.Mesh(geo,mat);
   m.position.set(x,y,z);m.castShadow=!isMobile;m.receiveShadow=!isMobile;
+  if(!noEdge){m.add(new THREE.LineSegments(new THREE.EdgesGeometry(geo),lineMat));}
   (parent||architecture).add(m);return m;
 }
 
 /* ---- shell: floor, ceiling, 3 walls with thickness ---- */
 const T=0.4; // wall thickness
-box(W, T, D, M.floor, 0, -T/2, 0);                       // floor
-box(W, T, D, M.ceiling, 0, H+T/2, 0);                    // ceiling
+box(W, T, D, M.floor, 0, -T/2, 0, null, true);           // floor (no ink edge)
+box(W, T, D, M.ceiling, 0, H+T/2, 0, null, true);        // ceiling (no ink edge)
 box(W, H+T, T, M.wall, 0, H/2, BACK-T/2);                // back wall
 box(T, H+T, D, M.wall, LEFTX-T/2, H/2, 0);               // left wall
 box(T, H+T, D, M.wall, RIGHTX+T/2, H/2, 0);              // right wall
@@ -232,10 +255,10 @@ buildBookcase(LEFTX+0.42, -3, Math.PI/2, D*0.5, H-1.2, 6);
 // RIGHT wall — Profile (front faces -x)
 buildBookcase(RIGHTX-0.42, -3, -Math.PI/2, D*0.5, H-1.2, 6);
 
-/* create the single InstancedMesh for all books */
+/* create the single InstancedMesh for all books (+ ink outline hull) */
 (function(){
   const geo=new THREE.BoxGeometry(1,1,1);
-  const mat=new THREE.MeshStandardMaterial({roughness:.68,metalness:0});
+  const mat=new THREE.MeshToonMaterial({gradientMap:RAMP});
   const inst=new THREE.InstancedMesh(geo,mat,bookMatrices.length);
   inst.castShadow=!isMobile;inst.receiveShadow=false;
   for(let i=0;i<bookMatrices.length;i++){
@@ -245,6 +268,14 @@ buildBookcase(RIGHTX-0.42, -3, -Math.PI/2, D*0.5, H-1.2, 6);
   inst.instanceMatrix.needsUpdate=true;
   if(inst.instanceColor)inst.instanceColor.needsUpdate=true;
   landmarks.add(inst);
+  // ink outline: slightly enlarged back-side black hull
+  const oMat=new THREE.MeshBasicMaterial({color:INK,side:THREE.BackSide});
+  const outline=new THREE.InstancedMesh(geo,oMat,bookMatrices.length);
+  outline.castShadow=false;outline.receiveShadow=false;
+  const S=new THREE.Matrix4().makeScale(1.10,1.05,1.10);const tmp=new THREE.Matrix4();
+  for(let i=0;i<bookMatrices.length;i++){tmp.multiplyMatrices(bookMatrices[i],S);outline.setMatrixAt(i,tmp);}
+  outline.instanceMatrix.needsUpdate=true;
+  landmarks.add(outline);
 })();
 
 /* ============================================================
@@ -275,11 +306,13 @@ lampGlow.position.set(-1.4,DESK_H+1.4,DESK_Z-0.2);atmosphere.add(lampGlow);
 /* ============================================================
    LIGHTING
 ============================================================ */
-scene.add(new THREE.HemisphereLight(0x4a3420,0x160e08,0.55));
-scene.add(new THREE.AmbientLight(0xffe6c0,0.35));
+scene.add(new THREE.HemisphereLight(0x3a2712,0x120a05,0.32));
+scene.add(new THREE.AmbientLight(0xffdca8,0.20));
+// warm fill to lift the room center softly
+const fill=new THREE.PointLight(0xffcf94,0.6,26,1.6);fill.position.set(0,6,-1);scene.add(fill);
 
 // "window" light — warm key from upper back
-const key=new THREE.DirectionalLight(0xffe0b0, 1.15);
+const key=new THREE.DirectionalLight(0xffd79a, 1.55);
 key.position.set(-4, H+4, BACK-2);
 key.target.position.set(0, 2, -2);
 scene.add(key);scene.add(key.target);
