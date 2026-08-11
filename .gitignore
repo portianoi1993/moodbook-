@@ -1,5 +1,8 @@
 .claude/skills/
 
+# reference material (studied locally, not part of the app)
+reference/
+
 # ruflo / claude-flow artifacts (not part of MoodBook)
 .claude-flow/
 .swarm/
