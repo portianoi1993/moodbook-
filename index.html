@@ -553,7 +553,8 @@ coverPivot.position.set(-1.05,BOOKY+0.07,DESK_Z);closedBook.add(coverPivot);
 box(2.1,0.07,2.88,M.bookCover,1.05,0,0,coverPivot);              // front cover (extends +x from spine)
 const plate=new THREE.Mesh(new THREE.PlaneGeometry(1.15,0.72),new THREE.MeshStandardMaterial({color:0xf2e4ce,roughness:.9}));
 plate.rotation.x=-Math.PI/2;plate.position.set(1.15,0.05,0);coverPivot.add(plate);
-let coverT=0, coverTarget=0;   // 3D cover open state: 0 closed → 1 open
+let coverT=0, coverTarget=0;             // 3D cover open state: 0 closed → 1 open
+let spreadT=0, spreadTarget=0;           // open-spread bloom: 0 hidden/small → 1 full
 
 // --- OPEN book: a wide two-page spread base the printed pages rest on (shown once the book has opened) ---
 const openBook=new THREE.Group();openBook.visible=false;book.add(openBook);
@@ -618,8 +619,8 @@ applyEnv();  // sync the day baseline now that all lights/materials exist
 ============================================================ */
 const V=(x,y,z)=>new THREE.Vector3(x,y,z);
 const KF={
-  room:    { pos:V(0,5.0,9),  tgt:V(0,3.6,DESK_Z), fov:54 },
-  approach:{ pos:V(0,6.4,2.5),  tgt:V(0,3.2,DESK_Z), fov:50 },
+  room:    { pos:V(0,4.2,6.5),  tgt:V(0,3.3,DESK_Z), fov:56 },
+  approach:{ pos:V(0,5.4,1.0),  tgt:V(0,3.2,DESK_Z), fov:48 },
   bookTop: { pos:V(0,BOOKY+7.2,DESK_Z+0.9), tgt:V(0,BOOKY,DESK_Z), fov:40 },  // near straight-down so flat page content sits ON the book (no parallax float)
   library: { pos:V(-1.2,5.4,3.5), tgt:V(LEFTX+2.2,5.4,-4), fov:62 },
   profile: { pos:V(1.2,5.4,3.5),  tgt:V(RIGHTX-2.2,5.4,-4), fov:62 },
@@ -689,8 +690,11 @@ const hotspots=proxies.concat(actionProxies);
 function pickAt(cx,cy){
   ndc.x=(cx/window.innerWidth)*2-1; ndc.y=-(cy/window.innerHeight)*2+1;
   raycaster.setFromCamera(ndc,camera);
-  const hit=raycaster.intersectObjects(hotspots,false)[0];
-  return hit?hit.object:null;
+  // small, intentional action hotspots (the lamp) take priority over the large desk navigation zone they sit inside
+  const a=raycaster.intersectObjects(actionProxies,false)[0];
+  if(a)return a.object;
+  const n=raycaster.intersectObjects(proxies,false)[0];
+  return n?n.object:null;
 }
 canvas.addEventListener('pointermove',e=>{
   if(rig.state!=='room'||rig.active){canvas.style.cursor='default';tooltip.style.opacity='0';return;}
@@ -731,10 +735,10 @@ function resize(){
   cssRenderer.setSize(w,h);
   camera.aspect=w/h;
   const asp=w/h, wide=asp>1.7, narrow=w<720;
-  // frame the DESK as the centered hero on the rug; shelves wrap the sides, window in the upper background
-  KF.room.pos.set(0, wide?4.7:5.1, (wide?10:9)*(narrow?1.12:1));
-  KF.room.tgt.set(0, 3.7, DESK_Z);
-  KF.room.fov=(wide?50:56)*(narrow?1.06:1);
+  // frame the DESK as the centered hero on the rug — close and prominent, shelves wrap, window peeks at the top
+  KF.room.pos.set(0, wide?4.2:4.6, (wide?6.5:7.8)*(narrow?1.18:1));
+  KF.room.tgt.set(0, wide?3.3:3.5, DESK_Z);
+  KF.room.fov=(wide?56:60)*(narrow?1.05:1);
   if(rig.state==='room'&&!rig.active){rig.curPos.copy(KF.room.pos);rig.curTgt.copy(KF.room.tgt);rig.curFov=KF.room.fov;}
   camera.updateProjectionMatrix();
 }
@@ -758,7 +762,8 @@ function tick(){
   const par=(rig.state==='room'&&!rig.active)?1:0;
   camera.position.set(rig.curPos.x+px*0.3*par, rig.curPos.y-py*0.18*par, rig.curPos.z);
   camera.lookAt(rig.curTgt.x+px*0.12*par, rig.curTgt.y, rig.curTgt.z);
-  coverT+=(coverTarget-coverT)*0.12; if(coverPivot)coverPivot.rotation.z=coverT*Math.PI*0.98;  // 3D cover opening
+  coverT+=(coverTarget-coverT)*0.07; if(coverPivot)coverPivot.rotation.z=coverT*Math.PI*0.98;  // 3D front cover swings open (slower = readable)
+  spreadT+=(spreadTarget-spreadT)*0.10; if(spreadObj)spreadObj.scale.setScalar(CSS_S*(0.90+0.10*spreadT)); // open spread blooms to full size
   if(Math.abs(camera.fov-rig.curFov)>0.01){camera.fov=rig.curFov;camera.updateProjectionMatrix();}
   if(window._motes)window._motes.rotation.y+=dt*0.02;
   renderer.render(scene,camera);
@@ -817,24 +822,31 @@ spreadObj.visible=false; cssScene.add(spreadObj);
 
 function openSearch(){
   closedBook.visible=true; openBook.visible=false;              // physical book: closed, cover facing up
-  coverObj.visible=true; spreadObj.visible=false; spreadEl.style.opacity='0';
+  coverObj.visible=true; pbookCover.style.opacity='1';
+  spreadObj.visible=false; spreadEl.style.opacity='0'; spreadT=0; spreadTarget=0;
   coverT=0; coverTarget=0;
   setTimeout(()=>{try{pbookInput.focus({preventScroll:true});}catch(e){}},550);
 }
 function closeBook(){
   closedBook.visible=true; openBook.visible=false;
-  coverObj.visible=false; spreadObj.visible=false; spreadEl.style.opacity='0';
+  coverObj.visible=false; pbookCover.style.opacity='1';
+  spreadObj.visible=false; spreadEl.style.opacity='0'; spreadT=0; spreadTarget=0;
   coverT=0; coverTarget=0; stopPlay();
 }
-// reveal the printed spread only after the cover has swung up: cover flips → book becomes an open spread → content settles
-function openSpreadSequenced(){
-  spreadEl.style.opacity='0';
-  const delay=reduceMotion?0:560;
-  setTimeout(()=>{
-    closedBook.visible=false; openBook.visible=true;           // swap the closed book for the open spread base
-    spreadObj.visible=true;
-    setTimeout(()=>{ spreadEl.style.opacity='1'; }, 40);        // RAF-independent fade so it can't get stuck at 0
-  }, delay);
+// physical opening choreography: cover swings open → search face fades → book blooms into the printed spread
+function startOpening(){
+  playPageSound();
+  coverTarget=1;                                          // 3D front cover swings open about the spine (slow, readable)
+  pbookCover.style.opacity='0';                           // the search-cover face fades as the cover lifts (CSS .3s)
+  const reveal=()=>{
+    coverObj.visible=false; pbookCover.style.opacity='1'; // hide + reset the cover face for next time
+    closedBook.visible=false; openBook.visible=true;      // the book is now physically open
+    spreadT=0; if(spreadObj)spreadObj.scale.setScalar(CSS_S*0.90);
+    spreadObj.visible=true; spreadTarget=1;               // tick blooms the spread to full size
+    spreadEl.style.opacity='1';                           // RAF-independent fade-in (CSS .5s)
+  };
+  if(reduceMotion){ coverT=1; reveal(); spreadT=1; }
+  else setTimeout(reveal, 560);
 }
 
 document.getElementById('spreadClose').addEventListener('click',()=>goTo('room'));
@@ -855,11 +867,7 @@ async function runSearch(q){
     bkAuthor.textContent=info.author?('— '+info.author):(info.confidence==='low'?'— автор невідомий':'');
     document.getElementById('bookMsg').textContent='';
     renderTracks(); renderMoods(); renderGenres();
-    // PHYSICAL OPENING: the front cover flips first, then the printed spread settles onto the pages
-    coverObj.visible=false;      // remove the search face from the cover
-    coverTarget=1;               // 3D front cover physically swings open about the spine
-    playPageSound();             // page-turn sound at the start of the opening
-    openSpreadSequenced();
+    startOpening();              // cover swings open → search face fades → book blooms into the printed spread
     pbookHint.innerHTML='Впиши назву — і книга розкриється';
   }catch(err){
     pbookHint.textContent=(err&&err.status===429)?'Забагато запитів — спробуй за хвилину.':'Не вдалося. Спробуй іншу назву.';
