@@ -651,7 +651,7 @@ function bookRect(open){
   cam.position.copy(KF.bookTop.pos); cam.lookAt(KF.bookTop.tgt);
   cam.fov=KF.bookTop.fov; cam.aspect=window.innerWidth/window.innerHeight;
   cam.updateProjectionMatrix(); cam.updateMatrixWorld();
-  const y=BOOKY+0.2, hw=open?2.2:1.15, hd=1.55;
+  const y=BOOKY+0.22, hw=open?2.15:1.05, hd=1.45;
   const P=(x,z)=>{const v=new THREE.Vector3(x,y,z).project(cam);return[(v.x*0.5+0.5)*window.innerWidth,(-v.y*0.5+0.5)*window.innerHeight];};
   const pts=[P(-hw,DESK_Z-hd),P(hw,DESK_Z-hd),P(hw,DESK_Z+hd),P(-hw,DESK_Z+hd)];
   let a=[1e9,1e9,-1e9,-1e9];
@@ -665,12 +665,13 @@ function placeBook(open){
   pbook.style.width=r.w+'px'; pbook.style.height=r.h+'px';
 }
 function openSearch(){
+  try{book.visible=false;}catch(e){}   // the DOM book takes the physical book's place
   pbook.classList.remove('open');
   placeBook(false);
   bookLayer.classList.add('show');
   setTimeout(()=>{try{pbookInput.focus({preventScroll:true});}catch(e){}},400);
 }
-function closeBook(){ bookLayer.classList.remove('show'); pbook.classList.remove('open'); stopPlay(); }
+function closeBook(){ bookLayer.classList.remove('show'); pbook.classList.remove('open'); stopPlay(); try{book.visible=true;}catch(e){} }
 
 document.getElementById('spreadClose').addEventListener('click',()=>goTo('room'));
 document.getElementById('pbookSearch').addEventListener('submit',e=>{e.preventDefault();const q=pbookInput.value.trim();if(q)runSearch(q);});
