@@ -211,13 +211,13 @@ const DPR=Math.min(window.devicePixelRatio||1, isMobile?1.5:1.9);
 renderer.setPixelRatio(DPR);
 renderer.outputColorSpace=THREE.SRGBColorSpace;
 renderer.toneMapping=THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure=0.92;
+renderer.toneMappingExposure=0.84;
 renderer.shadowMap.enabled=!isMobile;
 renderer.shadowMap.type=THREE.PCFSoftShadowMap;
 
 const scene=new THREE.Scene();
-scene.background=new THREE.Color(0x120a05);
-scene.fog=new THREE.Fog(0x1e1207, 13, 44);
+scene.background=new THREE.Color(0x1a0f05);
+scene.fog=new THREE.Fog(0x241305, 18, 64);
 
 const camera=new THREE.PerspectiveCamera(52, window.innerWidth/window.innerHeight, 0.1, 200);
 
@@ -231,13 +231,13 @@ worldRoot.add(architecture,landmarks,atmosphere);
 /* ============================================================
    ROOM DIMENSIONS (meters)
 ============================================================ */
-const W=16, H=9.5, D=22;         // room width, height, depth
+const W=16, H=22, D=24;          // width, height (two-story, open top), depth
 const BACK=-D/2, FRONT=D/2, LEFTX=-W/2, RIGHTX=W/2;
 
 /* ---- toon cel-shading ramp (bold flat bands, storybook look) ---- */
 function toonRamp(steps){
   const arr=new Uint8Array(steps);
-  for(let i=0;i<steps;i++)arr[i]=Math.round(255*(0.34+0.66*(i/(steps-1))));
+  for(let i=0;i<steps;i++)arr[i]=Math.round(255*(0.24+0.76*(i/(steps-1))));
   const tex=new THREE.DataTexture(arr,steps,1,THREE.RedFormat);
   tex.needsUpdate=true;tex.minFilter=THREE.NearestFilter;tex.magFilter=THREE.NearestFilter;
   return tex;
@@ -267,11 +267,10 @@ function box(w,h,d,mat,x,y,z,parent,noEdge){
   (parent||architecture).add(m);return m;
 }
 
-/* ---- shell: floor, ceiling, 3 walls with thickness ---- */
+/* ---- shell: floor + 3 tall walls, NO ceiling (open top fades to dark) ---- */
 const T=0.4; // wall thickness
 box(W, T, D, M.floor, 0, -T/2, 0, null, true);           // floor (no ink edge)
-box(W, T, D, M.ceiling, 0, H+T/2, 0, null, true);        // ceiling (no ink edge)
-box(W, H+T, T, M.wall, 0, H/2, BACK-T/2);                // back wall
+box(W, H+T, T, M.wall, 0, H/2, BACK-T/2);                // back wall (tall)
 box(T, H+T, D, M.wall, LEFTX-T/2, H/2, 0);               // left wall
 box(T, H+T, D, M.wall, RIGHTX+T/2, H/2, 0);              // right wall
 // baseboards for believable thickness at corners
@@ -303,9 +302,9 @@ function addBookInstance(anchor, lx,ly,lz, bw,bh,bd, rotY, colorHex){
 }
 
 /* build a bookcase; books pushed to global instanced arrays */
-function buildBookcase(x,z,rotY, width, height, rows){
+function buildBookcase(x,z,rotY, width, height, rows, yBase){
   const anchor=new THREE.Group();
-  anchor.position.set(x,0,z);anchor.rotation.y=rotY;
+  anchor.position.set(x,yBase||0,z);anchor.rotation.y=rotY;
   landmarks.add(anchor);
   anchor.updateMatrixWorld(true);
 
@@ -340,12 +339,28 @@ function buildBookcase(x,z,rotY, width, height, rows){
   }
 }
 
-// BACK wall — big wall of books
-buildBookcase(0, BACK+0.42, 0, W-1.2, H-0.6, 7);
-// LEFT wall — My Library (front faces +x)
-buildBookcase(LEFTX+0.42, -3, Math.PI/2, D*0.5, H-1.2, 6);
-// RIGHT wall — Profile (front faces -x)
-buildBookcase(RIGHTX-0.42, -3, -Math.PI/2, D*0.5, H-1.2, 6);
+// two-story shelving: lower tier, a gallery ledge, then an upper tier
+const TIER=8.6, LEDGE=0.8, upperH=H-TIER-LEDGE;
+function ledgeBeam(w,x,z,rotY){
+  const g=new THREE.Group();g.position.set(x,TIER,z);g.rotation.y=rotY;landmarks.add(g);
+  box(w,0.5,1.1,M.post,0,0.25,0.3,g);              // ledge slab (juts into room)
+  box(w,0.14,0.14,M.plank,0,1.0,0.72,g);           // railing top
+  const n=Math.max(3,Math.floor(w/1.7));
+  for(let i=0;i<=n;i++){box(0.1,0.62,0.1,M.post,-w/2+w*(i/n),0.68,0.72,g);}
+}
+// BACK wall — full width, wraps corners, two tiers
+buildBookcase(0, BACK+0.42, 0, W-0.4, TIER, 6);
+buildBookcase(0, BACK+0.42, 0, W-0.4, upperH, 4, TIER+LEDGE);
+ledgeBeam(W-0.4, 0, BACK+0.9, 0);
+// LEFT wall — runs full depth to the back corner (My Library)
+buildBookcase(LEFTX+0.42, 0.4, Math.PI/2, D-0.8, TIER, 6);
+buildBookcase(LEFTX+0.42, 0.4, Math.PI/2, D-0.8, upperH, 4, TIER+LEDGE);
+ledgeBeam(D-0.8, LEFTX+0.9, 0.4, Math.PI/2);
+// RIGHT wall — shelves on BACK half only; front half is the big window (Profile)
+const rShelfW=(D-0.8)*0.5, rShelfZ=BACK+0.4+rShelfW/2;
+buildBookcase(RIGHTX-0.42, rShelfZ, -Math.PI/2, rShelfW, TIER, 6);
+buildBookcase(RIGHTX-0.42, rShelfZ, -Math.PI/2, rShelfW, upperH, 4, TIER+LEDGE);
+ledgeBeam(rShelfW, RIGHTX-0.9, rShelfZ, -Math.PI/2);
 
 /* create the single InstancedMesh for all books (+ ink outline hull) */
 (function(){
@@ -398,28 +413,41 @@ lampGlow.position.set(-1.4,DESK_H+1.4,DESK_Z-0.2);atmosphere.add(lampGlow);
 /* ============================================================
    LIGHTING
 ============================================================ */
-scene.add(new THREE.HemisphereLight(0x3a2712,0x120a05,0.32));
-scene.add(new THREE.AmbientLight(0xffdca8,0.20));
-// warm fill to lift the room center softly
-const fill=new THREE.PointLight(0xffcf94,0.6,26,1.6);fill.position.set(0,6,-1);scene.add(fill);
+scene.add(new THREE.HemisphereLight(0x3a2610,0x120a03,0.22));
+scene.add(new THREE.AmbientLight(0xffc070,0.13));
 
-// "window" light — warm key from upper back
-const key=new THREE.DirectionalLight(0xffd79a, 1.55);
-key.position.set(-4, H+4, BACK-2);
-key.target.position.set(0, 2, -2);
-scene.add(key);scene.add(key.target);
-if(!isMobile){key.castShadow=true;key.shadow.mapSize.set(2048,2048);
-  key.shadow.camera.near=1;key.shadow.camera.far=50;
-  const s=16;key.shadow.camera.left=-s;key.shadow.camera.right=s;key.shadow.camera.top=s;key.shadow.camera.bottom=-s;
-  key.shadow.bias=-0.0004;}
-
-// emissive window plane on back wall
+/* BIG library window on the right wall (front half) — the main warm light */
+const WIN={z:6, y:9.5, w:9.5, h:13};
 (function(){
-  const win=new THREE.Mesh(new THREE.PlaneGeometry(3.4,2.6),
-    new THREE.MeshBasicMaterial({color:0xf6dca0}));
-  win.position.set(3.6,H-2.3,BACK+0.06);landmarks.add(win);
-  const winGlow=new THREE.PointLight(0xffdca0,6,16,2);winGlow.position.set(3.6,H-2.3,BACK+1.5);atmosphere.add(winGlow);
+  const glass=new THREE.Mesh(new THREE.PlaneGeometry(WIN.w,WIN.h),new THREE.MeshBasicMaterial({color:0xffc964}));
+  glass.rotation.y=-Math.PI/2;glass.position.set(RIGHTX-0.34,WIN.y,WIN.z);landmarks.add(glass);
+  // additive warm bloom so the window reads as luminous
+  const glow=new THREE.Mesh(new THREE.PlaneGeometry(WIN.w+4,WIN.h+4),
+    new THREE.MeshBasicMaterial({color:0xffcf7a,transparent:true,opacity:0.5,blending:THREE.AdditiveBlending,depthWrite:false}));
+  glow.rotation.y=-Math.PI/2;glow.position.set(RIGHTX-0.55,WIN.y,WIN.z);landmarks.add(glow);
+  const fr=new THREE.Group();fr.position.set(RIGHTX-0.3,WIN.y,WIN.z);fr.rotation.y=-Math.PI/2;landmarks.add(fr);
+  box(WIN.w+0.7,0.5,0.5,M.post,0,WIN.h/2+0.25,0,fr);
+  box(WIN.w+0.7,0.5,0.5,M.post,0,-WIN.h/2-0.25,0,fr);
+  box(0.5,WIN.h+1,0.5,M.post,WIN.w/2+0.25,0,0,fr);
+  box(0.5,WIN.h+1,0.5,M.post,-WIN.w/2-0.25,0,0,fr);
+  box(0.16,WIN.h,0.3,M.post,0,0,0,fr);
+  box(0.16,WIN.h,0.3,M.post,WIN.w/4,0,0,fr);
+  box(0.16,WIN.h,0.3,M.post,-WIN.w/4,0,0,fr);
+  box(WIN.w,0.16,0.3,M.post,0,WIN.h/4,0,fr);
+  box(WIN.w,0.16,0.3,M.post,0,0,0,fr);
+  box(WIN.w,0.16,0.3,M.post,0,-WIN.h/4,0,fr);
 })();
+// strong warm sun streaming in from the window
+const sun=new THREE.DirectionalLight(0xffb955, 1.85);
+sun.position.set(RIGHTX+7, WIN.y+2, WIN.z-1);
+sun.target.position.set(-4, 2, -5);
+scene.add(sun,sun.target);
+if(!isMobile){sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);
+  sun.shadow.camera.near=1;sun.shadow.camera.far=72;
+  const s=20;sun.shadow.camera.left=-s;sun.shadow.camera.right=s;sun.shadow.camera.top=s;sun.shadow.camera.bottom=-s;
+  sun.shadow.bias=-0.0004;}
+const winGlow=new THREE.PointLight(0xffca6e,4.5,32,2);winGlow.position.set(RIGHTX-2.6,WIN.y,WIN.z);atmosphere.add(winGlow);
+const fill=new THREE.PointLight(0xffc079,0.35,32,1.8);fill.position.set(0,7,-2);scene.add(fill);
 
 /* dust motes */
 (function(){
@@ -436,11 +464,11 @@ if(!isMobile){key.castShadow=true;key.shadow.mapSize.set(2048,2048);
 ============================================================ */
 const V=(x,y,z)=>new THREE.Vector3(x,y,z);
 const KF={
-  room:    { pos:V(0,4.6,7.5),   tgt:V(0,4.2,BACK+3), fov:52 },
-  approach:{ pos:V(0,4.4,-2.5),  tgt:V(0,3.3,DESK_Z), fov:50 },
-  bookTop: { pos:V(0,7.7,DESK_Z+2.6), tgt:V(0,DESK_H+0.2,DESK_Z-0.15), fov:46 },
-  library: { pos:V(-1.5,4.4,-2), tgt:V(LEFTX+2,3.6,-3), fov:56 },
-  profile: { pos:V(1.5,4.4,-2),  tgt:V(RIGHTX-2,3.6,-3), fov:56 },
+  room:    { pos:V(0,5.8,12),  tgt:V(0,7.6,-9), fov:58 },
+  approach:{ pos:V(0,4.8,-1),  tgt:V(0,3.4,DESK_Z), fov:52 },
+  bookTop: { pos:V(0,8.4,DESK_Z+3.2), tgt:V(0,3.2,DESK_Z-0.1), fov:48 },
+  library: { pos:V(-1.2,5.4,3.5), tgt:V(LEFTX+2.2,5.4,-4), fov:62 },
+  profile: { pos:V(1.2,5.4,3.5),  tgt:V(RIGHTX-2.2,5.4,-4), fov:62 },
 };
 function respFactor(){return window.innerWidth<720?1.18:1;}
 
@@ -492,9 +520,9 @@ function makeProxy(w,h,d,x,y,z,action,label,sub){
   m.position.set(x,y,z);m.userData={action,label,sub};scene.add(m);return m;
 }
 const proxies=[
-  makeProxy(4.6,3.4,2.6, 0,DESK_H+0.6,DESK_Z, 'bookTop','Знайти книгу','Стіл'),
-  makeProxy(1.2,H,D*0.55, LEFTX+1.2,H/2,-3, 'library','Моя бібліотека','Ліва стіна'),
-  makeProxy(1.2,H,D*0.55, RIGHTX-1.2,H/2,-3, 'profile','Профіль','Права стіна'),
+  makeProxy(8,7,6, 0,3.2,DESK_Z, 'bookTop','Знайти книгу','Стіл'),
+  makeProxy(1.8,H,D*0.7, LEFTX+1.4,H/2,-1, 'library','Моя бібліотека','Ліва стіна'),
+  makeProxy(1.8,H,D*0.7, RIGHTX-1.4,H/2,-1, 'profile','Профіль','Права стіна'),
 ];
 function pickAt(cx,cy){
   ndc.x=(cx/window.innerWidth)*2-1; ndc.y=-(cy/window.innerHeight)*2+1;
@@ -537,8 +565,8 @@ function resize(){
   renderer.setSize(w,h,false);
   camera.aspect=w/h;
   const rf=respFactor();
-  KF.room.pos.set(0,4.6,7.5*rf);
-  KF.room.fov=52*(rf>1?1.04:1);
+  KF.room.pos.set(0,5.8,12*rf);
+  KF.room.fov=58*(rf>1?1.05:1);
   camera.updateProjectionMatrix();
 }
 window.addEventListener('resize',resize);
