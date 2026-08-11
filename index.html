@@ -302,7 +302,7 @@ function addBookInstance(anchor, lx,ly,lz, bw,bh,bd, rotY, colorHex){
 }
 
 /* build a bookcase; books pushed to global instanced arrays */
-function buildBookcase(x,z,rotY, width, height, rows, yBase){
+function buildBookcase(x,z,rotY, width, height, _rows, yBase){
   const anchor=new THREE.Group();
   anchor.position.set(x,yBase||0,z);anchor.rotation.y=rotY;
   landmarks.add(anchor);
@@ -316,51 +316,79 @@ function buildBookcase(x,z,rotY, width, height, rows, yBase){
   // back panel (thin) so gaps read as a case, not floating books
   box(width,height,0.08,M.wall, 0, height/2, -depth/2+0.04, anchor);
 
+  const rows=Math.max(1,Math.round(height/1.5));   // fixed shelf pitch -> consistent book scale on every tier
   const rowH=height/rows;
   for(let r=0;r<=rows;r++){
     box(width,0.1,depth,M.plank, 0, r*rowH, 0, anchor);   // shelf plank
   }
-  // fill each shelf with standing books
   for(let r=0;r<rows;r++){
-    const shelfY=r*rowH+0.05;
-    const cellH=rowH-0.15;
-    let cx=-width/2+postW+0.15;
-    const limit=width/2-postW-0.1;
+    const shelfY=r*rowH+0.05, cellH=rowH-0.15;
+    let cx=-width/2+postW+0.15; const limit=width/2-postW-0.1;
     while(cx<limit){
-      const bw=0.14+Math.random()*0.26;
-      if(cx+bw>limit)break;
-      const bh=cellH*(0.66+Math.random()*0.3);
-      const bd=depth*(0.62+Math.random()*0.22);
-      const col=BOOK_COLORS[(Math.random()*BOOK_COLORS.length)|0];
-      const tilt=Math.random()<0.12?(Math.random()*0.18-0.09):0;
-      addBookInstance(anchor, cx+bw/2, shelfY+bh/2, depth/2-bd/2-0.03, bw,bh,bd, tilt, col);
-      cx+=bw+0.03+Math.random()*0.03;
+      const roll=Math.random();
+      if(roll<0.09 && cx+1.1<limit){
+        // horizontal stack of 2-3 flat books (lived-in detail)
+        const sw=0.65+Math.random()*0.4, n=2+((Math.random()*2)|0);
+        for(let s=0;s<n;s++){
+          const col=BOOK_COLORS[(Math.random()*BOOK_COLORS.length)|0];
+          addBookInstance(anchor, cx+sw/2, shelfY+0.1+s*0.17, depth/2-0.3, sw,0.15,0.42, 0, col);
+        }
+        cx+=sw+0.14;
+      } else {
+        const bw=0.16+Math.random()*0.22;
+        if(cx+bw>limit)break;
+        const bh=cellH*(0.72+Math.random()*0.16);        // consistent height across tiers
+        const bd=depth*(0.6+Math.random()*0.2);
+        const col=BOOK_COLORS[(Math.random()*BOOK_COLORS.length)|0];
+        const lean=Math.random()<0.16?(Math.random()*0.22-0.11):0;  // some books lean
+        addBookInstance(anchor, cx+bw/2, shelfY+bh/2, depth/2-bd/2-0.03, bw,bh,bd, lean, col);
+        cx+=bw+0.03+Math.random()*0.03;
+      }
     }
   }
 }
 
-// two-story shelving: lower tier, a gallery ledge, then an upper tier
-const TIER=8.6, LEDGE=0.8, upperH=H-TIER-LEDGE;
-function ledgeBeam(w,x,z,rotY){
+// two-story shelving: lower tier, a gallery walkway, then an upper tier
+const TIER=8.6, LEDGE=0.9, upperH=H-TIER-LEDGE;
+const WINW=6.0, WINY=TIER+LEDGE+upperH*0.52;     // centered back-wall window (above the desk)
+function ledgeBeam(w,x,z,rotY){                    // real gallery balcony: walkway slab + railing
   const g=new THREE.Group();g.position.set(x,TIER,z);g.rotation.y=rotY;landmarks.add(g);
-  box(w,0.5,1.1,M.post,0,0.25,0.3,g);              // ledge slab (juts into room)
-  box(w,0.14,0.14,M.plank,0,1.0,0.72,g);           // railing top
-  const n=Math.max(3,Math.floor(w/1.7));
-  for(let i=0;i<=n;i++){box(0.1,0.62,0.1,M.post,-w/2+w*(i/n),0.68,0.72,g);}
+  box(w,0.5,1.4,M.plank,0,0.25,0.5,g);             // walkway floor jutting into the room
+  box(w,0.16,0.16,M.post,0,1.05,1.15,g);           // handrail
+  const n=Math.max(3,Math.floor(w/1.6));
+  for(let i=0;i<=n;i++){box(0.1,0.72,0.1,M.post,-w/2+w*(i/n),0.7,1.15,g);}  // balusters
 }
-// BACK wall — full width, wraps corners, two tiers
-buildBookcase(0, BACK+0.42, 0, W-0.4, TIER, 6);
-buildBookcase(0, BACK+0.42, 0, W-0.4, upperH, 4, TIER+LEDGE);
+// BACK lower — full width; BACK upper — two segments leaving a centered window gap
+buildBookcase(0, BACK+0.42, 0, W-0.4, TIER, 0);
+const segW=((W-0.4)-WINW-0.7)/2, segOff=WINW/2+0.35+segW/2;
+buildBookcase(-segOff, BACK+0.42, 0, segW, upperH, 0, TIER+LEDGE);
+buildBookcase( segOff, BACK+0.42, 0, segW, upperH, 0, TIER+LEDGE);
 ledgeBeam(W-0.4, 0, BACK+0.9, 0);
-// LEFT wall — runs full depth to the back corner (My Library)
-buildBookcase(LEFTX+0.42, 0.4, Math.PI/2, D-0.8, TIER, 6);
-buildBookcase(LEFTX+0.42, 0.4, Math.PI/2, D-0.8, upperH, 4, TIER+LEDGE);
+// LEFT & RIGHT — symmetric, full depth, wrap the back corners
+buildBookcase(LEFTX+0.42, 0.4, Math.PI/2, D-0.8, TIER, 0);
+buildBookcase(LEFTX+0.42, 0.4, Math.PI/2, D-0.8, upperH, 0, TIER+LEDGE);
 ledgeBeam(D-0.8, LEFTX+0.9, 0.4, Math.PI/2);
-// RIGHT wall — shelves on BACK half only; front half is the big window (Profile)
-const rShelfW=(D-0.8)*0.5, rShelfZ=BACK+0.4+rShelfW/2;
-buildBookcase(RIGHTX-0.42, rShelfZ, -Math.PI/2, rShelfW, TIER, 6);
-buildBookcase(RIGHTX-0.42, rShelfZ, -Math.PI/2, rShelfW, upperH, 4, TIER+LEDGE);
-ledgeBeam(rShelfW, RIGHTX-0.9, rShelfZ, -Math.PI/2);
+buildBookcase(RIGHTX-0.42, 0.4, -Math.PI/2, D-0.8, TIER, 0);
+buildBookcase(RIGHTX-0.42, 0.4, -Math.PI/2, D-0.8, upperH, 0, TIER+LEDGE);
+ledgeBeam(D-0.8, RIGHTX-0.9, 0.4, -Math.PI/2);
+// CENTERED WINDOW high on the back wall, above the desk (reference-style focal point)
+(function(){
+  const wh=upperH*0.82;
+  const glass=new THREE.Mesh(new THREE.PlaneGeometry(WINW,wh),new THREE.MeshBasicMaterial({color:0xffd47e}));
+  glass.position.set(0,WINY,BACK+0.12);landmarks.add(glass);
+  const glow=new THREE.Mesh(new THREE.PlaneGeometry(WINW+3.5,wh+3.5),
+    new THREE.MeshBasicMaterial({color:0xffcf7a,transparent:true,opacity:0.4,blending:THREE.AdditiveBlending,depthWrite:false}));
+  glow.position.set(0,WINY,BACK+0.22);landmarks.add(glow);
+  const fr=new THREE.Group();fr.position.set(0,WINY,BACK+0.16);landmarks.add(fr);
+  box(WINW+0.8,0.5,0.5,M.post,0,wh/2+0.28,0,fr);
+  box(WINW+0.8,0.5,0.5,M.post,0,-wh/2-0.28,0,fr);
+  box(0.5,wh+1.1,0.5,M.post,WINW/2+0.28,0,0,fr);
+  box(0.5,wh+1.1,0.5,M.post,-WINW/2-0.28,0,0,fr);
+  box(0.16,wh,0.3,M.post,0,0,0,fr);
+  box(WINW,0.16,0.3,M.post,0,0,0,fr);
+  box(WINW,0.16,0.3,M.post,0,wh/4,0,fr);
+  box(WINW,0.16,0.3,M.post,0,-wh/4,0,fr);
+})();
 
 /* create the single InstancedMesh for all books (+ ink outline hull) */
 (function(){
@@ -413,41 +441,19 @@ lampGlow.position.set(-1.4,DESK_H+1.4,DESK_Z-0.2);atmosphere.add(lampGlow);
 /* ============================================================
    LIGHTING
 ============================================================ */
-scene.add(new THREE.HemisphereLight(0x3a2610,0x120a03,0.22));
-scene.add(new THREE.AmbientLight(0xffc070,0.13));
-
-/* BIG library window on the right wall (front half) — the main warm light */
-const WIN={z:6, y:9.5, w:9.5, h:13};
-(function(){
-  const glass=new THREE.Mesh(new THREE.PlaneGeometry(WIN.w,WIN.h),new THREE.MeshBasicMaterial({color:0xffc964}));
-  glass.rotation.y=-Math.PI/2;glass.position.set(RIGHTX-0.34,WIN.y,WIN.z);landmarks.add(glass);
-  // additive warm bloom so the window reads as luminous
-  const glow=new THREE.Mesh(new THREE.PlaneGeometry(WIN.w+4,WIN.h+4),
-    new THREE.MeshBasicMaterial({color:0xffcf7a,transparent:true,opacity:0.5,blending:THREE.AdditiveBlending,depthWrite:false}));
-  glow.rotation.y=-Math.PI/2;glow.position.set(RIGHTX-0.55,WIN.y,WIN.z);landmarks.add(glow);
-  const fr=new THREE.Group();fr.position.set(RIGHTX-0.3,WIN.y,WIN.z);fr.rotation.y=-Math.PI/2;landmarks.add(fr);
-  box(WIN.w+0.7,0.5,0.5,M.post,0,WIN.h/2+0.25,0,fr);
-  box(WIN.w+0.7,0.5,0.5,M.post,0,-WIN.h/2-0.25,0,fr);
-  box(0.5,WIN.h+1,0.5,M.post,WIN.w/2+0.25,0,0,fr);
-  box(0.5,WIN.h+1,0.5,M.post,-WIN.w/2-0.25,0,0,fr);
-  box(0.16,WIN.h,0.3,M.post,0,0,0,fr);
-  box(0.16,WIN.h,0.3,M.post,WIN.w/4,0,0,fr);
-  box(0.16,WIN.h,0.3,M.post,-WIN.w/4,0,0,fr);
-  box(WIN.w,0.16,0.3,M.post,0,WIN.h/4,0,fr);
-  box(WIN.w,0.16,0.3,M.post,0,0,0,fr);
-  box(WIN.w,0.16,0.3,M.post,0,-WIN.h/4,0,fr);
-})();
-// strong warm sun streaming in from the window
-const sun=new THREE.DirectionalLight(0xffb955, 1.85);
-sun.position.set(RIGHTX+7, WIN.y+2, WIN.z-1);
-sun.target.position.set(-4, 2, -5);
+scene.add(new THREE.HemisphereLight(0x3a2610,0x120a03,0.24));
+scene.add(new THREE.AmbientLight(0xffc070,0.14));
+// warm daylight through the centered back window (from behind & above)
+const sun=new THREE.DirectionalLight(0xffc266, 1.95);
+sun.position.set(2.5, WINY+7, BACK-9);
+sun.target.position.set(0, 3, -4);
 scene.add(sun,sun.target);
 if(!isMobile){sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);
-  sun.shadow.camera.near=1;sun.shadow.camera.far=72;
-  const s=20;sun.shadow.camera.left=-s;sun.shadow.camera.right=s;sun.shadow.camera.top=s;sun.shadow.camera.bottom=-s;
+  sun.shadow.camera.near=1;sun.shadow.camera.far=84;
+  const s=22;sun.shadow.camera.left=-s;sun.shadow.camera.right=s;sun.shadow.camera.top=s;sun.shadow.camera.bottom=-s;
   sun.shadow.bias=-0.0004;}
-const winGlow=new THREE.PointLight(0xffca6e,4.5,32,2);winGlow.position.set(RIGHTX-2.6,WIN.y,WIN.z);atmosphere.add(winGlow);
-const fill=new THREE.PointLight(0xffc079,0.35,32,1.8);fill.position.set(0,7,-2);scene.add(fill);
+const winGlow=new THREE.PointLight(0xffca6e,3.6,36,2);winGlow.position.set(0,WINY,BACK+3);atmosphere.add(winGlow);
+const fill=new THREE.PointLight(0xffc079,0.4,34,1.8);fill.position.set(0,7,-2);scene.add(fill);
 
 /* dust motes */
 (function(){
@@ -466,7 +472,7 @@ const V=(x,y,z)=>new THREE.Vector3(x,y,z);
 const KF={
   room:    { pos:V(0,5.8,12),  tgt:V(0,7.6,-9), fov:58 },
   approach:{ pos:V(0,4.8,-1),  tgt:V(0,3.4,DESK_Z), fov:52 },
-  bookTop: { pos:V(0,8.4,DESK_Z+3.2), tgt:V(0,3.2,DESK_Z-0.1), fov:48 },
+  bookTop: { pos:V(0,8.6,DESK_Z+1.6), tgt:V(0,3.05,DESK_Z-0.25), fov:46 },
   library: { pos:V(-1.2,5.4,3.5), tgt:V(LEFTX+2.2,5.4,-4), fov:62 },
   profile: { pos:V(1.2,5.4,3.5),  tgt:V(RIGHTX-2.2,5.4,-4), fov:62 },
 };
@@ -565,10 +571,10 @@ function resize(){
   renderer.setSize(w,h,false);
   camera.aspect=w/h;
   const asp=w/h, wide=asp>1.9, narrow=w<720;
-  // aspect-aware framing: wide/short screens look less up so the desk stays visible
-  KF.room.pos.set(0, wide?4.9:5.4, (wide?13.5:12)*(narrow?1.18:1));
-  KF.room.tgt.set(0, wide?5.2:6.4, -9);
-  KF.room.fov=(wide?62:56)*(narrow?1.06:1);
+  // telephoto framing centered on the desk: desk stays centered, side shelves are just edges
+  KF.room.pos.set(0, wide?5.4:5.9, (wide?11:10)*(narrow?1.12:1));
+  KF.room.tgt.set(0, wide?7.0:7.4, DESK_Z);
+  KF.room.fov=(wide?37:43)*(narrow?1.12:1);
   if(rig.state==='room'&&!rig.active){rig.curPos.copy(KF.room.pos);rig.curTgt.copy(KF.room.tgt);rig.curFov=KF.room.fov;}
   camera.updateProjectionMatrix();
 }
