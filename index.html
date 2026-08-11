@@ -154,7 +154,7 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:#160e08;color:var(--c
     <div class="tag">Музика для кожної сторінки</div>
   </div>
   <button class="back-btn" id="backBtn">← До кімнати</button>
-  <div class="hint" id="hint">Клікни на <b>стіл із книгою</b>, щоб шукати. Клікни на <b>торшер</b> — день ⇄ ніч. Тягни мишею — роззирнись.</div>
+  <div class="hint" id="hint">Клікни на <b>стіл із книгою</b>, щоб шукати. Клікни на <b>торшер</b> — день ⇄ ніч.</div>
 </div>
 <div class="tooltip" id="tooltip"></div>
 
@@ -621,7 +621,7 @@ const V=(x,y,z)=>new THREE.Vector3(x,y,z);
 const KF={
   room:    { pos:V(0,4.2,6.5),  tgt:V(0,3.3,DESK_Z), fov:56 },
   approach:{ pos:V(0,5.4,1.0),  tgt:V(0,3.2,DESK_Z), fov:48 },
-  bookTop: { pos:V(0,BOOKY+7.2,DESK_Z+0.9), tgt:V(0,BOOKY,DESK_Z), fov:40 },  // near straight-down so flat page content sits ON the book (no parallax float)
+  bookTop: { pos:V(0,BOOKY+7.6,DESK_Z+0.12), tgt:V(0,BOOKY,DESK_Z), fov:38 },  // near-perfect top-down: flat page content maps exactly onto the book (no float)
   library: { pos:V(-1.2,5.4,3.5), tgt:V(LEFTX+2.2,5.4,-4), fov:62 },
   profile: { pos:V(1.2,5.4,3.5),  tgt:V(RIGHTX-2.2,5.4,-4), fov:62 },
 };
@@ -758,10 +758,9 @@ function tick(){
     if(rig.t>=1){rig.active=false;bookOnArrive(rig.state);}
   }
   tickEnv(dt);
-  px+=(tpx-px)*0.05; py+=(tpy-py)*0.05;
-  const par=(rig.state==='room'&&!rig.active)?1:0;
-  camera.position.set(rig.curPos.x+px*0.3*par, rig.curPos.y-py*0.18*par, rig.curPos.z);
-  camera.lookAt(rig.curTgt.x+px*0.12*par, rig.curTgt.y, rig.curTgt.z);
+  // no parallax: the camera stays locked so the desk is dead-centered and click targets line up with what's drawn
+  camera.position.copy(rig.curPos);
+  camera.lookAt(rig.curTgt.x, rig.curTgt.y, rig.curTgt.z);
   coverT+=(coverTarget-coverT)*0.07; if(coverPivot)coverPivot.rotation.z=coverT*Math.PI*0.98;  // 3D front cover swings open (slower = readable)
   spreadT+=(spreadTarget-spreadT)*0.10; if(spreadObj)spreadObj.scale.setScalar(CSS_S*(0.90+0.10*spreadT)); // open spread blooms to full size
   if(Math.abs(camera.fov-rig.curFov)>0.01){camera.fov=rig.curFov;camera.updateProjectionMatrix();}
@@ -811,12 +810,12 @@ const spreadEl=document.getElementById('spread');
 const CSS_S=2.24/560;                   // px→world: cover element 560px → 2.24 world units, matching the 3D book's footprint
 const coverObj=new THREE.CSS3DObject(pbookCover);
 coverObj.scale.setScalar(CSS_S);
-coverObj.position.set(0,BOOKY+0.17,DESK_Z);
+coverObj.position.set(0,BOOKY+0.12,DESK_Z);
 coverObj.rotation.set(-Math.PI/2,0,0);       // lie flat on the desk, facing up
 coverObj.visible=false; cssScene.add(coverObj);
 const spreadObj=new THREE.CSS3DObject(spreadEl);
 spreadObj.scale.setScalar(CSS_S);
-spreadObj.position.set(0,BOOKY+0.19,DESK_Z);
+spreadObj.position.set(0,BOOKY+0.13,DESK_Z);
 spreadObj.rotation.set(-Math.PI/2,0,0);
 spreadObj.visible=false; cssScene.add(spreadObj);
 
