@@ -112,6 +112,27 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:#160e08;color:var(--c
 .mini-spin{width:16px;height:16px;border-radius:50%;border:3px solid rgba(0,0,0,.15);border-top-color:#b0472a;animation:spin .9s linear infinite;display:inline-block;vertical-align:middle}
 @media(max-width:640px){.pbook{height:84vh}.spread{flex-direction:column}.page-r{border-top:2px solid #d8c4a0}.pbook-emblem{font-size:1.8rem}}
 
+/* ---- CSS3D book pages: real DOM sized in world units, placed on the 3D book ---- */
+#pbookCover{width:560px;height:772px;border-radius:22px;background:linear-gradient(135deg,#b0472a,#8a3a22);
+  border:8px solid var(--ink);box-shadow:0 40px 90px rgba(0,0,0,.6),inset 0 0 0 16px rgba(255,220,170,.12),inset 0 0 90px rgba(0,0,0,.35);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:26px;color:#f7e6c8;
+  position:relative;overflow:hidden;pointer-events:auto;opacity:1;transform:none;transition:opacity .3s ease}
+#pbookCover .pbook-emblem{font-size:2.8rem}
+#pbookCover .pbook-search{width:78%;max-width:none}
+#pbookCover .pbook-search input{font-size:1.45rem;padding:16px 24px}
+#pbookCover .pbook-search button{font-size:1.05rem;padding:0 24px}
+#pbookCover .pbook-hint{font-size:1.05rem}
+#spread{width:1160px;height:772px;position:relative;inset:auto;opacity:1;transform:none;pointer-events:auto;
+  border:8px solid var(--ink);border-radius:14px;box-shadow:0 40px 90px rgba(0,0,0,.55)}
+#spread .page{padding:34px 40px}
+#spread .bk-name{font-size:2rem}
+#spread .track .tt{font-size:1.1rem}
+#spread .track .tv{font-size:.85rem}
+#spread .pill{font-size:.95rem;padding:9px 18px}
+#spread .pg-eyebrow{font-size:.75rem}
+#spread .spread-close{width:44px;height:44px;font-size:1.1rem}
+#spread .track .play{width:34px;height:34px}
+
 /* ---- cinematic grade over the 3D canvas (vignette + paper grain) ---- */
 .grade{position:fixed;inset:0;pointer-events:none;z-index:5}
 .grade::before{content:"";position:absolute;inset:0;
@@ -180,6 +201,7 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:#160e08;color:var(--c
 </div>
 
 <script src="vendor/three.min.js"></script>
+<script src="vendor/CSS3DRenderer.js"></script>
 <script>
 (function(){
 "use strict";
@@ -216,6 +238,13 @@ scene.background=new THREE.Color(0x1a0f05);
 scene.fog=new THREE.Fog(0x241305, 18, 64);
 
 const camera=new THREE.PerspectiveCamera(52, window.innerWidth/window.innerHeight, 0.1, 200);
+
+// CSS3D layer — real interactive DOM placed in the same 3D space (the book's pages)
+const cssRenderer=new THREE.CSS3DRenderer();
+cssRenderer.setSize(window.innerWidth,window.innerHeight);
+cssRenderer.domElement.style.cssText='position:fixed;top:0;left:0;z-index:8;pointer-events:none';
+document.body.appendChild(cssRenderer.domElement);
+const cssScene=new THREE.Scene();
 
 /* Scene graph groups */
 const worldRoot=new THREE.Group();scene.add(worldRoot);
@@ -575,6 +604,7 @@ const clock=new THREE.Clock();
 function resize(){
   const w=window.innerWidth,h=window.innerHeight;
   renderer.setSize(w,h,false);
+  cssRenderer.setSize(w,h);
   camera.aspect=w/h;
   const asp=w/h, wide=asp>1.7, narrow=w<720;
   // centered on the desk, aimed low enough that the desk stays in view; window sits above
@@ -583,7 +613,6 @@ function resize(){
   KF.room.fov=(wide?46:52)*(narrow?1.08:1);
   if(rig.state==='room'&&!rig.active){rig.curPos.copy(KF.room.pos);rig.curTgt.copy(KF.room.tgt);rig.curFov=KF.room.fov;}
   camera.updateProjectionMatrix();
-  try{ if(bookLayer.classList.contains('show')) placeBook(pbook.classList.contains('open')); }catch(e){}
 }
 window.addEventListener('resize',resize);
 
@@ -608,6 +637,7 @@ function tick(){
   if(Math.abs(camera.fov-rig.curFov)>0.01){camera.fov=rig.curFov;camera.updateProjectionMatrix();}
   if(window._motes)window._motes.rotation.y+=dt*0.02;
   renderer.render(scene,camera);
+  cssRenderer.render(cssScene,camera);
   requestAnimationFrame(tick);
 }
 
@@ -647,33 +677,25 @@ function bookOnArrive(state){ if(state==='bookTop') openSearch(); }
 let pageSound=null; // e.g. pageSound=new Audio('assets/sfx/page-turn.mp3');
 function playPageSound(){ if(pageSound){ try{ pageSound.currentTime=0; const p=pageSound.play(); if(p&&p.catch)p.catch(()=>{}); }catch(e){} } }
 
-// align the DOM book exactly onto the physical 3D book on the desk (top-down view)
-function bookRect(open){
-  const cam=camera.clone();
-  cam.position.copy(KF.bookTop.pos); cam.lookAt(KF.bookTop.tgt);
-  cam.fov=KF.bookTop.fov; cam.aspect=window.innerWidth/window.innerHeight;
-  cam.updateProjectionMatrix(); cam.updateMatrixWorld();
-  const y=BOOKY+0.22, hw=open?2.15:1.05, hd=1.45;
-  const P=(x,z)=>{const v=new THREE.Vector3(x,y,z).project(cam);return[(v.x*0.5+0.5)*window.innerWidth,(-v.y*0.5+0.5)*window.innerHeight];};
-  const pts=[P(-hw,DESK_Z-hd),P(hw,DESK_Z-hd),P(hw,DESK_Z+hd),P(-hw,DESK_Z+hd)];
-  let a=[1e9,1e9,-1e9,-1e9];
-  pts.forEach(p=>{a[0]=Math.min(a[0],p[0]);a[1]=Math.min(a[1],p[1]);a[2]=Math.max(a[2],p[0]);a[3]=Math.max(a[3],p[1]);});
-  const px=(a[2]-a[0])*0.04, py=(a[3]-a[1])*0.04;
-  return {left:a[0]-px, top:a[1]-py, w:(a[2]-a[0])+2*px, h:(a[3]-a[1])+2*py};
-}
-function placeBook(open){
-  const r=bookRect(open);
-  pbook.style.left=r.left+'px'; pbook.style.top=r.top+'px';
-  pbook.style.width=r.w+'px'; pbook.style.height=r.h+'px';
-}
+// ---- book pages as REAL DOM in 3D space (CSS3D), sitting on the physical book ----
+const spreadEl=document.getElementById('spread');
+const CSS_S=2.1/560;                    // px→world: the cover element is 560px wide → 2.1 world units
+const coverObj=new THREE.CSS3DObject(pbookCover);
+coverObj.scale.setScalar(CSS_S);
+coverObj.position.set(0,BOOKY+0.17,DESK_Z);
+coverObj.rotation.set(-Math.PI/2,0,Math.PI);       // lie flat on the desk, facing up
+coverObj.visible=false; cssScene.add(coverObj);
+const spreadObj=new THREE.CSS3DObject(spreadEl);
+spreadObj.scale.setScalar(CSS_S);
+spreadObj.position.set(0,BOOKY+0.19,DESK_Z);
+spreadObj.rotation.set(-Math.PI/2,0,Math.PI);
+spreadObj.visible=false; cssScene.add(spreadObj);
+
 function openSearch(){
-  coverTarget=0;                       // physical book stays on the desk, closed
-  pbook.classList.remove('open');
-  placeBook(false);
-  bookLayer.classList.add('show');
-  setTimeout(()=>{try{pbookInput.focus({preventScroll:true});}catch(e){}},400);
+  coverObj.visible=true; spreadObj.visible=false; coverTarget=0;
+  setTimeout(()=>{try{pbookInput.focus({preventScroll:true});}catch(e){}},550);
 }
-function closeBook(){ bookLayer.classList.remove('show'); pbook.classList.remove('open'); stopPlay(); coverTarget=0; }
+function closeBook(){ coverObj.visible=false; spreadObj.visible=false; coverTarget=0; stopPlay(); }
 
 document.getElementById('spreadClose').addEventListener('click',()=>goTo('room'));
 document.getElementById('pbookSearch').addEventListener('submit',e=>{e.preventDefault();const q=pbookInput.value.trim();if(q)runSearch(q);});
@@ -693,8 +715,7 @@ async function runSearch(q){
     bkAuthor.textContent=info.author?('— '+info.author):(info.confidence==='low'?'— автор невідомий':'');
     document.getElementById('bookMsg').textContent='';
     renderTracks(); renderMoods(); renderGenres();
-    placeBook(true); playPageSound(); coverTarget=1;   // physically open the 3D book
-    pbook.classList.add('open');
+    coverObj.visible=false; spreadObj.visible=true; playPageSound(); coverTarget=1;   // open the 3D book
     pbookHint.innerHTML='Впиши назву — і книга розкриється';
   }catch(err){
     pbookHint.textContent=(err&&err.status===429)?'Забагато запитів — спробуй за хвилину.':'Не вдалося. Спробуй іншу назву.';
@@ -758,8 +779,8 @@ rig.path=[curKF(),KF.room];
 rig.curPos.copy(KF.room.pos);rig.curTgt.copy(KF.room.tgt);rig.curFov=KF.room.fov;
 requestAnimationFrame(tick);
 setTimeout(()=>loader.classList.add('hide'),450);
-window.MOODBOOK={goTo,rig,KF,renderer,scene,camera,proxies,bookCount:bookMatrices.length,
-  book:{openSearch,runSearch,closeBook,playTrack,BST}};
+window.MOODBOOK={goTo,rig,KF,renderer,scene,camera,cssRenderer,cssScene,proxies,bookCount:bookMatrices.length,
+  book:{openSearch,runSearch,closeBook,playTrack,BST,coverObj,spreadObj}};
 })();
 </script>
 </body>
