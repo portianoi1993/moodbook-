@@ -564,9 +564,12 @@ function resize(){
   const w=window.innerWidth,h=window.innerHeight;
   renderer.setSize(w,h,false);
   camera.aspect=w/h;
-  const rf=respFactor();
-  KF.room.pos.set(0,5.8,12*rf);
-  KF.room.fov=58*(rf>1?1.05:1);
+  const asp=w/h, wide=asp>1.9, narrow=w<720;
+  // aspect-aware framing: wide/short screens look less up so the desk stays visible
+  KF.room.pos.set(0, wide?4.9:5.4, (wide?13.5:12)*(narrow?1.18:1));
+  KF.room.tgt.set(0, wide?5.2:6.4, -9);
+  KF.room.fov=(wide?62:56)*(narrow?1.06:1);
+  if(rig.state==='room'&&!rig.active){rig.curPos.copy(KF.room.pos);rig.curTgt.copy(KF.room.tgt);rig.curFov=KF.room.fov;}
   camera.updateProjectionMatrix();
 }
 window.addEventListener('resize',resize);
