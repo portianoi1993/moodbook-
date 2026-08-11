@@ -65,13 +65,10 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:#160e08;color:var(--c
 .bookLayer.show{opacity:1;pointer-events:auto}
 .pbook{position:absolute;perspective:1600px;
   transition:left .55s cubic-bezier(.2,1,.3,1),top .55s cubic-bezier(.2,1,.3,1),width .55s cubic-bezier(.2,1,.3,1),height .55s cubic-bezier(.2,1,.3,1)}
-.pbook-cover{position:absolute;inset:0;border-radius:10px;background:linear-gradient(135deg,#b0472a,#8a3a22);
-  border:4px solid var(--ink);box-shadow:0 30px 70px rgba(0,0,0,.55),inset 0 0 0 10px rgba(255,220,170,.12),inset 0 0 60px rgba(0,0,0,.35);
-  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;
-  transform-origin:left center;transition:transform .9s cubic-bezier(.7,0,.2,1),opacity .4s ease .5s;backface-visibility:hidden;z-index:3}
-.pbook.open .pbook-cover{transform:rotateY(-172deg);opacity:0;pointer-events:none}
-.pbook-cover::before{content:"";position:absolute;left:14px;top:14px;right:14px;bottom:14px;border:2px solid rgba(255,220,170,.35);border-radius:6px;pointer-events:none}
-.pbook-emblem{font-family:'Fraunces',serif;font-weight:600;font-size:2.4rem;color:#f7e6c8;text-shadow:0 2px 0 rgba(0,0,0,.3)}
+.pbook-cover{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;
+  transition:opacity .35s ease;z-index:3;text-shadow:0 1px 3px rgba(0,0,0,.5)}
+.pbook.open .pbook-cover{opacity:0;pointer-events:none}
+.pbook-emblem{font-family:'Fraunces',serif;font-weight:600;font-size:1.5rem;color:#f7e6c8;text-shadow:0 2px 4px rgba(0,0,0,.5)}
 .pbook-emblem em{font-style:italic;color:var(--amber)}
 .pbook-search{display:flex;gap:8px;width:min(78%,440px)}
 .pbook-search input{flex:1;border:2px solid var(--ink);border-radius:100px;padding:12px 18px;font-family:'Fraunces',serif;font-style:italic;font-size:1rem;background:#f7ecd6;color:#3a2a1c;outline:none;min-width:0}
@@ -423,15 +420,19 @@ box(0.24,DESK_H,0.24,M.post, 2.6,DESK_H/2,DESK_Z-1.1,desk);
 box(0.24,DESK_H,0.24,M.post,-2.6,DESK_H/2,DESK_Z+1.1,desk);
 box(0.24,DESK_H,0.24,M.post, 2.6,DESK_H/2,DESK_Z+1.1,desk);
 
-/* closed book — a real physical object on the desk from the start */
+/* closed book — a real physical object on the desk; front cover opens in 3D */
 const BOOKY=DESK_H+0.22;
-const book=new THREE.Group();
-box(2.1,0.2,2.9,M.bookCover,0,BOOKY,DESK_Z,book);          // cover slab
-box(1.95,0.16,2.72,M.pages,0.04,BOOKY,DESK_Z,book);        // pages inset
-box(0.16,0.26,2.9,M.bookCover,-1.05,BOOKY,DESK_Z,book);    // spine
-const plate=new THREE.Mesh(new THREE.PlaneGeometry(1.2,0.7),new THREE.MeshStandardMaterial({color:0xf2e4ce,roughness:.9}));
-plate.rotation.x=-Math.PI/2;plate.position.set(0.08,BOOKY+0.11,DESK_Z);book.add(plate);
-landmarks.add(book);
+const book=new THREE.Group();landmarks.add(book);
+box(2.24,0.09,3.04,M.bookCover,0,BOOKY-0.15,DESK_Z,book);   // back cover
+box(2.06,0.18,2.86,M.pages,0,BOOKY-0.03,DESK_Z,book);       // page block (body)
+box(0.18,0.34,3.04,M.bookCover,-1.06,BOOKY-0.02,DESK_Z,book);// spine (left)
+// front cover pivots open about the left spine
+const coverPivot=new THREE.Group();
+coverPivot.position.set(-1.05,BOOKY+0.07,DESK_Z);book.add(coverPivot);
+box(2.1,0.07,2.88,M.bookCover,1.05,0,0,coverPivot);         // front cover (extends +x from spine)
+const plate=new THREE.Mesh(new THREE.PlaneGeometry(1.15,0.72),new THREE.MeshStandardMaterial({color:0xf2e4ce,roughness:.9}));
+plate.rotation.x=-Math.PI/2;plate.position.set(1.15,0.05,0);coverPivot.add(plate);
+let coverT=0, coverTarget=0;   // 3D cover open state: 0 closed → 1 open
 
 /* small desk lamp (subtle lived-in detail) */
 (function(){
@@ -601,8 +602,9 @@ function tick(){
   }
   px+=(tpx-px)*0.05; py+=(tpy-py)*0.05;
   const par=(rig.state==='room'&&!rig.active)?1:0;
-  camera.position.set(rig.curPos.x+px*1.4*par, rig.curPos.y-py*0.8*par, rig.curPos.z);
-  camera.lookAt(rig.curTgt.x+px*0.6*par, rig.curTgt.y, rig.curTgt.z);
+  camera.position.set(rig.curPos.x+px*0.3*par, rig.curPos.y-py*0.18*par, rig.curPos.z);
+  camera.lookAt(rig.curTgt.x+px*0.12*par, rig.curTgt.y, rig.curTgt.z);
+  coverT+=(coverTarget-coverT)*0.12; if(coverPivot)coverPivot.rotation.z=coverT*Math.PI*0.98;  // 3D cover opening
   if(Math.abs(camera.fov-rig.curFov)>0.01){camera.fov=rig.curFov;camera.updateProjectionMatrix();}
   if(window._motes)window._motes.rotation.y+=dt*0.02;
   renderer.render(scene,camera);
@@ -665,13 +667,13 @@ function placeBook(open){
   pbook.style.width=r.w+'px'; pbook.style.height=r.h+'px';
 }
 function openSearch(){
-  try{book.visible=false;}catch(e){}   // the DOM book takes the physical book's place
+  coverTarget=0;                       // physical book stays on the desk, closed
   pbook.classList.remove('open');
   placeBook(false);
   bookLayer.classList.add('show');
   setTimeout(()=>{try{pbookInput.focus({preventScroll:true});}catch(e){}},400);
 }
-function closeBook(){ bookLayer.classList.remove('show'); pbook.classList.remove('open'); stopPlay(); try{book.visible=true;}catch(e){} }
+function closeBook(){ bookLayer.classList.remove('show'); pbook.classList.remove('open'); stopPlay(); coverTarget=0; }
 
 document.getElementById('spreadClose').addEventListener('click',()=>goTo('room'));
 document.getElementById('pbookSearch').addEventListener('submit',e=>{e.preventDefault();const q=pbookInput.value.trim();if(q)runSearch(q);});
@@ -691,7 +693,7 @@ async function runSearch(q){
     bkAuthor.textContent=info.author?('— '+info.author):(info.confidence==='low'?'— автор невідомий':'');
     document.getElementById('bookMsg').textContent='';
     renderTracks(); renderMoods(); renderGenres();
-    placeBook(true); playPageSound();
+    placeBook(true); playPageSound(); coverTarget=1;   // physically open the 3D book
     pbook.classList.add('open');
     pbookHint.innerHTML='Впиши назву — і книга розкриється';
   }catch(err){
