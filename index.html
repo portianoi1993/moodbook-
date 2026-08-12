@@ -621,7 +621,7 @@ const V=(x,y,z)=>new THREE.Vector3(x,y,z);
 const KF={
   room:    { pos:V(0,4.2,6.5),  tgt:V(0,3.3,DESK_Z), fov:56 },
   approach:{ pos:V(0,5.4,1.0),  tgt:V(0,3.2,DESK_Z), fov:48 },
-  bookTop: { pos:V(0,BOOKY+4.2,DESK_Z+0.08), tgt:V(0,BOOKY,DESK_Z), fov:34 },  // near top-down + close: the open book fills the screen (it's the main UI)
+  bookTop: { pos:V(0,BOOKY+5.3,DESK_Z+0.08), tgt:V(0,BOOKY,DESK_Z), fov:34 },  // near top-down: the open book fills the screen with all content visible (it's the main UI)
   library: { pos:V(-1.2,5.4,3.5), tgt:V(LEFTX+2.2,5.4,-4), fov:62 },
   profile: { pos:V(1.2,5.4,3.5),  tgt:V(RIGHTX-2.2,5.4,-4), fov:62 },
 };
