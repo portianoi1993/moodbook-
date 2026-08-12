@@ -76,7 +76,7 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:#160e08;color:var(--c
 .pbook-hint{font-family:'DM Sans';font-size:.74rem;color:rgba(255,230,200,.8);min-height:1.2em}
 .pbook-cover.loading .pbook-search{opacity:.5;pointer-events:none}
 .spread{position:absolute;inset:0;display:flex;border-radius:10px;overflow:hidden;background:#f6ecd6;
-  border:4px solid var(--ink);box-shadow:0 30px 70px rgba(0,0,0,.5);opacity:0;transform:scale(.97);
+  border:4px solid var(--ink);opacity:0;transform:scale(.97);
   transition:opacity .5s ease .25s,transform .5s ease .25s}
 .pbook.open .spread{opacity:1;transform:scale(1)}
 .page{flex:1;padding:22px 24px;min-width:0;color:#3a2a1c;position:relative;overflow-y:auto}
@@ -113,8 +113,8 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:#160e08;color:var(--c
 @media(max-width:640px){.pbook{height:84vh}.spread{flex-direction:column}.page-r{border-top:2px solid #d8c4a0}.pbook-emblem{font-size:1.8rem}}
 
 /* ---- CSS3D book pages: real DOM sized in world units, placed on the 3D book ---- */
-#pbookCover{width:560px;height:772px;border-radius:22px;background:linear-gradient(135deg,#b0472a,#8a3a22);
-  border:8px solid var(--ink);box-shadow:0 40px 90px rgba(0,0,0,.6),inset 0 0 0 16px rgba(255,220,170,.12),inset 0 0 90px rgba(0,0,0,.35);
+#pbookCover{width:560px;height:772px;border-radius:8px;background:linear-gradient(135deg,#b0472a,#8a3a22);
+  border:8px solid var(--ink);box-shadow:inset 0 0 0 16px rgba(255,220,170,.12),inset 0 0 90px rgba(0,0,0,.35);
   display:flex;flex-direction:column;align-items:center;justify-content:center;gap:26px;color:#f7e6c8;
   position:relative;overflow:hidden;pointer-events:auto;opacity:1;transform:none;transition:opacity .3s ease}
 #pbookCover .pbook-emblem{font-size:2.8rem}
@@ -123,7 +123,7 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:#160e08;color:var(--c
 #pbookCover .pbook-search button{font-size:1.05rem;padding:0 24px}
 #pbookCover .pbook-hint{font-size:1.05rem}
 #spread{width:1160px;height:772px;position:relative;inset:auto;opacity:1;transform:none;pointer-events:auto;
-  border:8px solid var(--ink);border-radius:14px;box-shadow:0 40px 90px rgba(0,0,0,.55);transition:opacity .5s ease}
+  border:none;border-radius:4px;box-shadow:none;transition:opacity .5s ease;background:transparent}
 #spread .page{padding:34px 40px}
 #spread .bk-name{font-size:2rem}
 #spread .track .tt{font-size:1.1rem}
@@ -621,7 +621,7 @@ const V=(x,y,z)=>new THREE.Vector3(x,y,z);
 const KF={
   room:    { pos:V(0,4.2,6.5),  tgt:V(0,3.3,DESK_Z), fov:56 },
   approach:{ pos:V(0,5.4,1.0),  tgt:V(0,3.2,DESK_Z), fov:48 },
-  bookTop: { pos:V(0,BOOKY+7.6,DESK_Z+0.12), tgt:V(0,BOOKY,DESK_Z), fov:38 },  // near-perfect top-down: flat page content maps exactly onto the book (no float)
+  bookTop: { pos:V(0,BOOKY+4.2,DESK_Z+0.08), tgt:V(0,BOOKY,DESK_Z), fov:34 },  // near top-down + close: the open book fills the screen (it's the main UI)
   library: { pos:V(-1.2,5.4,3.5), tgt:V(LEFTX+2.2,5.4,-4), fov:62 },
   profile: { pos:V(1.2,5.4,3.5),  tgt:V(RIGHTX-2.2,5.4,-4), fov:62 },
 };
@@ -810,12 +810,12 @@ const spreadEl=document.getElementById('spread');
 const CSS_S=2.24/560;                   // px→world: cover element 560px → 2.24 world units, matching the 3D book's footprint
 const coverObj=new THREE.CSS3DObject(pbookCover);
 coverObj.scale.setScalar(CSS_S);
-coverObj.position.set(0,BOOKY+0.12,DESK_Z);
+coverObj.position.set(0,BOOKY+0.11,DESK_Z);  // flush on the closed cover's top face
 coverObj.rotation.set(-Math.PI/2,0,0);       // lie flat on the desk, facing up
 coverObj.visible=false; cssScene.add(coverObj);
 const spreadObj=new THREE.CSS3DObject(spreadEl);
 spreadObj.scale.setScalar(CSS_S);
-spreadObj.position.set(0,BOOKY+0.13,DESK_Z);
+spreadObj.position.set(0,BOOKY+0.05,DESK_Z);  // flush on the open pages
 spreadObj.rotation.set(-Math.PI/2,0,0);
 spreadObj.visible=false; cssScene.add(spreadObj);
 
