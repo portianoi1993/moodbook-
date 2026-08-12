@@ -545,22 +545,22 @@ const book=new THREE.Group();landmarks.add(book);
 
 // --- CLOSED book: the front cover physically swings open about the spine ---
 const closedBook=new THREE.Group();book.add(closedBook);
-box(2.24,0.09,3.04,M.bookCover,0,BOOKY-0.15,DESK_Z,closedBook);   // back cover
-box(2.06,0.18,2.86,M.pages,0,BOOKY-0.03,DESK_Z,closedBook);       // page block (body)
-box(0.18,0.34,3.04,M.bookCover,-1.06,BOOKY-0.02,DESK_Z,closedBook);// spine (left)
+box(1.84,0.09,2.46,M.bookCover,0,BOOKY-0.15,DESK_Z,closedBook);   // back cover
+box(1.70,0.18,2.30,M.pages,0,BOOKY-0.03,DESK_Z,closedBook);       // page block (body)
+box(0.15,0.34,2.46,M.bookCover,-0.86,BOOKY-0.02,DESK_Z,closedBook);// spine (left)
 const coverPivot=new THREE.Group();
-coverPivot.position.set(-1.05,BOOKY+0.07,DESK_Z);closedBook.add(coverPivot);
-box(2.1,0.07,2.88,M.bookCover,1.05,0,0,coverPivot);              // front cover (extends +x from spine)
-const plate=new THREE.Mesh(new THREE.PlaneGeometry(1.15,0.72),new THREE.MeshStandardMaterial({color:0xf2e4ce,roughness:.9}));
-plate.rotation.x=-Math.PI/2;plate.position.set(1.15,0.05,0);coverPivot.add(plate);
+coverPivot.position.set(-0.85,BOOKY+0.07,DESK_Z);closedBook.add(coverPivot);
+box(1.72,0.07,2.32,M.bookCover,0.86,0,0,coverPivot);            // front cover (extends +x from spine)
+const plate=new THREE.Mesh(new THREE.PlaneGeometry(0.94,0.58),new THREE.MeshStandardMaterial({color:0xf2e4ce,roughness:.9}));
+plate.rotation.x=-Math.PI/2;plate.position.set(0.94,0.05,0);coverPivot.add(plate);
 let coverT=0, coverTarget=0;             // 3D cover open state: 0 closed → 1 open
 let spreadT=0, spreadTarget=0;           // open-spread bloom: 0 hidden/small → 1 full
 
 // --- OPEN book: a wide two-page spread base the printed pages rest on (shown once the book has opened) ---
 const openBook=new THREE.Group();openBook.visible=false;book.add(openBook);
-box(5.0,0.10,3.40,M.bookCover,0,BOOKY-0.16,DESK_Z,openBook);      // open back cover (the binding)
-box(4.80,0.16,3.22,M.pages,   0,BOOKY-0.06,DESK_Z,openBook);      // the open cream pages
-box(0.10,0.20,3.22,M.bookCover,0,BOOKY+0.02,DESK_Z,openBook);     // center spine fold
+box(3.90,0.10,2.62,M.bookCover,0,BOOKY-0.16,DESK_Z,openBook);     // open back cover (the binding) — frames the 3.52×2.34 spread
+box(3.72,0.16,2.46,M.pages,   0,BOOKY-0.06,DESK_Z,openBook);      // the open cream pages
+box(0.10,0.20,2.46,M.bookCover,0,BOOKY+0.02,DESK_Z,openBook);     // center spine fold
 
 /* small desk lamp (subtle lived-in detail) */
 (function(){
@@ -621,7 +621,7 @@ const V=(x,y,z)=>new THREE.Vector3(x,y,z);
 const KF={
   room:    { pos:V(0,4.2,6.5),  tgt:V(0,3.3,DESK_Z), fov:56 },
   approach:{ pos:V(0,5.4,1.0),  tgt:V(0,3.2,DESK_Z), fov:48 },
-  bookTop: { pos:V(0,BOOKY+5.3,DESK_Z+0.08), tgt:V(0,BOOKY,DESK_Z), fov:34 },  // near top-down: the open book fills the screen with all content visible (it's the main UI)
+  bookTop: { pos:V(0,BOOKY+5.5,DESK_Z+0.08), tgt:V(0,BOOKY,DESK_Z), fov:36 },  // top-down on the desk + the book sitting on it (book is proportional, fits the desk)
   library: { pos:V(-1.2,5.4,3.5), tgt:V(LEFTX+2.2,5.4,-4), fov:62 },
   profile: { pos:V(1.2,5.4,3.5),  tgt:V(RIGHTX-2.2,5.4,-4), fov:62 },
 };
@@ -807,7 +807,7 @@ function playPageSound(){ SFX.play('page-turn'); }
 
 // ---- book pages as REAL DOM in 3D space (CSS3D), sitting on the physical book ----
 const spreadEl=document.getElementById('spread');
-const CSS_S=2.24/560;                   // px→world: cover element 560px → 2.24 world units, matching the 3D book's footprint
+const CSS_S=1.7/560;                    // px→world: cover 560px → 1.7 units; open spread → 3.52 wide × 2.34 deep, fits ON the 5.8×2.8 desk
 const coverObj=new THREE.CSS3DObject(pbookCover);
 coverObj.scale.setScalar(CSS_S);
 coverObj.position.set(0,BOOKY+0.11,DESK_Z);  // flush on the closed cover's top face
