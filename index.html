@@ -100,7 +100,12 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:#160e08;color:var(--c
 .pill:hover{background:#fff}
 .pill.on{background:var(--amber)}
 .pill.on.g{background:#3e7a72;color:#fff}
-.np{margin-top:auto;display:flex;align-items:center;gap:10px;border-top:2px solid #d8c4a0;padding-top:12px}
+.save-row{margin-top:auto;padding-top:14px}
+.save-btn{font-family:'DM Sans';font-weight:700;font-size:.78rem;padding:9px 16px;border:2px solid var(--ink);border-radius:100px;
+  background:#f6ecd6;color:#3a2a1c;cursor:pointer;transition:background .2s,transform .15s}
+.save-btn:hover{transform:translateY(-1px);background:#fff}
+.save-btn.on{background:#3e7a72;color:#fff}
+.np{display:flex;align-items:center;gap:10px;border-top:2px solid #d8c4a0;padding-top:12px;margin-top:12px}
 .np-eq{display:flex;gap:2px;align-items:flex-end;height:16px;flex-shrink:0}
 .np-eq i{width:3px;height:6px;background:#3e7a72;animation:eqb .8s ease-in-out infinite alternate}
 .np-eq i:nth-child(2){animation-delay:.15s}.np-eq i:nth-child(3){animation-delay:.3s}
@@ -132,6 +137,7 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:#160e08;color:var(--c
 #spread .pg-eyebrow{font-size:.75rem}
 #spread .spread-close{width:44px;height:44px;font-size:1.1rem}
 #spread .track .play{width:34px;height:34px}
+#spread .save-btn{font-size:1rem;padding:13px 24px}
 
 /* ---- cinematic grade over the 3D canvas (vignette + paper grain) ---- */
 .grade{position:fixed;inset:0;pointer-events:none;z-index:5}
@@ -154,7 +160,7 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:#160e08;color:var(--c
     <div class="tag">Музика для кожної сторінки</div>
   </div>
   <button class="back-btn" id="backBtn">← До кімнати</button>
-  <div class="hint" id="hint">Клікни на <b>стіл із книгою</b>, щоб шукати. Клікни на <b>торшер</b> — день ⇄ ніч.</div>
+  <div class="hint" id="hint">Клікни на <b>стіл із книгою</b>, щоб шукати. <b>Ліва стіна</b> — твоя бібліотека, <b>права</b> — профіль. Клікни на <b>торшер</b> — день ⇄ ніч.</div>
 </div>
 <div class="tooltip" id="tooltip"></div>
 
@@ -175,6 +181,7 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:#160e08;color:var(--c
         <div class="pill-row" id="moodRow"></div>
         <div class="pg-eyebrow">Жанр</div>
         <div class="pill-row" id="genreRow"></div>
+        <div class="save-row"><button class="save-btn" id="saveBtn">✚ Зберегти на полицю</button></div>
         <div class="np" id="np" style="display:none">
           <div class="np-eq"><i></i><i></i><i></i></div>
           <div class="np-name" id="npName"></div>
@@ -222,6 +229,13 @@ if(typeof THREE==='undefined'||!window.WebGLRenderingContext){fallback.classList
    in `defs` (or via SFX.set), and every hook picks it up. No file = silent no-op.
 ============================================================ */
 const APP={ mode:'day', savedBooks:[], user:null };
+
+/* saved library — localStorage now, Supabase later (same shape, same two functions) */
+const LS_BOOKS='moodbook.saved.v1';
+function loadSaved(){try{const v=JSON.parse(localStorage.getItem(LS_BOOKS));return Array.isArray(v)?v:[];}catch(e){return[];}}
+function persistSaved(){try{localStorage.setItem(LS_BOOKS,JSON.stringify(APP.savedBooks));}catch(e){}}
+APP.savedBooks=loadSaved();
+function hashStr(s){let h=0;for(let i=0;i<s.length;i++){h=(h*31+s.charCodeAt(i))|0;}return Math.abs(h);}
 
 const SFX=(function(){
   const defs={
@@ -467,15 +481,26 @@ const segW=((W-0.4)-WINW-0.7)/2, segOff=WINW/2+0.35+segW/2;
 buildBookcase(-segOff, BACK+0.42, 0, segW, upperH, 0, TIER+LEDGE);
 buildBookcase( segOff, BACK+0.42, 0, segW, upperH, 0, TIER+LEDGE);
 ledgeBeam(W-0.4, 0, BACK+0.9, 0);
-// LEFT & RIGHT — symmetric, full depth, wrap the back corners
-buildBookcase(LEFTX+0.42, 0.4, Math.PI/2, D-0.8, TIER, 0);
-buildBookcase(LEFTX+0.42, 0.4, Math.PI/2, D-0.8, upperH, 0, TIER+LEDGE);
+// LEFT & RIGHT — symmetric, full depth, wrap the back corners.
+// shelfRun() fills a stretch of wall between two world-z coordinates, so we can carve gaps
+// (the "My library" alcove on the left, the corkboard on the right, the side window above it).
+const ZA=BACK+0.4, ZB=FRONT-0.4;
+function shelfRun(x,rotY,zFrom,zTo,height,yBase){
+  const a=Math.min(zFrom,zTo), b=Math.max(zFrom,zTo), w=b-a;
+  if(w<0.7)return;
+  buildBookcase(x,(a+b)/2,rotY,w,height,0,yBase);
+}
+const LIB_Z=-4.0, LIB_W=8.0;   // "Моя бібліотека" alcove — carved into the LEFT lower shelving
+const PRO_Z=-4.0, PRO_W=7.0;   // corkboard profile — carved into the RIGHT lower shelving
+shelfRun(LEFTX+0.42, Math.PI/2, ZA, LIB_Z-LIB_W/2, TIER, 0);
+shelfRun(LEFTX+0.42, Math.PI/2, LIB_Z+LIB_W/2, ZB, TIER, 0);
+shelfRun(LEFTX+0.42, Math.PI/2, ZA, ZB, upperH, TIER+LEDGE);
 ledgeBeam(D-0.8, LEFTX+0.9, 0.4, Math.PI/2);
-buildBookcase(RIGHTX-0.42, 0.4, -Math.PI/2, D-0.8, TIER, 0);
-// upper right tier split into two segments, leaving a centered gap for the side window
-const rSegW=((D-0.8)-SWINW-0.7)/2, rSegOff=SWINW/2+0.35+rSegW/2;
-buildBookcase(RIGHTX-0.42, 0.4-rSegOff, -Math.PI/2, rSegW, upperH, 0, TIER+LEDGE);
-buildBookcase(RIGHTX-0.42, 0.4+rSegOff, -Math.PI/2, rSegW, upperH, 0, TIER+LEDGE);
+shelfRun(RIGHTX-0.42, -Math.PI/2, ZA, PRO_Z-PRO_W/2, TIER, 0);
+shelfRun(RIGHTX-0.42, -Math.PI/2, PRO_Z+PRO_W/2, ZB, TIER, 0);
+// upper right tier split around the side window
+shelfRun(RIGHTX-0.42, -Math.PI/2, ZA, 0.4-SWINW/2, upperH, TIER+LEDGE);
+shelfRun(RIGHTX-0.42, -Math.PI/2, 0.4+SWINW/2, ZB, upperH, TIER+LEDGE);
 ledgeBeam(D-0.8, RIGHTX-0.9, 0.4, -Math.PI/2);
 // WINDOWS — reusable frame+glass+glow+stars; glass/glow react to day/night, stars fade in at night
 function makeStars(parent,w,h,zoff){
@@ -504,6 +529,90 @@ function makeWindow(cx,cy,cz,w,h,rotY){
 }
 makeWindow(0,WINY,BACK, WINW, upperH*0.82, 0);               // back wall (the focal window above the desk)
 makeWindow(RIGHTX,SWINY,0.4, SWINW, upperH*0.62, -Math.PI/2); // right side wall
+
+/* ============================================================
+   PHASE 3 — "МОЯ БІБЛІОТЕКА": a real alcove in the left wall.
+   Saved books are physical books with their titles printed on the spine;
+   clicking one carries the camera to the desk and opens THAT book.
+============================================================ */
+// text baked onto a canvas → used as a real texture (plaques, book spines)
+function textTexture(text,opt){
+  const o=opt||{}, w=o.w||512, h=o.h||128;
+  const c=document.createElement('canvas');c.width=w;c.height=h;
+  const x=c.getContext('2d');
+  x.fillStyle=o.bg||'#2e1c10';x.fillRect(0,0,w,h);
+  x.translate(w/2,h/2); if(o.rot)x.rotate(o.rot);
+  const span=o.rot?h:w;
+  let size=o.size||64;
+  x.fillStyle=o.fg||'#f2e4ce';x.textAlign='center';x.textBaseline='middle';
+  let t=String(text||'');
+  do{ x.font=(o.weight||'600')+' '+size+'px '+(o.font||"Fraunces, Georgia, serif");
+      if(x.measureText(t).width<=span*0.88)break; size-=3; }while(size>18);
+  if(x.measureText(t).width>span*0.88){
+    while(t.length>2&&x.measureText(t+'…').width>span*0.88)t=t.slice(0,-1);
+    t+='…';
+  }
+  x.fillText(t,0,o.dy||0);
+  const tex=new THREE.CanvasTexture(c);
+  tex.colorSpace=THREE.SRGBColorSpace;tex.anisotropy=4;
+  return tex;
+}
+const LIB_ROWS=[1.55,3.10,4.65,6.20];   // plank surfaces the saved books stand on
+const LIB_D=0.74;
+const libGroup=new THREE.Group();
+libGroup.position.set(LEFTX+0.42,0,LIB_Z);libGroup.rotation.y=Math.PI/2;   // local +z faces into the room
+landmarks.add(libGroup);libGroup.updateMatrixWorld(true);
+(function(){
+  const w=LIB_W, postW=0.18;
+  box(postW,TIER,LIB_D,M.post,-w/2+postW/2,TIER/2,0,libGroup);
+  box(postW,TIER,LIB_D,M.post, w/2-postW/2,TIER/2,0,libGroup);
+  box(w,TIER,0.08,toon(0x2b1a0e),0,TIER/2,-LIB_D/2+0.04,libGroup);        // darker back panel so spines pop
+  box(w,0.16,LIB_D,M.plank,0,0.08,0,libGroup);                            // base
+  LIB_ROWS.forEach(y=>box(w,0.14,LIB_D,M.plank,0,y-0.07,0,libGroup));
+  box(w,0.18,LIB_D,M.plank,0,TIER-0.09,0,libGroup);                       // top
+  // brass plaque naming the alcove
+  const pl=new THREE.Mesh(new THREE.PlaneGeometry(3.2,0.52),
+    new THREE.MeshBasicMaterial({map:textTexture('МОЯ БІБЛІОТЕКА',{w:640,h:104,bg:'#8a6a2e',fg:'#fff3d0',size:52,font:"'DM Sans',sans-serif",weight:'700'})}));
+  pl.position.set(0,TIER-0.6,LIB_D/2+0.02);libGroup.add(pl);
+})();
+const libLight=new THREE.PointLight(0xffc98a,2.6,10,2);
+libLight.position.set(LEFTX+2.0,4.6,LIB_Z);atmosphere.add(libLight);
+
+const libBooks=new THREE.Group();libGroup.add(libBooks);
+const savedPicks=[];
+let libEmpty=null;
+function rebuildLibrary(){
+  while(libBooks.children.length){
+    const c=libBooks.children[0];
+    c.traverse(o=>{if(o.geometry)o.geometry.dispose();});
+    libBooks.remove(c);
+  }
+  savedPicks.length=0;
+  const BW=0.38, BH=1.16, BD=0.54, ZC=LIB_D/2-BD/2-0.04;
+  let row=0, cx=-LIB_W/2+0.40;
+  APP.savedBooks.forEach(rec=>{
+    if(cx+BW>LIB_W/2-0.34){row++;cx=-LIB_W/2+0.40;}
+    if(row>=LIB_ROWS.length)return;
+    const col=rec.color||BOOK_COLORS[hashStr(rec.key||rec.title||'')%BOOK_COLORS.length];
+    const side=toon(col);
+    const hex='#'+col.toString(16).padStart(6,'0');
+    const face=new THREE.MeshToonMaterial({map:textTexture(rec.title,{w:128,h:512,rot:-Math.PI/2,bg:hex,fg:'#fdf3dd',size:56}),gradientMap:RAMP});
+    const geo=new THREE.BoxGeometry(BW,BH,BD);
+    const m=new THREE.Mesh(geo,[side,side,side,side,face,side]);   // +z face (index 4) = the spine, facing the room
+    m.position.set(cx+BW/2,LIB_ROWS[row]+BH/2,ZC);
+    m.castShadow=!isMobile;
+    m.add(new THREE.LineSegments(new THREE.EdgesGeometry(geo),lineMat));
+    m.userData={type:'saved',rec:rec,label:rec.title,sub:rec.author||'Моя книга'};
+    libBooks.add(m);savedPicks.push(m);
+    cx+=BW+0.05;
+  });
+  if(libEmpty){libGroup.remove(libEmpty);libEmpty=null;}
+  if(!APP.savedBooks.length){
+    libEmpty=new THREE.Mesh(new THREE.PlaneGeometry(5.6,0.9),
+      new THREE.MeshBasicMaterial({map:textTexture('Полиця порожня',{w:700,h:112,bg:'#2b1a0e',fg:'#c9b48a',size:56}),transparent:true}));
+    libEmpty.position.set(0,LIB_ROWS[1]+0.55,-LIB_D/2+0.10);libGroup.add(libEmpty);
+  }
+}
 
 /* create the single InstancedMesh for all books (+ ink outline hull) */
 (function(){
@@ -622,8 +731,8 @@ const KF={
   room:    { pos:V(0,4.2,6.5),  tgt:V(0,3.3,DESK_Z), fov:56 },
   approach:{ pos:V(0,5.4,1.0),  tgt:V(0,3.2,DESK_Z), fov:48 },
   bookTop: { pos:V(0,BOOKY+5.8,DESK_Z+0.08), tgt:V(0,BOOKY,DESK_Z), fov:36 },  // top-down on the desk + the book sitting on it (book is proportional, fits the desk)
-  library: { pos:V(-1.2,5.4,3.5), tgt:V(LEFTX+2.2,5.4,-4), fov:62 },
-  profile: { pos:V(1.2,5.4,3.5),  tgt:V(RIGHTX-2.2,5.4,-4), fov:62 },
+  library: { pos:V(LEFTX+7.6,4.5,LIB_Z), tgt:V(LEFTX+0.6,4.2,LIB_Z), fov:50 },   // face the "My library" alcove head-on
+  profile: { pos:V(RIGHTX-7.4,4.6,PRO_Z), tgt:V(RIGHTX-0.6,4.4,PRO_Z), fov:50 }, // face the corkboard head-on
 };
 function respFactor(){return window.innerWidth<720?1.18:1;}
 
@@ -656,10 +765,18 @@ function applyPath(tt){
   rig.curFov=a.fov+(b.fov-a.fov)*lt;
 }
 
+const HINTS={
+  room:'Клікни на <b>стіл із книгою</b>, щоб шукати. <b>Ліва стіна</b> — твоя бібліотека, <b>права</b> — профіль. Клікни на <b>торшер</b> — день ⇄ ніч.',
+  library:'Твоя полиця. Клікни на <b>книгу</b> — вона розгорнеться на столі.',
+  profile:'Твій куточок. Клікни по <b>імені</b>, щоб змінити його.',
+  bookTop:''
+};
 function updateUI(state){
   titleEl.classList.remove('show');   // no separate title overlay — the book itself is the focus
   backBtn.classList.toggle('show',state!=='room');
-  hintEl.style.opacity=(state==='room')?'1':'0';
+  const h=HINTS[state]||'';
+  if(h)hintEl.innerHTML=h;
+  hintEl.style.opacity=h?'1':'0';
   bookOnState(state);
 }
 backBtn.addEventListener('click',()=>goTo('room'));
@@ -690,14 +807,20 @@ const hotspots=proxies.concat(actionProxies);
 function pickAt(cx,cy){
   ndc.x=(cx/window.innerWidth)*2-1; ndc.y=-(cy/window.innerHeight)*2+1;
   raycaster.setFromCamera(ndc,camera);
+  if(rig.state==='library'){                    // on the shelf the saved books themselves are the targets
+    const s=raycaster.intersectObjects(savedPicks,false)[0];
+    return s?s.object:null;
+  }
+  if(rig.state!=='room')return null;
   // small, intentional action hotspots (the lamp) take priority over the large desk navigation zone they sit inside
   const a=raycaster.intersectObjects(actionProxies,false)[0];
   if(a)return a.object;
   const n=raycaster.intersectObjects(proxies,false)[0];
   return n?n.object:null;
 }
+function interactive(){return rig.state==='room'||rig.state==='library';}
 canvas.addEventListener('pointermove',e=>{
-  if(rig.state!=='room'||rig.active){canvas.style.cursor='default';tooltip.style.opacity='0';return;}
+  if(!interactive()||rig.active){canvas.style.cursor='default';tooltip.style.opacity='0';return;}
   const o=pickAt(e.clientX,e.clientY);
   canvas.style.cursor=o?'pointer':'grab';
   if(o){tooltip.style.left=e.clientX+'px';tooltip.style.top=e.clientY+'px';
@@ -706,11 +829,12 @@ canvas.addEventListener('pointermove',e=>{
 });
 let downX=0,downY=0,dragging=false,lastNav=0;
 function navHotspot(cx,cy){
-  if(dragging||rig.state!=='room'||rig.active)return;
+  if(dragging||!interactive()||rig.active)return;
   const o=pickAt(cx,cy);
   if(!o)return;
   tooltip.style.opacity='0'; lastNav=Date.now();
-  if(o.userData.type==='action')o.userData.onClick();
+  if(o.userData.type==='saved')openSavedBook(o.userData.rec);
+  else if(o.userData.type==='action')o.userData.onClick();
   else goTo(o.userData.action);
 }
 canvas.addEventListener('pointerdown',e=>{downX=e.clientX;downY=e.clientY;dragging=false;});
@@ -800,7 +924,16 @@ const CORE={
 };
 
 function bookOnState(state){ if(state!=='bookTop') closeBook(); }
-function bookOnArrive(state){ if(state==='bookTop') openSearch(); }
+let pendingSaved=null;
+function openSavedBook(rec){ pendingSaved=rec; goTo('bookTop'); }   // physical navigation: the shelf book travels to the desk
+function bookOnArrive(state){
+  if(state!=='bookTop')return;
+  openSearch();
+  if(pendingSaved){
+    const r=pendingSaved; pendingSaved=null;
+    loadBook({titleEn:r.titleEn||r.title,titleOriginal:r.title,author:r.author||'',confidence:'high'});
+  }
+}
 
 // page-turn sound — routes through the central audio system (SFX.set('page-turn', 'assets/sfx/page-turn.mp3'))
 function playPageSound(){ SFX.play('page-turn'); }
@@ -855,17 +988,23 @@ document.getElementById('npStop').addEventListener('click',stopPlay);
 async function runSearch(q){
   pbookCover.classList.add('loading');
   pbookHint.innerHTML='<span class="mini-spin"></span> Шукаю книгу…';
+  let info=null; try{info=await CORE.identify(q);}catch(e){}
+  if(!info||!info.titleEn){info={titleEn:q,titleOriginal:q,author:'',confidence:'low'};}
+  await loadBook(info);
+}
+// fetch tracks+moods for a known book and physically open it (shared by search and by shelf books)
+async function loadBook(info){
+  pbookCover.classList.add('loading');
+  pbookHint.innerHTML='<span class="mini-spin"></span> Розгортаю «'+esc(info.titleOriginal||info.titleEn)+'»…';
   try{
-    let info=null; try{info=await CORE.identify(q);}catch(e){}
-    if(!info||!info.titleEn){info={titleEn:q,titleOriginal:q,author:'',confidence:'low'};}
     BST.info=info; BST.activeMood=null; BST.activeGenre=null;
     const [tr,md]=await Promise.all([CORE.tracks(info).catch(()=>null),CORE.moods(info).catch(()=>null)]);
     if(!tr||!tr.tracks||!tr.tracks.length)throw{status:'empty'};
     BST.tracks=tr.tracks; BST.moods=(md&&md.moods)||[];
-    bkName.textContent=info.titleOriginal||info.titleEn||q;
+    bkName.textContent=info.titleOriginal||info.titleEn||'';
     bkAuthor.textContent=info.author?('— '+info.author):(info.confidence==='low'?'— автор невідомий':'');
     document.getElementById('bookMsg').textContent='';
-    renderTracks(); renderMoods(); renderGenres();
+    renderTracks(); renderMoods(); renderGenres(); updateSaveBtn();
     startOpening();              // cover swings open → search face fades → book blooms into the printed spread
     pbookHint.innerHTML='Впиши назву — і книга розкриється';
   }catch(err){
@@ -874,6 +1013,30 @@ async function runSearch(q){
     pbookCover.classList.remove('loading');
   }
 }
+
+/* ---- saving the open book onto the left-wall shelf ---- */
+const saveBtn=document.getElementById('saveBtn');
+function bookKey(info){return String(info&&(info.titleEn||info.titleOriginal)||'').toLowerCase().trim();}
+function savedIndex(info){const k=bookKey(info);return APP.savedBooks.findIndex(b=>b.key===k);}
+function updateSaveBtn(){
+  const on=BST.info&&savedIndex(BST.info)>=0;
+  saveBtn.classList.toggle('on',!!on);
+  saveBtn.textContent=on?'✓ На полиці':'✚ Зберегти на полицю';
+}
+saveBtn.addEventListener('click',()=>{
+  if(!BST.info)return;
+  const i=savedIndex(BST.info);
+  if(i>=0)APP.savedBooks.splice(i,1);
+  else{
+    const k=bookKey(BST.info);
+    APP.savedBooks.push({
+      key:k, title:BST.info.titleOriginal||BST.info.titleEn, titleEn:BST.info.titleEn,
+      author:BST.info.author||'', color:BOOK_COLORS[hashStr(k)%BOOK_COLORS.length], ts:Date.now()
+    });
+    SFX.play('page-turn');
+  }
+  persistSaved(); rebuildLibrary(); updateSaveBtn();
+});
 function renderTracks(){
   tracksBody.innerHTML='';
   BST.tracks.forEach((t,i)=>{
@@ -925,6 +1088,7 @@ function stopPlay(){
 }
 
 /* boot */
+rebuildLibrary(); updateSaveBtn();
 resize();
 rig.path=[curKF(),KF.room];
 rig.curPos.copy(KF.room.pos);rig.curTgt.copy(KF.room.tgt);rig.curFov=KF.room.fov;
@@ -932,7 +1096,8 @@ requestAnimationFrame(tick);
 setTimeout(()=>loader.classList.add('hide'),450);
 window.MOODBOOK={goTo,rig,KF,renderer,scene,camera,cssRenderer,cssScene,proxies,bookCount:bookMatrices.length,
   APP,SFX,setMode,toggleMode,curEnv,applyEnv,_stepEnv:tickEnv,DAY,NIGHT,
-  book:{openSearch,runSearch,closeBook,playTrack,BST,coverObj,spreadObj}};
+  library:{rebuild:rebuildLibrary,open:openSavedBook,saved:()=>APP.savedBooks,picks:savedPicks},
+  book:{openSearch,runSearch,loadBook,closeBook,playTrack,BST,coverObj,spreadObj}};
 })();
 </script>
 </body>
