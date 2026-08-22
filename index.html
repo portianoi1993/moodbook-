@@ -139,6 +139,34 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:#160e08;color:var(--c
 #spread .track .play{width:34px;height:34px}
 #spread .save-btn{font-size:1rem;padding:13px 24px}
 
+/* ---- PHASE 4: corkboard profile — real paper notes pinned in 3D on the right wall ---- */
+#profileCard{width:900px;height:620px;position:relative;opacity:0;transition:opacity .45s ease;pointer-events:auto;
+  font-family:'DM Sans',sans-serif}
+.note{position:absolute;background:#f6ecd6;color:#3a2a1c;border:3px solid #241812;border-radius:3px;
+  padding:24px 26px;box-shadow:6px 10px 0 rgba(0,0,0,.28)}
+.note::before{content:"";position:absolute;top:-11px;left:50%;transform:translateX(-50%);width:22px;height:22px;border-radius:50%;
+  background:radial-gradient(circle at 35% 30%,#e8664a,#a5301c);border:2px solid #241812;box-shadow:0 3px 6px rgba(0,0,0,.4)}
+.note h4{font-family:'DM Sans';font-size:.95rem;letter-spacing:.18em;text-transform:uppercase;color:#a07a4a;font-weight:700;margin-bottom:12px}
+.n-me{left:24px;top:26px;width:430px;transform:rotate(-1.4deg);display:flex;align-items:center;gap:20px}
+.n-plan{right:26px;top:34px;width:378px;transform:rotate(1.8deg)}
+.n-stats{left:40px;bottom:30px;width:452px;transform:rotate(1.1deg)}
+.n-since{right:34px;bottom:44px;width:340px;transform:rotate(-2deg)}
+.pc-ava{width:104px;height:104px;border-radius:50%;flex-shrink:0;background:linear-gradient(140deg,#f0b968,#b0472a);
+  border:3px solid #241812;display:flex;align-items:center;justify-content:center;
+  font-family:'Fraunces',serif;font-weight:600;font-size:3rem;color:#fff5e0}
+.pc-name{font-family:'Fraunces',serif;font-weight:600;font-size:2.1rem;line-height:1.05;color:#2c1e12;
+  outline:none;border-bottom:2px dashed transparent;cursor:text}
+.pc-name:hover,.pc-name:focus{border-bottom-color:#c9a066}
+.pc-role{font-size:.95rem;color:#8a6a44;margin-top:4px}
+.pc-badge{display:inline-block;font-weight:700;font-size:1.05rem;padding:8px 18px;border:3px solid #241812;border-radius:100px;
+  background:#f0b968;color:#241812}
+.pc-sub{font-size:.95rem;color:#8a6a44;margin-top:12px;line-height:1.45}
+.pc-grid{display:flex;gap:26px}
+.pc-stat{flex:1}
+.pc-num{font-family:'Fraunces',serif;font-weight:600;font-size:2.4rem;color:#b0472a;line-height:1}
+.pc-lab{font-size:.86rem;color:#8a6a44;margin-top:4px}
+.pc-date{font-family:'Fraunces',serif;font-style:italic;font-size:1.5rem;color:#2c1e12}
+
 /* ---- cinematic grade over the 3D canvas (vignette + paper grain) ---- */
 .grade{position:fixed;inset:0;pointer-events:none;z-index:5}
 .grade::before{content:"";position:absolute;inset:0;
@@ -199,6 +227,33 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:#160e08;color:var(--c
     </div>
   </div>
 </div>
+<!-- PROFILE CORKBOARD (Phase 4) — pinned to the right wall in 3D -->
+<div id="profileCard">
+  <div class="note n-me">
+    <div class="pc-ava" id="pcAva">Ч</div>
+    <div>
+      <div class="pc-name" id="pcName" contenteditable="true" spellcheck="false">Читач</div>
+      <div class="pc-role">читає під музику MoodBook</div>
+    </div>
+  </div>
+  <div class="note n-plan">
+    <h4>Підписка</h4>
+    <span class="pc-badge" id="pcPlan">Безкоштовний</span>
+    <div class="pc-sub" id="pcPlanSub">3 безкоштовні пошуки</div>
+  </div>
+  <div class="note n-stats">
+    <h4>Статистика</h4>
+    <div class="pc-grid">
+      <div class="pc-stat"><div class="pc-num" id="pcBooks">0</div><div class="pc-lab">книг на полиці</div></div>
+      <div class="pc-stat"><div class="pc-num" id="pcSearch">0</div><div class="pc-lab">пошуків</div></div>
+      <div class="pc-stat"><div class="pc-num" id="pcPlayed">0</div><div class="pc-lab">треків</div></div>
+    </div>
+  </div>
+  <div class="note n-since">
+    <h4>У бібліотеці з</h4>
+    <div class="pc-date" id="pcSince">—</div>
+  </div>
+</div>
 <iframe id="ytFrame" allow="autoplay; encrypted-media" title="player" style="position:fixed;width:1px;height:1px;left:-10px;bottom:-10px;opacity:0;pointer-events:none;border:0"></iframe>
 
 <div class="loader" id="loader"><div class="spark"></div><div class="lm">Заходимо до бібліотеки…</div></div>
@@ -236,6 +291,17 @@ function loadSaved(){try{const v=JSON.parse(localStorage.getItem(LS_BOOKS));retu
 function persistSaved(){try{localStorage.setItem(LS_BOOKS,JSON.stringify(APP.savedBooks));}catch(e){}}
 APP.savedBooks=loadSaved();
 function hashStr(s){let h=0;for(let i=0;i<s.length;i++){h=(h*31+s.charCodeAt(i))|0;}return Math.abs(h);}
+
+/* the user behind the corkboard — local for now, same shape as the future Supabase row */
+const LS_USER='moodbook.user.v1';
+function persistUser(){try{localStorage.setItem(LS_USER,JSON.stringify(APP.user));}catch(e){}}
+(function(){
+  let u=null; try{u=JSON.parse(localStorage.getItem(LS_USER));}catch(e){}
+  APP.user=u&&typeof u==='object'?u:{name:'Читач',plan:'free',joined:Date.now()};
+  if(!APP.user.stats)APP.user.stats={searches:0,played:0};
+  if(!APP.user.joined)APP.user.joined=Date.now();
+  persistUser();
+})();
 
 const SFX=(function(){
   const defs={
@@ -612,7 +678,59 @@ function rebuildLibrary(){
       new THREE.MeshBasicMaterial({map:textTexture('Полиця порожня',{w:700,h:112,bg:'#2b1a0e',fg:'#c9b48a',size:56}),transparent:true}));
     libEmpty.position.set(0,LIB_ROWS[1]+0.55,-LIB_D/2+0.10);libGroup.add(libEmpty);
   }
+  renderProfile();
 }
+
+/* ============================================================
+   PHASE 4 — PROFILE CORKBOARD: a physical board on the right wall.
+   The user's real data lives on paper notes pinned to it (CSS3D), not a web dashboard.
+============================================================ */
+const PRO_Y=4.5;
+(function(){
+  const g=new THREE.Group();
+  g.position.set(RIGHTX-0.44,PRO_Y,PRO_Z);g.rotation.y=-Math.PI/2;   // local +z faces into the room
+  landmarks.add(g);
+  box(6.5,4.9,0.14,M.post,0,0,-0.08,g);                    // backing
+  box(6.1,4.5,0.08,toon(0xbf9256),0,0,0.02,g);             // cork surface
+  box(6.6,0.30,0.28,M.plank,0,2.42,0.06,g);                // frame rails
+  box(6.6,0.30,0.28,M.plank,0,-2.42,0.06,g);
+  box(0.30,4.9,0.28,M.plank,3.15,0,0.06,g);
+  box(0.30,4.9,0.28,M.plank,-3.15,0,0.06,g);
+})();
+const proLight=new THREE.PointLight(0xffc98a,2.4,10,2);
+proLight.position.set(RIGHTX-2.2,PRO_Y+0.6,PRO_Z);atmosphere.add(proLight);
+
+const profileEl=document.getElementById('profileCard');
+const CSS_P=5.8/900;                                        // 900px note sheet → 5.8 world units across the cork
+const profileObj=new THREE.CSS3DObject(profileEl);
+profileObj.scale.setScalar(CSS_P);
+profileObj.position.set(RIGHTX-0.56,PRO_Y,PRO_Z);
+profileObj.rotation.set(0,-Math.PI/2,0);
+profileObj.visible=false;cssScene.add(profileObj);
+
+const MONTHS=['січня','лютого','березня','квітня','травня','червня','липня','серпня','вересня','жовтня','листопада','грудня'];
+function renderProfile(){
+  const u=APP.user, n=(u.name||'Читач').trim()||'Читач';
+  const nameEl=document.getElementById('pcName');
+  if(document.activeElement!==nameEl)nameEl.textContent=n;
+  document.getElementById('pcAva').textContent=n[0].toUpperCase();
+  document.getElementById('pcPlan').textContent=u.plan==='pro'?'Pro':'Безкоштовний';
+  document.getElementById('pcPlanSub').innerHTML=u.plan==='pro'
+    ? 'Безлімітні пошуки та вся бібліотека.'
+    : '3 безкоштовні пошуки.<br>Синхронізація між пристроями — скоро.';
+  document.getElementById('pcBooks').textContent=APP.savedBooks.length;
+  document.getElementById('pcSearch').textContent=u.stats.searches;
+  document.getElementById('pcPlayed').textContent=u.stats.played;
+  const d=new Date(u.joined);
+  document.getElementById('pcSince').textContent=d.getDate()+' '+MONTHS[d.getMonth()]+' '+d.getFullYear();
+}
+(function(){
+  const nameEl=document.getElementById('pcName');
+  const commit=()=>{APP.user.name=(nameEl.textContent||'').replace(/\s+/g,' ').trim().slice(0,28)||'Читач';persistUser();renderProfile();};
+  nameEl.addEventListener('blur',commit);
+  nameEl.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();nameEl.blur();}});
+})();
+function bumpStat(k){APP.user.stats[k]=(APP.user.stats[k]||0)+1;persistUser();renderProfile();}
 
 /* create the single InstancedMesh for all books (+ ink outline hull) */
 (function(){
@@ -777,6 +895,9 @@ function updateUI(state){
   const h=HINTS[state]||'';
   if(h)hintEl.innerHTML=h;
   hintEl.style.opacity=h?'1':'0';
+  // the corkboard notes are real DOM, so they only exist while we're actually facing the board
+  profileObj.visible=(state==='profile');
+  if(state!=='profile')profileEl.style.opacity='0';
   bookOnState(state);
 }
 backBtn.addEventListener('click',()=>goTo('room'));
@@ -927,6 +1048,7 @@ function bookOnState(state){ if(state!=='bookTop') closeBook(); }
 let pendingSaved=null;
 function openSavedBook(rec){ pendingSaved=rec; goTo('bookTop'); }   // physical navigation: the shelf book travels to the desk
 function bookOnArrive(state){
+  if(state==='profile'){renderProfile();profileEl.style.opacity='1';}
   if(state!=='bookTop')return;
   openSearch();
   if(pendingSaved){
@@ -988,6 +1110,7 @@ document.getElementById('npStop').addEventListener('click',stopPlay);
 async function runSearch(q){
   pbookCover.classList.add('loading');
   pbookHint.innerHTML='<span class="mini-spin"></span> Шукаю книгу…';
+  bumpStat('searches');
   let info=null; try{info=await CORE.identify(q);}catch(e){}
   if(!info||!info.titleEn){info={titleEn:q,titleOriginal:q,author:'',confidence:'low'};}
   await loadBook(info);
@@ -1079,6 +1202,7 @@ async function playTrack(i){
       ytFrame.src='https://www.youtube.com/embed/'+v.videoId+'?autoplay=1&rel=0&modestbranding=1&playsinline=1';
       npBar.style.display='flex'; npName.textContent=t.name;
       if(row)row.querySelector('.play').innerHTML='❚❚';
+      bumpStat('played');
     }else if(row){row.querySelector('.play').innerHTML='▶';}
   }catch(e){ if(row)row.querySelector('.play').innerHTML='▶'; }
 }
@@ -1097,6 +1221,7 @@ setTimeout(()=>loader.classList.add('hide'),450);
 window.MOODBOOK={goTo,rig,KF,renderer,scene,camera,cssRenderer,cssScene,proxies,bookCount:bookMatrices.length,
   APP,SFX,setMode,toggleMode,curEnv,applyEnv,_stepEnv:tickEnv,DAY,NIGHT,
   library:{rebuild:rebuildLibrary,open:openSavedBook,saved:()=>APP.savedBooks,picks:savedPicks},
+  profile:{render:renderProfile,obj:profileObj,bumpStat,user:()=>APP.user},
   book:{openSearch,runSearch,loadBook,closeBook,playTrack,BST,coverObj,spreadObj}};
 })();
 </script>
