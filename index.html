@@ -155,6 +155,8 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:#160e08;color:var(--c
 .n-plan{right:26px;top:34px;width:378px;transform:rotate(1.8deg)}
 .n-stats{left:40px;bottom:30px;width:452px;transform:rotate(1.1deg)}
 .n-since{right:34px;bottom:44px;width:340px;transform:rotate(-2deg)}
+.n-last{left:250px;top:250px;width:400px;transform:rotate(-.8deg);text-align:center}
+.pc-last{font-family:'Fraunces',serif;font-weight:600;font-size:1.6rem;color:#2c1e12;line-height:1.15}
 .pc-ava{width:104px;height:104px;border-radius:50%;flex-shrink:0;background:linear-gradient(140deg,#f0b968,#b0472a);
   border:3px solid #241812;display:flex;align-items:center;justify-content:center;
   font-family:'Fraunces',serif;font-weight:600;font-size:3rem;color:#fff5e0}
@@ -171,6 +173,25 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:#160e08;color:var(--c
 .pc-lab{font-size:.86rem;color:#8a6a44;margin-top:4px}
 .pc-date{font-family:'Fraunces',serif;font-style:italic;font-size:1.5rem;color:#2c1e12}
 
+/* ---- PHASE 7: the MoodBook mark, floating above the desk (cloud-graffiti, ink outline) ---- */
+#introLogo{width:1100px;height:360px;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  position:relative;pointer-events:none;opacity:0;transform:scale(.7)}
+#introLogo.anim{transition:opacity .55s ease,transform 1s cubic-bezier(.18,1.35,.32,1)}
+#introLogo.pop{opacity:1;transform:scale(1)}
+#introLogo::before{content:"";position:absolute;width:940px;height:300px;border-radius:50%;
+  background:radial-gradient(closest-side,rgba(255,226,176,.34),rgba(255,200,140,0) 72%);filter:blur(30px)}
+.il-word{position:relative;font-family:'Fraunces',serif;font-weight:600;font-size:210px;line-height:.9;letter-spacing:-.015em;white-space:nowrap}
+.il-word span{
+  text-shadow:
+    -9px 0 0 #241812, 9px 0 0 #241812, 0 -9px 0 #241812, 0 9px 0 #241812,
+    -7px -7px 0 #241812, 7px -7px 0 #241812, -7px 7px 0 #241812, 7px 7px 0 #241812,
+    -9px 5px 0 #241812, 9px 5px 0 #241812, -5px 9px 0 #241812, 5px 9px 0 #241812,
+    0 26px 0 rgba(36,24,18,.30), 0 46px 80px rgba(0,0,0,.55)}
+.il-m{color:#fffaf0}
+.il-b{color:#f7cf9b;font-style:italic}
+.il-tag{position:relative;margin-top:26px;font-family:'DM Sans',sans-serif;font-weight:500;font-size:38px;letter-spacing:.16em;
+  text-transform:uppercase;color:#ffe6bd;text-shadow:0 3px 0 #241812,0 14px 34px rgba(0,0,0,.6)}
+
 /* ---- cinematic grade over the 3D canvas (vignette + paper grain) ---- */
 .grade{position:fixed;inset:0;pointer-events:none;z-index:5}
 .grade::before{content:"";position:absolute;inset:0;
@@ -186,7 +207,7 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:#160e08;color:var(--c
 <div class="grade"></div>
 
 <div class="ui">
-  <div class="badge">МАКЕТ • <b>MoodBook</b> Immersive · Фаза 4</div>
+  <div class="badge">МАКЕТ • <b>MoodBook</b> Immersive · Фаза 7</div>
   <div class="title" id="title">
     <div class="m">Mood<em>Book</em></div>
     <div class="tag">Музика для кожної сторінки</div>
@@ -232,6 +253,12 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:#160e08;color:var(--c
     </div>
   </div>
 </div>
+<!-- INTRO LOGO (Phase 7) — floats in 3D above the desk -->
+<div id="introLogo">
+  <div class="il-word"><span class="il-m">Mood</span><span class="il-b">Book</span></div>
+  <div class="il-tag">музика для кожної сторінки</div>
+</div>
+
 <!-- PROFILE CORKBOARD (Phase 4) — pinned to the right wall in 3D -->
 <div id="profileCard">
   <div class="note n-me">
@@ -245,6 +272,10 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:#160e08;color:var(--c
     <h4>Підписка</h4>
     <span class="pc-badge" id="pcPlan">Безкоштовний</span>
     <div class="pc-sub" id="pcPlanSub">3 безкоштовні пошуки</div>
+  </div>
+  <div class="note n-last">
+    <h4>Остання збережена</h4>
+    <div class="pc-last" id="pcLast">—</div>
   </div>
   <div class="note n-stats">
     <h4>Статистика</h4>
@@ -562,7 +593,7 @@ function shelfRun(x,rotY,zFrom,zTo,height,yBase){
   buildBookcase(x,(a+b)/2,rotY,w,height,0,yBase);
 }
 const LIB_Z=-4.0, LIB_W=8.0;   // "Моя бібліотека" alcove — carved into the LEFT lower shelving
-const PRO_Z=-4.0, PRO_W=7.0;   // corkboard profile — carved into the RIGHT lower shelving
+const PRO_Z=-1.0, PRO_W=7.0;   // corkboard profile — carved into the RIGHT lower shelving
 shelfRun(LEFTX+0.42, Math.PI/2, ZA, LIB_Z-LIB_W/2, TIER, 0);
 shelfRun(LEFTX+0.42, Math.PI/2, LIB_Z+LIB_W/2, ZB, TIER, 0);
 shelfRun(LEFTX+0.42, Math.PI/2, ZA, ZB, upperH, TIER+LEDGE);
@@ -611,7 +642,7 @@ function textTexture(text,opt){
   const o=opt||{}, w=o.w||512, h=o.h||128;
   const c=document.createElement('canvas');c.width=w;c.height=h;
   const x=c.getContext('2d');
-  x.fillStyle=o.bg||'#2e1c10';x.fillRect(0,0,w,h);
+  if(o.bg!==null){x.fillStyle=o.bg||'#2e1c10';x.fillRect(0,0,w,h);}   // bg:null → text floats on a transparent plate
   x.translate(w/2,h/2); if(o.rot)x.rotate(o.rot);
   const span=o.rot?h:w;
   let size=o.size||64;
@@ -637,21 +668,34 @@ landmarks.add(libGroup);libGroup.updateMatrixWorld(true);
   const w=LIB_W, postW=0.18;
   box(postW,TIER,LIB_D,M.post,-w/2+postW/2,TIER/2,0,libGroup);
   box(postW,TIER,LIB_D,M.post, w/2-postW/2,TIER/2,0,libGroup);
-  box(w,TIER,0.08,toon(0x2b1a0e),0,TIER/2,-LIB_D/2+0.04,libGroup);        // darker back panel so spines pop
+  box(w,TIER,0.08,toon(0x4a2e1a),0,TIER/2,-LIB_D/2+0.04,libGroup);        // darker back panel so spines pop
   box(w,0.16,LIB_D,M.plank,0,0.08,0,libGroup);                            // base
   LIB_ROWS.forEach(y=>box(w,0.14,LIB_D,M.plank,0,y-0.07,0,libGroup));
   box(w,0.18,LIB_D,M.plank,0,TIER-0.09,0,libGroup);                       // top
   // brass plaque naming the alcove
   const pl=new THREE.Mesh(new THREE.PlaneGeometry(3.2,0.52),
-    new THREE.MeshBasicMaterial({map:textTexture('МОЯ БІБЛІОТЕКА',{w:640,h:104,bg:'#8a6a2e',fg:'#fff3d0',size:52,font:"'DM Sans',sans-serif",weight:'700'})}));
+    new THREE.MeshBasicMaterial({toneMapped:false,map:textTexture('МОЯ БІБЛІОТЕКА',{w:640,h:104,bg:'#d9a441',fg:'#2a1a10',size:52,font:"'DM Sans',sans-serif",weight:'700'})}));
   pl.position.set(0,TIER-0.6,LIB_D/2+0.02);libGroup.add(pl);
 })();
-const libLight=new THREE.PointLight(0xffc98a,2.6,10,2);
-libLight.position.set(LEFTX+2.0,4.6,LIB_Z);atmosphere.add(libLight);
+const libLight=new THREE.PointLight(0xffc98a,1.15,13,2);
+libLight.position.set(LEFTX+3.2,5.4,LIB_Z);atmosphere.add(libLight);
 
 const libBooks=new THREE.Group();libGroup.add(libBooks);
 const savedPicks=[];
-let libEmpty=null;
+let libEmpty=null, libUsedRows=1;
+// frame the camera on the shelves that actually hold books, so a half-empty case never reads as an empty wall
+function frameLibrary(){
+  const FOV=52, t=Math.tan(FOV*Math.PI/360);
+  const asp=Math.max(0.5,window.innerWidth/Math.max(1,window.innerHeight));
+  const rows=LIB_ROWS.slice().reverse();
+  const yTop=rows[0]+0.58, yBot=rows[Math.min(rows.length,Math.max(1,libUsedRows))-1]+0.58;
+  const cy=(yTop+yBot)/2;
+  const dist=Math.min(8.6,Math.max(4.0,Math.max(((yTop-yBot)+2.6)/2/t,(LIB_W+0.6)/2/(t*asp))));
+  KF.library.pos.set(LEFTX+0.42+dist,cy+0.1,LIB_Z);
+  KF.library.tgt.set(LEFTX+0.6,cy,LIB_Z);
+  KF.library.fov=FOV;
+  if(rig.state==='library'&&!rig.active){rig.curPos.copy(KF.library.pos);rig.curTgt.copy(KF.library.tgt);rig.curFov=FOV;}
+}
 function rebuildLibrary(){
   while(libBooks.children.length){
     const c=libBooks.children[0];
@@ -659,30 +703,36 @@ function rebuildLibrary(){
     libBooks.remove(c);
   }
   savedPicks.length=0;
-  const BW=0.38, BH=1.16, BD=0.54, ZC=LIB_D/2-BD/2-0.04;
-  let row=0, cx=-LIB_W/2+0.40;
-  APP.savedBooks.forEach(rec=>{
-    if(cx+BW>LIB_W/2-0.34){row++;cx=-LIB_W/2+0.40;}
-    if(row>=LIB_ROWS.length)return;
-    const col=rec.color||BOOK_COLORS[hashStr(rec.key||rec.title||'')%BOOK_COLORS.length];
-    const side=toon(col);
-    const hex='#'+col.toString(16).padStart(6,'0');
-    const face=new THREE.MeshToonMaterial({map:textTexture(rec.title,{w:128,h:512,rot:-Math.PI/2,bg:hex,fg:'#fdf3dd',size:56}),gradientMap:RAMP});
-    const geo=new THREE.BoxGeometry(BW,BH,BD);
-    const m=new THREE.Mesh(geo,[side,side,side,side,face,side]);   // +z face (index 4) = the spine, facing the room
-    m.position.set(cx+BW/2,LIB_ROWS[row]+BH/2,ZC);
-    m.castShadow=!isMobile;
-    m.add(new THREE.LineSegments(new THREE.EdgesGeometry(geo),lineMat));
-    m.userData={type:'saved',rec:rec,label:rec.title,sub:rec.author||'Моя книга'};
-    libBooks.add(m);savedPicks.push(m);
-    cx+=BW+0.05;
-  });
+  const BW=0.38, BH=1.16, BD=0.54, GAP=0.05, ZC=LIB_D/2-BD/2-0.04;
+  const per=Math.max(1,Math.floor((LIB_W-0.7)/(BW+GAP)));
+  const rows=LIB_ROWS.slice().reverse();            // fill from the top shelf down, the way you'd really stock it
+  libUsedRows=Math.max(1,Math.min(rows.length,Math.ceil(APP.savedBooks.length/per)));
+  for(let r=0;r<rows.length;r++){
+    const chunk=APP.savedBooks.slice(r*per,(r+1)*per);
+    if(!chunk.length)break;
+    let cx=-(chunk.length*BW+(chunk.length-1)*GAP)/2;   // each row centred in the alcove
+    chunk.forEach(rec=>{
+      const col=rec.color||BOOK_COLORS[hashStr(rec.key||rec.title||'')%BOOK_COLORS.length];
+      const side=toon(col);
+      const hex='#'+col.toString(16).padStart(6,'0');
+      const face=new THREE.MeshToonMaterial({map:textTexture(rec.title,{w:128,h:512,rot:-Math.PI/2,bg:hex,fg:'#2a1a10',size:56}),gradientMap:RAMP});
+      const geo=new THREE.BoxGeometry(BW,BH,BD);
+      const m=new THREE.Mesh(geo,[side,side,side,side,face,side]);   // +z face (index 4) = the spine, facing the room
+      m.position.set(cx+BW/2,rows[r]+BH/2,ZC);
+      m.castShadow=!isMobile;
+      m.add(new THREE.LineSegments(new THREE.EdgesGeometry(geo),lineMat));
+      m.userData={type:'saved',rec:rec,label:rec.title,sub:rec.author||'Моя книга'};
+      libBooks.add(m);savedPicks.push(m);
+      cx+=BW+GAP;
+    });
+  }
   if(libEmpty){libGroup.remove(libEmpty);libEmpty=null;}
   if(!APP.savedBooks.length){
-    libEmpty=new THREE.Mesh(new THREE.PlaneGeometry(5.6,0.9),
-      new THREE.MeshBasicMaterial({map:textTexture('Полиця порожня',{w:700,h:112,bg:'#2b1a0e',fg:'#c9b48a',size:56}),transparent:true}));
-    libEmpty.position.set(0,LIB_ROWS[1]+0.55,-LIB_D/2+0.10);libGroup.add(libEmpty);
+    libEmpty=new THREE.Mesh(new THREE.PlaneGeometry(5.8,0.92),
+      new THREE.MeshBasicMaterial({toneMapped:false,map:textTexture('Полиця чекає на книги',{w:720,h:114,bg:null,fg:'#e8d5a8',size:52}),transparent:true}));
+    libEmpty.position.set(0,LIB_ROWS[3]+0.52,-LIB_D/2+0.10);libGroup.add(libEmpty);
   }
+  frameLibrary();
   renderProfile();
 }
 
@@ -696,13 +746,22 @@ const PRO_Y=4.5;
   g.position.set(RIGHTX-0.44,PRO_Y,PRO_Z);g.rotation.y=-Math.PI/2;   // local +z faces into the room
   landmarks.add(g);
   box(6.5,4.9,0.14,M.post,0,0,-0.08,g);                    // backing
-  box(6.1,4.5,0.08,toon(0xbf9256),0,0,0.02,g);             // cork surface
+  box(6.1,4.5,0.08,toon(0x9b7442),0,0,0.02,g);             // cork surface
   box(6.6,0.30,0.28,M.plank,0,2.42,0.06,g);                // frame rails
   box(6.6,0.30,0.28,M.plank,0,-2.42,0.06,g);
   box(0.30,4.9,0.28,M.plank,3.15,0,0.06,g);
   box(0.30,4.9,0.28,M.plank,-3.15,0,0.06,g);
+  // real pinned papers, so the board reads as a corkboard from across the room too.
+  // They sit exactly where the crisp CSS3D notes land when you walk up to it.
+  const pin=new THREE.SphereGeometry(0.075,8,6), pinMat=toon(0xa5301c);
+  [[-1.36,1.31,2.77,1.03,-0.024],[1.51,1.19,2.44,1.19,0.031],
+   [0,0.03,2.58,0.71,-0.014],
+   [-1.19,-1.32,2.91,0.97,0.019],[1.59,-1.31,2.19,0.81,-0.035]].forEach(n=>{
+    const p=box(n[2],n[3],0.04,M.pages,n[0],n[1],0.08,g);p.rotation.z=n[4];
+    const k=new THREE.Mesh(pin,pinMat);k.position.set(0,n[3]/2-0.02,0.05);p.add(k);
+  });
 })();
-const proLight=new THREE.PointLight(0xffc98a,2.4,10,2);
+const proLight=new THREE.PointLight(0xffc98a,1.7,9,2);
 proLight.position.set(RIGHTX-2.2,PRO_Y+0.6,PRO_Z);atmosphere.add(proLight);
 
 const profileEl=document.getElementById('profileCard');
@@ -726,6 +785,8 @@ function renderProfile(){
   document.getElementById('pcBooks').textContent=APP.savedBooks.length;
   document.getElementById('pcSearch').textContent=u.stats.searches;
   document.getElementById('pcPlayed').textContent=u.stats.played;
+  const last=APP.savedBooks[APP.savedBooks.length-1];
+  document.getElementById('pcLast').textContent=last?last.title:'ще нічого';
   const d=new Date(u.joined);
   document.getElementById('pcSince').textContent=d.getDate()+' '+MONTHS[d.getMonth()]+' '+d.getFullYear();
 }
@@ -828,26 +889,37 @@ function inked(geo,mat,parent,s){
   o.scale.setScalar(s||1.08);m.add(o);
   (parent||landmarks).add(m);return m;
 }
-const CAT_X=-3.4, CAT_Y=TIER+0.5, CAT_Z=BACK+1.15;
+// on the rug in front of the desk, on its own cushion — close enough to actually read and pet
+const CAT_X=-2.65, CAT_Y=0.16, CAT_Z=-3.15;
+(function(){                                       // the cushion is the cat's spot, and it stays when the cat moves
+  const c=new THREE.Group();c.position.set(CAT_X-0.05,0.03,CAT_Z+0.04);c.rotation.y=-0.5;landmarks.add(c);
+  const p=inked(new THREE.SphereGeometry(1,14,10),toon(0x3e7a72),c);
+  p.scale.set(0.95,0.13,0.78);p.position.y=0.11;
+})();
 const catGrp=new THREE.Group();
-catGrp.position.set(CAT_X,CAT_Y,CAT_Z);catGrp.rotation.y=0.42;landmarks.add(catGrp);
+catGrp.position.set(CAT_X,CAT_Y,CAT_Z);catGrp.rotation.y=-0.5;catGrp.scale.setScalar(1.15);landmarks.add(catGrp);
 const catBody=(function(){
-  const fur=toon(0xc9763f), dark=toon(0x8f4f28), ink=toon(0x2a1a10);
+  const fur=toon(0x40382f), dark=toon(0x2a241d), pale=toon(0xc9bda6), ink=toon(0x1f1712);
   const sph=new THREE.SphereGeometry(1,14,10);
-  const body=inked(sph,fur,catGrp);body.scale.set(0.62,0.33,0.42);body.position.set(0,0.30,0);
-  const head=inked(sph,fur,catGrp);head.scale.set(0.25,0.23,0.24);head.position.set(0.50,0.36,0.08);
-  const ear=new THREE.ConeGeometry(0.11,0.18,4);
-  const e1=inked(ear,dark,catGrp);e1.position.set(0.46,0.60,-0.05);e1.rotation.z=-0.25;
-  const e2=inked(ear,dark,catGrp);e2.position.set(0.44,0.60,0.21);e2.rotation.z=-0.25;
-  const tail=inked(new THREE.TorusGeometry(0.34,0.055,6,18,Math.PI*1.2),fur,catGrp);
+  const body=inked(sph,fur,catGrp);body.scale.set(0.60,0.33,0.42);body.position.set(-0.04,0.30,0);
+  const head=inked(sph,fur,catGrp);head.scale.set(0.28,0.26,0.27);head.position.set(0.62,0.42,0.05);
+  for(let i=0;i<3;i++){                                   // tabby stripes, laid on the curve of the back
+    const dx=-0.30+i*0.22, k=Math.sqrt(Math.max(0,1-(dx/0.60)*(dx/0.60)));
+    box(0.06,0.05,0.38*k,dark,-0.04+dx,0.30+0.33*k-0.02,0,catGrp,true);
+  }
+  const ear=new THREE.ConeGeometry(0.13,0.20,4);
+  const e1=inked(ear,dark,catGrp);e1.position.set(0.57,0.70,-0.10);e1.rotation.z=-0.25;
+  const e2=inked(ear,dark,catGrp);e2.position.set(0.55,0.70,0.20);e2.rotation.z=-0.25;
+  const tail=inked(new THREE.TorusGeometry(0.34,0.06,6,18,Math.PI*1.2),fur,catGrp);
   tail.rotation.x=Math.PI/2;tail.rotation.z=0.5;tail.position.set(-0.26,0.14,0.30);
   const paw=new THREE.SphereGeometry(1,10,8);
-  const p1=inked(paw,fur,catGrp);p1.scale.set(0.15,0.09,0.11);p1.position.set(0.36,0.10,-0.06);
-  const p2=inked(paw,fur,catGrp);p2.scale.set(0.15,0.09,0.11);p2.position.set(0.36,0.10,0.20);
+  const p1=inked(paw,pale,catGrp);p1.scale.set(0.16,0.10,0.12);p1.position.set(0.40,0.10,-0.08);
+  const p2=inked(paw,pale,catGrp);p2.scale.set(0.16,0.10,0.12);p2.position.set(0.40,0.10,0.18);
+  const muzzle=inked(sph,pale,catGrp);muzzle.scale.set(0.13,0.09,0.14);muzzle.position.set(0.76,0.35,0.05);
   // closed, contented eyes + a small nose
-  box(0.03,0.02,0.11,ink,0.69,0.40,-0.02,catGrp,true);
-  box(0.03,0.02,0.11,ink,0.69,0.40,0.18,catGrp,true);
-  box(0.05,0.04,0.05,dark,0.73,0.33,0.08,catGrp,true);
+  box(0.03,0.025,0.12,ink,0.77,0.46,-0.03,catGrp,true);
+  box(0.03,0.025,0.12,ink,0.77,0.46,0.14,catGrp,true);
+  box(0.05,0.045,0.06,dark,0.87,0.36,0.05,catGrp,true);
   return body;
 })();
 const purrEl=document.getElementById('purr');
@@ -855,7 +927,7 @@ let purrT=0, purrTimer=null;
 const _proj=new THREE.Vector3();
 function petCat(){
   SFX.play('purr'); purrT=1;
-  _proj.set(CAT_X,CAT_Y+0.9,CAT_Z).project(camera);
+  _proj.set(CAT_X,CAT_Y+0.85,CAT_Z).project(camera);
   purrEl.style.left=((_proj.x*0.5+0.5)*window.innerWidth)+'px';
   purrEl.style.top=((-_proj.y*0.5+0.5)*window.innerHeight)+'px';
   purrEl.classList.remove('show');
@@ -922,6 +994,21 @@ mug(2.24, DESK_H+0.11, DESK_Z+0.80);           // desk — kept clear of the ope
 papers(-2.42, DESK_H+0.11, DESK_Z+0.74);
 
 /* ============================================================
+   PHASE 7 — the MoodBook mark, hanging in the air above the desk.
+   Soft-pops in once the room has loaded; lives only in the room view.
+============================================================ */
+const logoEl=document.getElementById('introLogo');
+const logoObj=new THREE.CSS3DObject(logoEl);
+logoObj.scale.setScalar(7.6/1100);
+logoObj.position.set(0,6.0,DESK_Z-1.2);
+cssScene.add(logoObj);
+function popLogo(){
+  if(reduceMotion){logoEl.classList.add('pop');return;}
+  logoEl.classList.add('anim');
+  setTimeout(()=>{logoEl.classList.add('pop');SFX.play('pop');},40);   // RAF-independent: can't stick hidden in a throttled tab
+}
+
+/* ============================================================
    LIGHTING
 ============================================================ */
 const hemi=new THREE.HemisphereLight(0x3a2610,0x120a03,0.24); scene.add(hemi);
@@ -958,7 +1045,7 @@ const KF={
   room:    { pos:V(0,4.2,6.5),  tgt:V(0,3.3,DESK_Z), fov:56 },
   approach:{ pos:V(0,5.4,1.0),  tgt:V(0,3.2,DESK_Z), fov:48 },
   bookTop: { pos:V(0,BOOKY+5.8,DESK_Z+0.08), tgt:V(0,BOOKY,DESK_Z), fov:36 },  // top-down on the desk + the book sitting on it (book is proportional, fits the desk)
-  library: { pos:V(LEFTX+7.6,4.5,LIB_Z), tgt:V(LEFTX+0.6,4.2,LIB_Z), fov:50 },   // face the "My library" alcove head-on
+  library: { pos:V(LEFTX+7.6,4.8,LIB_Z), tgt:V(LEFTX+0.6,4.7,LIB_Z), fov:52 },   // face the "My library" alcove head-on
   profile: { pos:V(RIGHTX-7.4,4.6,PRO_Z), tgt:V(RIGHTX-0.6,4.4,PRO_Z), fov:50 }, // face the corkboard head-on
 };
 function respFactor(){return window.innerWidth<720?1.18:1;}
@@ -1007,6 +1094,7 @@ function updateUI(state){
   // the corkboard notes are real DOM, so they only exist while we're actually facing the board
   profileObj.visible=(state==='profile');
   if(state!=='profile')profileEl.style.opacity='0';
+  logoObj.visible=(state==='room');   // the mark belongs to the room, not to the book/shelf/board close-ups
   bookOnState(state);
 }
 backBtn.addEventListener('click',()=>goTo('room'));
@@ -1033,7 +1121,7 @@ function makeAction(w,h,d,x,y,z,onClick,label,sub){
   m.position.set(x,y,z);m.userData={type:'action',onClick,label,sub};scene.add(m);actionProxies.push(m);return m;
 }
 makeAction(1.9,5.6,1.9, LAMP_X,2.8,LAMP_Z, toggleMode, 'Світло: день / ніч','Торшер');
-makeAction(1.7,1.1,1.3, CAT_X+0.15,CAT_Y+0.4,CAT_Z+0.08, petCat, 'Спить. Не буди…','Кіт');
+makeAction(1.9,1.1,1.7, CAT_X+0.10,CAT_Y+0.35,CAT_Z+0.10, petCat, 'Спить. Не буди…','Кіт');
 const hotspots=proxies.concat(actionProxies);
 function pickAt(cx,cy){
   ndc.x=(cx/window.innerWidth)*2-1; ndc.y=-(cy/window.innerHeight)*2+1;
@@ -1095,6 +1183,7 @@ function resize(){
   KF.room.tgt.set(0, wide?3.3:3.5, DESK_Z);
   KF.room.fov=(wide?56:60)*(narrow?1.05:1);
   if(rig.state==='room'&&!rig.active){rig.curPos.copy(KF.room.pos);rig.curTgt.copy(KF.room.tgt);rig.curFov=KF.room.fov;}
+  frameLibrary();
   camera.updateProjectionMatrix();
 }
 window.addEventListener('resize',resize);
@@ -1329,11 +1418,13 @@ rig.path=[curKF(),KF.room];
 rig.curPos.copy(KF.room.pos);rig.curTgt.copy(KF.room.tgt);rig.curFov=KF.room.fov;
 requestAnimationFrame(tick);
 setTimeout(()=>loader.classList.add('hide'),450);
+setTimeout(popLogo,950);
 window.MOODBOOK={goTo,rig,KF,renderer,scene,camera,cssRenderer,cssScene,proxies,bookCount:bookMatrices.length,
   APP,SFX,setMode,toggleMode,curEnv,applyEnv,_stepEnv:tickEnv,DAY,NIGHT,
   library:{rebuild:rebuildLibrary,open:openSavedBook,saved:()=>APP.savedBooks,picks:savedPicks},
   profile:{render:renderProfile,obj:profileObj,bumpStat,user:()=>APP.user},
   cat:{pet:petCat,grp:catGrp},
+  logo:{obj:logoObj,pop:popLogo},
   book:{openSearch,runSearch,loadBook,closeBook,playTrack,BST,coverObj,spreadObj}};
 })();
 </script>
