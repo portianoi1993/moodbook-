@@ -32,6 +32,10 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:#160e08;color:var(--c
 .tooltip{position:fixed;transform:translate(-50%,-140%);font-family:'Fraunces',serif;font-style:italic;font-size:.95rem;
   color:var(--cream);background:rgba(30,18,10,.85);border:1.5px solid rgba(246,220,150,.45);border-radius:100px;
   padding:6px 15px;white-space:nowrap;opacity:0;transition:opacity .2s;box-shadow:0 8px 24px rgba(0,0,0,.45);pointer-events:none}
+.purr{position:fixed;transform:translate(-50%,-120%) scale(.8);font-family:'Fraunces',serif;font-style:italic;font-size:1.15rem;
+  color:#fff0cf;text-shadow:0 2px 8px rgba(0,0,0,.7);opacity:0;pointer-events:none;z-index:11;
+  transition:opacity .4s ease,transform .6s cubic-bezier(.2,1,.3,1)}
+.purr.show{opacity:1;transform:translate(-50%,-190%) scale(1)}
 .tooltip small{display:block;font-family:'DM Sans';font-style:normal;font-size:.55rem;letter-spacing:.14em;text-transform:uppercase;color:var(--amber);text-align:center}
 
 .title{position:fixed;left:50%;top:16%;transform:translate(-50%,18px);text-align:center;opacity:0;pointer-events:none;
@@ -191,6 +195,7 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:#160e08;color:var(--c
   <div class="hint" id="hint">Клікни на <b>стіл із книгою</b>, щоб шукати. <b>Ліва стіна</b> — твоя бібліотека, <b>права</b> — профіль. Клікни на <b>торшер</b> — день ⇄ ніч.</div>
 </div>
 <div class="tooltip" id="tooltip"></div>
+<div class="purr" id="purr">мур-р-р…</div>
 
 <!-- PHYSICAL BOOK (Phase 2) -->
 <div class="bookLayer" id="bookLayer">
@@ -813,6 +818,60 @@ const LAMP_X=3.9, LAMP_Z=DESK_Z+0.4;
 })();
 
 /* ============================================================
+   PHASE 5 — THE CAT: asleep on the gallery walkway above the desk.
+   Not navigation — just alive. It breathes; click it and it purrs.
+============================================================ */
+// ink outline for round shapes (EdgesGeometry only reads well on boxes)
+function inked(geo,mat,parent,s){
+  const m=new THREE.Mesh(geo,mat);m.castShadow=!isMobile;
+  const o=new THREE.Mesh(geo,new THREE.MeshBasicMaterial({color:INK,side:THREE.BackSide}));
+  o.scale.setScalar(s||1.08);m.add(o);
+  (parent||landmarks).add(m);return m;
+}
+const CAT_X=-3.4, CAT_Y=TIER+0.5, CAT_Z=BACK+1.15;
+const catGrp=new THREE.Group();
+catGrp.position.set(CAT_X,CAT_Y,CAT_Z);catGrp.rotation.y=0.42;landmarks.add(catGrp);
+const catBody=(function(){
+  const fur=toon(0xc9763f), dark=toon(0x8f4f28), ink=toon(0x2a1a10);
+  const sph=new THREE.SphereGeometry(1,14,10);
+  const body=inked(sph,fur,catGrp);body.scale.set(0.62,0.33,0.42);body.position.set(0,0.30,0);
+  const head=inked(sph,fur,catGrp);head.scale.set(0.25,0.23,0.24);head.position.set(0.50,0.36,0.08);
+  const ear=new THREE.ConeGeometry(0.11,0.18,4);
+  const e1=inked(ear,dark,catGrp);e1.position.set(0.46,0.60,-0.05);e1.rotation.z=-0.25;
+  const e2=inked(ear,dark,catGrp);e2.position.set(0.44,0.60,0.21);e2.rotation.z=-0.25;
+  const tail=inked(new THREE.TorusGeometry(0.34,0.055,6,18,Math.PI*1.2),fur,catGrp);
+  tail.rotation.x=Math.PI/2;tail.rotation.z=0.5;tail.position.set(-0.26,0.14,0.30);
+  const paw=new THREE.SphereGeometry(1,10,8);
+  const p1=inked(paw,fur,catGrp);p1.scale.set(0.15,0.09,0.11);p1.position.set(0.36,0.10,-0.06);
+  const p2=inked(paw,fur,catGrp);p2.scale.set(0.15,0.09,0.11);p2.position.set(0.36,0.10,0.20);
+  // closed, contented eyes + a small nose
+  box(0.03,0.02,0.11,ink,0.69,0.40,-0.02,catGrp,true);
+  box(0.03,0.02,0.11,ink,0.69,0.40,0.18,catGrp,true);
+  box(0.05,0.04,0.05,dark,0.73,0.33,0.08,catGrp,true);
+  return body;
+})();
+const purrEl=document.getElementById('purr');
+let purrT=0, purrTimer=null;
+const _proj=new THREE.Vector3();
+function petCat(){
+  SFX.play('purr'); purrT=1;
+  _proj.set(CAT_X,CAT_Y+0.9,CAT_Z).project(camera);
+  purrEl.style.left=((_proj.x*0.5+0.5)*window.innerWidth)+'px';
+  purrEl.style.top=((-_proj.y*0.5+0.5)*window.innerHeight)+'px';
+  purrEl.classList.remove('show');
+  void purrEl.offsetWidth;                       // restart the float-up
+  purrEl.classList.add('show');
+  clearTimeout(purrTimer);purrTimer=setTimeout(()=>purrEl.classList.remove('show'),1900);
+}
+function tickCat(t,dt){
+  if(purrT>0)purrT=Math.max(0,purrT-dt*0.55);
+  const rate=1.5+purrT*4.5, amp=0.045+purrT*0.05;
+  const b=Math.sin(t*rate);
+  catBody.scale.set(0.62,0.33*(1+amp*b),0.42*(1+amp*0.6*b));
+  catGrp.position.y=CAT_Y+purrT*0.012*Math.sin(t*22);   // a faint purr tremble
+}
+
+/* ============================================================
    LIGHTING
 ============================================================ */
 const hemi=new THREE.HemisphereLight(0x3a2610,0x120a03,0.24); scene.add(hemi);
@@ -924,6 +983,7 @@ function makeAction(w,h,d,x,y,z,onClick,label,sub){
   m.position.set(x,y,z);m.userData={type:'action',onClick,label,sub};scene.add(m);actionProxies.push(m);return m;
 }
 makeAction(1.9,5.6,1.9, LAMP_X,2.8,LAMP_Z, toggleMode, 'Світло: день / ніч','Торшер');
+makeAction(1.7,1.1,1.3, CAT_X+0.15,CAT_Y+0.4,CAT_Z+0.08, petCat, 'Спить. Не буди…','Кіт');
 const hotspots=proxies.concat(actionProxies);
 function pickAt(cx,cy){
   ndc.x=(cx/window.innerWidth)*2-1; ndc.y=-(cy/window.innerHeight)*2+1;
@@ -1003,6 +1063,7 @@ function tick(){
     if(rig.t>=1){rig.active=false;bookOnArrive(rig.state);}
   }
   tickEnv(dt);
+  tickCat(clock.elapsedTime,dt);
   // no parallax: the camera stays locked so the desk is dead-centered and click targets line up with what's drawn
   camera.position.copy(rig.curPos);
   camera.lookAt(rig.curTgt.x, rig.curTgt.y, rig.curTgt.z);
@@ -1222,6 +1283,7 @@ window.MOODBOOK={goTo,rig,KF,renderer,scene,camera,cssRenderer,cssScene,proxies,
   APP,SFX,setMode,toggleMode,curEnv,applyEnv,_stepEnv:tickEnv,DAY,NIGHT,
   library:{rebuild:rebuildLibrary,open:openSavedBook,saved:()=>APP.savedBooks,picks:savedPicks},
   profile:{render:renderProfile,obj:profileObj,bumpStat,user:()=>APP.user},
+  cat:{pet:petCat,grp:catGrp},
   book:{openSearch,runSearch,loadBook,closeBook,playTrack,BST,coverObj,spreadObj}};
 })();
 </script>
