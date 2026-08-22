@@ -872,6 +872,56 @@ function tickCat(t,dt){
 }
 
 /* ============================================================
+   PHASE 6 — PLANTS & SMALL OBJECTS. A handful of lived-in things
+   on the galleries and the desk; the shelves stay books.
+============================================================ */
+function plant(x,y,z,s,parent){
+  const g=new THREE.Group();g.position.set(x,y,z);g.scale.setScalar(s||1);(parent||landmarks).add(g);
+  const pot=inked(new THREE.CylinderGeometry(0.27,0.20,0.36,10),toon(0xb0563a),g);pot.position.y=0.18;
+  const rim=inked(new THREE.CylinderGeometry(0.30,0.30,0.07,10),toon(0x9c4b36),g);rim.position.y=0.36;
+  const leafGeo=new THREE.SphereGeometry(1,8,6);
+  const greens=[0x5e7355,0x6f8a4e,0x47624a];
+  for(let i=0;i<7;i++){
+    const a=(i/7)*Math.PI*2+(i%2?0.5:0);
+    const l=inked(leafGeo,toon(greens[i%3]),g);
+    l.scale.set(0.10,0.30+(i%3)*0.05,0.17);
+    l.position.set(Math.cos(a)*0.17,0.60+(i%3)*0.09,Math.sin(a)*0.17);
+    l.rotation.z=-Math.cos(a)*0.6;l.rotation.x=Math.sin(a)*0.6;
+  }
+  return g;
+}
+function candle(x,y,z,parent){
+  const g=new THREE.Group();g.position.set(x,y,z);(parent||landmarks).add(g);
+  inked(new THREE.CylinderGeometry(0.24,0.26,0.06,10),toon(0xd9a441),g).position.y=0.03;   // saucer
+  inked(new THREE.CylinderGeometry(0.11,0.12,0.42,10),toon(0xecdcbe),g).position.y=0.27;   // wax
+  const flameMat=new THREE.MeshBasicMaterial({color:0xffd98a,transparent:true,opacity:0,depthWrite:false});
+  const f=new THREE.Mesh(new THREE.ConeGeometry(0.07,0.20,8),flameMat);f.position.y=0.58;g.add(f);
+  starsMats.push(flameMat);          // rides the same day→night curve as the stars: lit only after dark
+  return g;
+}
+function mug(x,y,z,parent){
+  const g=new THREE.Group();g.position.set(x,y,z);(parent||landmarks).add(g);
+  inked(new THREE.CylinderGeometry(0.17,0.14,0.28,12),toon(0x3e7a72),g).position.y=0.14;
+  const h=inked(new THREE.TorusGeometry(0.09,0.028,6,12),toon(0x3e7a72),g);
+  h.position.set(0.19,0.16,0);h.rotation.y=Math.PI/2;
+  const t=inked(new THREE.CylinderGeometry(0.145,0.145,0.02,12),toon(0x4a2c1a),g);t.position.y=0.26;  // coffee
+  return g;
+}
+function papers(x,y,z,parent){
+  const g=new THREE.Group();g.position.set(x,y,z);(parent||landmarks).add(g);
+  for(let i=0;i<4;i++)box(0.78,0.02,1.02,M.pages,0,0.02+i*0.022,0,g).rotation.y=(i-1.5)*0.06;
+  return g;
+}
+plant(LEFTX+1.4, TIER+0.5, 3.6, 1.0);          // left gallery
+plant(RIGHTX-1.4, TIER+0.5, 4.2, 0.9);         // right gallery
+plant(4.6, TIER+0.5, BACK+1.4, 1.05);          // back gallery, opposite the cat
+candle(2.1, TIER+0.5, BACK+1.35);
+plant(2.7, TIER, 0.12, 0.85, libGroup);        // on top of the "My library" alcove
+plant(-2.8, TIER, 0.12, 0.7, libGroup);
+mug(2.24, DESK_H+0.11, DESK_Z+0.80);           // desk — kept clear of the open book's footprint
+papers(-2.42, DESK_H+0.11, DESK_Z+0.74);
+
+/* ============================================================
    LIGHTING
 ============================================================ */
 const hemi=new THREE.HemisphereLight(0x3a2610,0x120a03,0.24); scene.add(hemi);
