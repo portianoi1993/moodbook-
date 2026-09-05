@@ -45,8 +45,15 @@ const S = {
 const DB = {
   books: ls.get('mb_books', []),
   liked: ls.get('mb_liked_tracks', []),
+  history: ls.get('mb_history', []), // recently played: {name, vibe, query, book, cover, at}
 };
-const save = () => { ls.set('mb_books', DB.books); ls.set('mb_liked_tracks', DB.liked); };
+const save = () => { ls.set('mb_books', DB.books); ls.set('mb_liked_tracks', DB.liked); ls.set('mb_history', DB.history.slice(0, 30)); };
+const timeAgo = (ts) => {
+  const m = Math.max(1, Math.round((Date.now() - ts) / 60000));
+  if (m < 60) return `${m} min ago`;
+  const h = Math.round(m / 60); if (h < 24) return `${h} h ago`;
+  const d = Math.round(h / 24); return d === 1 ? 'yesterday' : `${d} days ago`;
+};
 const isPro = () => ls.raw('mb_pro') === 'true';
 const searchesToday = () => ls.get('mb_day_' + todayKey(), 0);
 const bumpSearches = () => {
@@ -82,7 +89,7 @@ function showPage(p, { push = true } = {}) {
     a.classList.toggle('is-active', on);
     if (a.matches('.tab-top,.tab-bottom')) a.setAttribute('aria-current', on ? 'page' : 'false');
   });
-  if (p === 'library') { renderShelf(); renderLiked(); }
+  if (p === 'library') { renderShelf(); renderLiked(); renderHistory(); hydrateCovers(); }
   if (p === 'account') renderAccount();
   if (push && location.hash !== '#' + p) history.replaceState(null, '', p === 'discover' ? location.pathname + location.search : '#' + p);
   window.scrollTo({ top: 0, behavior: 'instant' in window ? 'instant' : 'auto' });
@@ -267,6 +274,7 @@ async function loadSoundtrack(mood = S.mood || '', style = S.style || '', { fres
     S.tracks = d.tracks || [];
     if (!mood && !d.degraded) await reconcileIdentity(d.book);
     renderBookCard(); renderTracks(); setStatus('');
+    showCoach();
     if (d.degraded) {
       el.status.classList.add('is-on');
       el.status.innerHTML = '<span aria-hidden="true">⚡</span><span>Our AI is busy right now, so this soundtrack was matched by genre, not by this exact book.</span><button type="button" class="ghost" id="retryAi">Try again</button>';
@@ -353,6 +361,24 @@ function toggleLike(t, btn) {
   }
   save();
 }
+
+// First-result coach card: three steps, shown once, dismissed by hand or by the first play.
+function showCoach() {
+  const box = $('#coach');
+  if (!box || ls.raw('mb_seen_coach') === '1') return;
+  box.hidden = false;
+  box.innerHTML = `<div class="core">
+    <p class="mono accent">First time here?</p>
+    <ol class="coach-steps">
+      <li><b>Press play</b> on any mix. The player stays with you while you browse.</li>
+      <li><b>Switch the scene</b> or the music style when the chapter changes mood.</li>
+      <li><b>Save to shelf</b> to come back to this book in one tap.</li>
+    </ol>
+    <button type="button" class="ghost" id="coachClose">Got it</button>
+  </div>`;
+  $('#coachClose').onclick = hideCoach;
+}
+function hideCoach() { const box = $('#coach'); if (!box) return; box.hidden = true; ls.put('mb_seen_coach', '1'); }
 
 function resetSearch() {
   el.results.hidden = true; el.paywall.hidden = true; el.hero.hidden = false;
@@ -457,12 +483,24 @@ $('#dockProgress').addEventListener('keydown', (e) => {
   if (e.key === 'ArrowRight') { e.preventDefault(); yt.seekTo(yt.getCurrentTime() + 30, true); }
   if (e.key === 'ArrowLeft') { e.preventDefault(); yt.seekTo(Math.max(0, yt.getCurrentTime() - 30), true); }
 });
+function rerenderPlaying() {
+  if (S.playingFrom === 'results') renderTracks();
+  else if (S.playingFrom === 'liked') renderLiked();
+  else renderHistory();
+}
+function remember(t) {
+  const bookTitle = S.playingFrom === 'results' ? (S.book?.title || '') : (t.book || '');
+  const cover = S.playingFrom === 'results' ? (S.book?.cover || '') : (t.cover || '');
+  DB.history = DB.history.filter((x) => x.query !== t.query);
+  DB.history.unshift({ name: t.name, vibe: t.vibe, query: t.query, duration: t.duration, book: bookTitle, cover, at: Date.now() });
+  save();
+}
 async function playFrom(list, i, from) {
   const t = list[i]; if (!t) return;
   S.queue = list; S.playingIdx = i; S.playingFrom = from;
   setDock(t.name, 'Finding the mix…'); dock.classList.remove('is-paused');
   $('#dockTime').textContent = '0:00'; $('#dockProgress span').style.width = '0%';
-  if (from === 'results') renderTracks(); else renderLiked();
+  rerenderPlaying(); hideCoach();
   const p = loadYT();
   let hit;
   try { hit = await api('/api/search', { q: t.query }); } catch (e) { toast(`Search failed: ${e.detail || e.message}`); return; }
@@ -472,7 +510,8 @@ async function playFrom(list, i, from) {
   const player = await p;
   player.loadVideoById(hit.videoId);
   setDock(t.name, `${hit.title}${hit.channel ? ' · ' + hit.channel : ''}`);
-  if (from === 'results') renderTracks(); else renderLiked();
+  remember(t);
+  rerenderPlaying();
   startProgress();
 }
 function nextTrack(skipBroken = false) {
@@ -504,7 +543,7 @@ $('#closeDock')?.addEventListener('click', () => {
   clearInterval(progressTimer);
   dock.hidden = true; dock.classList.remove('is-expanded', 'is-mini');
   syncDockButtons(); setDockHeight();
-  S.playingIdx = -1; if (S.playingFrom === 'results') renderTracks(); else renderLiked();
+  S.playingIdx = -1; rerenderPlaying();
 });
 $('#prevBtn').addEventListener('click', prevTrack);
 $('#expandBtn').addEventListener('click', () => {
@@ -562,11 +601,16 @@ $('#shelf').addEventListener('click', (e) => {
     toast(`Removed “${esc(b.title)}”`, { undo: () => { DB.books.splice(i, 0, b); save(); renderShelf(); } });
   }
 });
+let likedQuery = '';
 function renderLiked() {
   const o = $('#liked');
   $('#statLiked').textContent = DB.liked.length;
+  const tools = $('#likedTools'); if (tools) tools.hidden = DB.liked.length < 6;
   if (!DB.liked.length) { o.innerHTML = '<li class="empty"><b>♡</b>No liked tracks yet. Tap the heart on any track while listening.</li>'; return; }
-  o.innerHTML = DB.liked.map((t, i) => `
+  const q = normT(likedQuery);
+  const rows = DB.liked.map((t, i) => ({ t, i })).filter(({ t }) => !q || normT(`${t.name} ${t.book} ${t.vibe}`).includes(q));
+  if (!rows.length) { o.innerHTML = `<li class="empty"><b>🔍</b>Nothing matches “${esc(likedQuery)}”.</li>`; return; }
+  o.innerHTML = rows.map(({ t, i }) => `
     <li class="track${S.playingFrom === 'liked' && S.playingIdx === i ? ' is-playing' : ''}" data-l="${i}" tabindex="0" role="button" aria-label="Play ${esc(t.name)}">
       <span class="info">
         <span class="name">${esc(t.name)}${S.playingFrom === 'liked' && S.playingIdx === i ? '<span class="eq" aria-hidden="true"><i></i><i></i><i></i></span>' : ''}</span>
@@ -577,6 +621,47 @@ function renderLiked() {
         <button type="button" class="icon-btn play" aria-label="Play ${esc(t.name)}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4v16l14-8z"/></svg></button>
       </span>
     </li>`).join('');
+}
+$('#likedFilter')?.addEventListener('input', (e) => { likedQuery = e.target.value; renderLiked(); });
+
+function renderHistory() {
+  const o = $('#history'); if (!o) return;
+  if (!DB.history.length) { o.innerHTML = '<li class="empty"><b>🕰</b>Nothing played yet. Your last 30 mixes will appear here.</li>'; return; }
+  o.innerHTML = DB.history.map((t, i) => `
+    <li class="track${S.playingFrom === 'history' && S.playingIdx === i ? ' is-playing' : ''}" data-h="${i}" tabindex="0" role="button" aria-label="Play ${esc(t.name)}">
+      ${t.cover ? `<img class="hcv" src="${esc(t.cover)}" alt="" width="30" height="44" loading="lazy">` : '<span class="hcv ph"></span>'}
+      <span class="info">
+        <span class="name">${esc(t.name)}${S.playingFrom === 'history' && S.playingIdx === i ? '<span class="eq" aria-hidden="true"><i></i><i></i><i></i></span>' : ''}</span>
+        <span class="vibe">${t.book ? esc(t.book) + ' · ' : ''}${esc(timeAgo(t.at))}</span>
+      </span>
+      <span class="acts">
+        ${t.book ? `<button type="button" class="icon-btn openbook" aria-label="Open ${esc(t.book)}" title="Open this book"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h6a3 3 0 0 1 3 3v12a2 2 0 0 0-2-2H4zM20 5h-6a3 3 0 0 0-3 3v12a2 2 0 0 1 2-2h7z"/></svg></button>` : ''}
+        <button type="button" class="icon-btn play" aria-label="Play ${esc(t.name)}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4v16l14-8z"/></svg></button>
+      </span>
+    </li>`).join('');
+}
+$('#history')?.addEventListener('click', (e) => {
+  const li = e.target.closest('[data-h]'); if (!li) return;
+  const i = +li.dataset.h; const t = DB.history[i];
+  if (e.target.closest('.openbook')) { showPage('discover'); el.q.value = t.book; startSearch(t.book); return; }
+  playFrom(DB.history, i, 'history');
+});
+$('#history')?.addEventListener('keydown', (e) => { if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('[data-h]')) { e.preventDefault(); playFrom(DB.history, +e.target.dataset.h, 'history'); } });
+
+// Shelf entries saved before covers existed: look the cover up once, quietly.
+let hydrating = false;
+async function hydrateCovers() {
+  if (hydrating) return; hydrating = true;
+  try {
+    for (const b of DB.books.filter((x) => !x.cover && !x.coverTried).slice(0, 6)) {
+      try {
+        const best = (await api('/api/books', { q: `${b.title} ${b.author || ''}`.trim(), best: '1' })).book;
+        if (best?.cover && candidateMatches(best, b.title)) { b.cover = best.cover; if (!b.author && best.author) b.author = best.author; }
+      } catch {}
+      b.coverTried = true; save();
+    }
+    renderShelf();
+  } finally { hydrating = false; }
 }
 $('#liked').addEventListener('click', (e) => {
   const li = e.target.closest('[data-l]'); if (!li) return;

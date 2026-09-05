@@ -21,7 +21,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preconnect" href="https://covers.openlibrary.org">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT@0,9..144,400..700,30;1,9..144,400..600,50&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/css/app.css?v=20260905h6">
+<link rel="stylesheet" href="/css/app.css?v=20260905h7">
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"WebApplication","name":"MoodBook","url":"https://moodbook-six.vercel.app/","applicationCategory":"MusicApplication","operatingSystem":"Web","description":"AI-curated reading soundtracks matched to the book you are reading.","offers":[{"@type":"Offer","price":"0","priceCurrency":"USD","name":"Free"},{"@type":"Offer","price":"9.99","priceCurrency":"USD","name":"Pro monthly"}]}
 </script>
@@ -227,6 +227,7 @@
           <button class="btn-glass sm" type="button" id="shareBtn">Share</button>
         </div>
       </div>
+      <aside class="coach shell-glass" id="coach" hidden aria-label="How to use this page"></aside>
       <div class="results-grid">
         <article class="book-card shell-glass gborder" id="bookCardWrap" data-spot><div class="core" id="bookCard" aria-live="polite"></div></article>
         <section class="tracks-col shell-glass" aria-labelledby="tracks-title"><div class="core">
@@ -287,7 +288,13 @@
     <h2 class="mono section-label">Books</h2>
     <div class="shelf" id="shelf"></div>
     <h2 class="mono section-label">Liked tracks</h2>
+    <div class="liked-tools" id="likedTools" hidden>
+      <label class="sr-only" for="likedFilter">Filter liked tracks</label>
+      <input id="likedFilter" type="search" placeholder="Filter by track or book…" autocomplete="off" spellcheck="false">
+    </div>
     <ol class="liked" id="liked"></ol>
+    <h2 class="mono section-label">Recently played</h2>
+    <ol class="liked" id="history"></ol>
   </section>
 
   <!-- ═══════════════ ACCOUNT ═══════════════ -->
@@ -379,7 +386,7 @@
 </nav>
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
-<script type="module" src="/js/app.js?v=20260905h6"></script>
+<script type="module" src="/js/app.js?v=20260905h7"></script>
 <script defer src="/_vercel/insights/script.js"></script>
 </body>
 </html>
