@@ -3,6 +3,11 @@
     "api/*.js": { "maxDuration": 60 }
   },
   "rewrites": [
+    {
+      "source": "/((?!blocked\\.html$).*)",
+      "has": [{ "type": "header", "key": "x-vercel-ip-country", "value": "RU" }],
+      "destination": "/blocked.html"
+    },
     { "source": "/((?!api/).*)", "destination": "/index.html" }
   ],
   "headers": [

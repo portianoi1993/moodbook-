@@ -254,20 +254,24 @@ async function reconcileIdentity(aiBook) {
   Object.assign(b, { title: aiBook.title || b.title, author: aiBook.author, genre: b.genre || aiBook.genre, trusted: true });
 }
 
-async function loadSoundtrack(mood = S.mood || '', style = S.style || '') {
+async function loadSoundtrack(mood = S.mood || '', style = S.style || '', { fresh = false } = {}) {
   S.mood = mood; S.style = style;
   const what = [mood, style].filter(Boolean).join(' · ');
   setStatus(what ? `Re-tuning for “${what}”…` : 'Composing the soundtrack…');
   skeletonTracks();
   const b = S.book;
   try {
-    const d = await api('/api/analyze', { title: b.title, author: b.author, genre: b.genre, desc: (b.desc || '').slice(0, 600), mood, style });
+    const d = await api('/api/analyze', { title: b.title, author: b.author, genre: b.genre, desc: (b.desc || '').slice(0, 600), mood, style, fresh: fresh ? '1' : '', r: fresh ? Date.now() : '' });
     if (!what || !S.ai) { S.ai = d; renderMoods(); }
     else { S.ai = { ...S.ai, tracks: d.tracks, why: d.why || S.ai.why }; }
     S.tracks = d.tracks || [];
     if (!mood && !d.degraded) await reconcileIdentity(d.book);
     renderBookCard(); renderTracks(); setStatus('');
-    if (d.degraded) el.status.classList.add('is-on'), el.status.innerHTML = '<span aria-hidden="true">⚡</span><span>The AI curator is resting, so this soundtrack was matched by genre. Try again in a few minutes for a book-specific mix.</span>';
+    if (d.degraded) {
+      el.status.classList.add('is-on');
+      el.status.innerHTML = '<span aria-hidden="true">⚡</span><span>Our AI is busy right now, so this soundtrack was matched by genre, not by this exact book.</span><button type="button" class="ghost" id="retryAi">Try again</button>';
+      $('#retryAi').onclick = () => loadSoundtrack(mood, style, { fresh: true });
+    }
     el.tracksMeta.textContent = `${S.tracks.length} long mixes${mood ? ' · ' + mood : ''}`;
     document.title = `${b.title} — MoodBook`;
     // warm the first two searches so the first play is instant
@@ -422,14 +426,23 @@ function loadYT() {
   });
   return ytReady;
 }
+// Dock has three sizes: expanded (big video), compact bar, and mini (corner card; music keeps playing).
+function setDockHeight() {
+  const h = dock.hidden ? 0 : dock.classList.contains('is-mini') ? 84 : dock.classList.contains('is-expanded') ? 360 : 96;
+  document.documentElement.style.setProperty('--dock-h', h + 'px');
+}
+function syncDockButtons() {
+  const ex = dock.classList.contains('is-expanded'), mini = dock.classList.contains('is-mini');
+  $('#expandBtn').setAttribute('aria-expanded', String(ex)); $('#expandBtn').setAttribute('aria-label', ex ? 'Hide video' : 'Show video');
+  $('#miniBtn').setAttribute('aria-pressed', String(mini)); $('#miniBtn').setAttribute('aria-label', mini ? 'Restore player' : 'Minimize player');
+}
 function setDock(t, sub) {
-  if (dock.hidden && !dock.classList.contains('is-expanded')) {
+  if (dock.hidden && !dock.classList.contains('is-expanded') && !dock.classList.contains('is-mini')) {
     // first play: open the dock with the video visible so pause/seek/YouTube controls are reachable
     dock.classList.add('is-expanded');
-    $('#expandBtn').setAttribute('aria-expanded', 'true'); $('#expandBtn').setAttribute('aria-label', 'Hide video');
   }
   dock.hidden = false;
-  document.documentElement.style.setProperty('--dock-h', (dock.classList.contains('is-expanded') ? 360 : 96) + 'px');
+  syncDockButtons(); setDockHeight();
   $('#dockTitle').textContent = t; $('#dockSub').textContent = sub || '';
 }
 const fmtTime = (s) => { s = Math.max(0, Math.floor(s || 0)); const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), x = s % 60; return (h ? `${h}:${String(m).padStart(2, '0')}` : String(m)) + ':' + String(x).padStart(2, '0'); };
@@ -489,16 +502,22 @@ $('#nextBtn').addEventListener('click', () => nextTrack());
 $('#closeDock')?.addEventListener('click', () => {
   try { yt?.stopVideo?.(); } catch {}
   clearInterval(progressTimer);
-  dock.hidden = true; dock.classList.remove('is-expanded');
-  document.documentElement.style.setProperty('--dock-h', '0px');
+  dock.hidden = true; dock.classList.remove('is-expanded', 'is-mini');
+  syncDockButtons(); setDockHeight();
   S.playingIdx = -1; if (S.playingFrom === 'results') renderTracks(); else renderLiked();
 });
 $('#prevBtn').addEventListener('click', prevTrack);
 $('#expandBtn').addEventListener('click', () => {
-  const on = dock.classList.toggle('is-expanded');
-  $('#expandBtn').setAttribute('aria-expanded', String(on));
-  $('#expandBtn').setAttribute('aria-label', on ? 'Hide video' : 'Show video');
-  document.documentElement.style.setProperty('--dock-h', (on ? 360 : 96) + 'px');
+  dock.classList.remove('is-mini');
+  dock.classList.toggle('is-expanded');
+  syncDockButtons(); setDockHeight();
+});
+let dockWasExpanded = false;
+$('#miniBtn').addEventListener('click', () => {
+  const on = dock.classList.toggle('is-mini');
+  if (on) { dockWasExpanded = dock.classList.contains('is-expanded'); dock.classList.remove('is-expanded'); }
+  else if (dockWasExpanded) dock.classList.add('is-expanded');
+  syncDockButtons(); setDockHeight();
 });
 document.addEventListener('keydown', (e) => {
   if (e.target.matches('input,textarea') || !yt) return;

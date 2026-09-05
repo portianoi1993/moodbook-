@@ -133,7 +133,8 @@ export default async function handler(req, res) {
   const configured = getProviders().length > 0;
 
   const cacheKey = [input.title, input.author, input.mood, input.style].join('|').toLowerCase();
-  const hit = cache.get(cacheKey);
+  // `fresh=1` = the reader pressed "try again" after a degraded answer → skip the short-lived memory cache.
+  const hit = q.fresh === '1' ? null : cache.get(cacheKey);
   if (hit) {
     cacheFor(res, 7 * 24 * 3600);
     res.setHeader('X-Cache', 'HIT');

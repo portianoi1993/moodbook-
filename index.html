@@ -21,7 +21,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preconnect" href="https://covers.openlibrary.org">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT@0,9..144,400..700,30;1,9..144,400..600,50&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/css/app.css?v=20260905h5">
+<link rel="stylesheet" href="/css/app.css?v=20260905h6">
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"WebApplication","name":"MoodBook","url":"https://moodbook-six.vercel.app/","applicationCategory":"MusicApplication","operatingSystem":"Web","description":"AI-curated reading soundtracks matched to the book you are reading.","offers":[{"@type":"Offer","price":"0","priceCurrency":"USD","name":"Free"},{"@type":"Offer","price":"9.99","priceCurrency":"USD","name":"Pro monthly"}]}
 </script>
@@ -190,7 +190,7 @@
             <span class="mono accent">Pro · early access</span>
             <p class="plan-big" id="landingProPrice">$9.99<span>/mo</span></p>
             <ul><li>Unlimited books</li><li>Everything synced across devices</li><li>Liked tracks saved forever</li></ul>
-            <a class="btn grad" href="mailto:moodbook@moodbook.ink?subject=MoodBook%20Pro%20early%20access" data-magnetic>Request early access <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></a>
+            <a class="btn grad" href="#account" data-nav="account" data-magnetic>See the Pro plan <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></a>
             <p class="plan-note">or $99.99 a year (save 17%). Card payments open with the public launch.</p>
           </div></article>
         </div>
@@ -256,14 +256,14 @@
         <ul class="perks"><li>Unlimited books, every day</li><li>All scene moods unlocked</li><li>Shelf and liked tracks synced across devices</li></ul>
         <div class="pay-price"><b id="payPrice">$9.99</b><span id="payPer">/month</span><span class="pay-alt" id="payAlt">or $99.99/year (save 17%)</span></div>
         <div class="pay-actions">
-          <a class="btn grad" id="payCta" href="mailto:moodbook@moodbook.ink?subject=MoodBook%20Pro%20early%20access" data-magnetic>Request early access <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></a>
+          <span class="btn grad is-soon" id="payCta" aria-disabled="true">Payments open soon <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="9"/></svg></span></span>
           <form class="promo" id="promoForm">
             <label class="sr-only" for="promoInput">Promo code</label>
             <input id="promoInput" name="promo" type="text" placeholder="Promo code…" autocomplete="off" autocapitalize="characters" spellcheck="false">
             <button type="submit">Apply</button>
           </form>
         </div>
-        <p class="dim small">Free searches reset tomorrow. Card payments open with the public launch; early access is by invitation.</p>
+        <p class="dim small">Free searches reset tomorrow. Card payments open with the public launch; until then a promo code unlocks Pro.</p>
       </div></div>
     </div>
   </section>
@@ -323,7 +323,7 @@
           <article class="card plan gborder">
             <header><h2>Pro</h2><p class="price" id="proPrice">$9.99<span>/mo</span></p></header>
             <ul><li>Unlimited books</li><li>All scene moods</li><li>Sync shelf across devices</li><li>Liked tracks saved forever</li></ul>
-            <a class="btn grad" id="proCta" href="mailto:moodbook@moodbook.ink?subject=MoodBook%20Pro%20early%20access">Request early access <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></a>
+            <span class="btn grad is-soon" id="proCta" aria-disabled="true">Payments open soon <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="9"/></svg></span></span>
           </article>
         </div>
         <form class="card promo-acct" id="promoFormAcct">
@@ -345,7 +345,6 @@
     <nav class="foot-links" aria-label="Legal">
       <a href="/privacy.html">Privacy</a>
       <a href="/terms.html">Terms</a>
-      <a href="mailto:moodbook@moodbook.ink">Contact</a>
     </nav>
   </footer>
 </main>
@@ -366,6 +365,7 @@
       <button type="button" class="icon-btn big" id="playBtn" aria-label="Pause"><svg class="i-pause" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5h3v14H8zM13 5h3v14h-3z"/></svg><svg class="i-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4v16l14-8z"/></svg></button>
       <button type="button" class="icon-btn" id="nextBtn" aria-label="Next track"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 5v14M4 5l12 7-12 7z"/></svg></button>
       <button type="button" class="icon-btn" id="expandBtn" aria-label="Show video" aria-expanded="false" title="Show / hide video"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 15 6-6 6 6"/></svg></button>
+      <button type="button" class="icon-btn" id="miniBtn" aria-label="Minimize player" aria-pressed="false" title="Minimize player (music keeps playing)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19h14M8 13l4 4 4-4M12 17V4"/></svg></button>
       <button type="button" class="icon-btn" id="closeDock" aria-label="Stop and close player" title="Stop and close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
     </div>
   </div>
@@ -379,6 +379,7 @@
 </nav>
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
-<script type="module" src="/js/app.js?v=20260905h5"></script>
+<script type="module" src="/js/app.js?v=20260905h6"></script>
+<script defer src="/_vercel/insights/script.js"></script>
 </body>
 </html>

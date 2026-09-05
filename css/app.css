@@ -383,7 +383,6 @@ h1,h2,h3{font-family:var(--display);font-weight:600;letter-spacing:-.02em;line-h
 .add .suggest{left:0;right:0}
 .section-label{margin:34px 0 14px;display:flex;align-items:center;gap:12px}
 .section-label::after{content:"";flex:1;height:1px;background:var(--line-2)}
-.band-head::before{content:"¾6";display:block;font-family:var(--display);color:var(--peach-d);font-size:1.1rem;opacity:.7;margin-bottom:2px}
 .shelf{display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:22px 16px;padding:6px 0 10px}
 .book{position:relative;text-align:left}
 .cvbtn{all:unset;display:block;cursor:pointer;width:100%}
@@ -522,3 +521,20 @@ h1,h2,h3{font-family:var(--display);font-weight:600;letter-spacing:-.02em;line-h
   [data-reveal],[data-words] .w>span{opacity:1!important;transform:none!important;filter:none!important}
   .float{animation:none}
 }
+
+/* ── payments not open yet: informative pill, not a dead button ── */
+.btn.is-soon{cursor:default;opacity:.85;filter:saturate(.8)}
+.btn.is-soon:hover{transform:none}
+
+/* ── player dock: mini mode (video keeps playing, dock shrinks to a corner card) ── */
+.dock.is-mini{left:auto;right:12px;padding:0;width:auto}
+.dock.is-mini .dock-inner{grid-template-columns:auto auto;gap:6px;padding:6px;max-width:none;width:max-content;margin:0 0 0 auto;border-radius:18px}
+.dock.is-mini .dock-info,.dock.is-mini #prevBtn,.dock.is-mini #nextBtn,.dock.is-mini #expandBtn,.dock.is-mini #closeDock{display:none}
+.dock.is-mini .dock-video{width:104px;border-radius:12px}
+.dock.is-mini .dock-controls .big{width:40px;height:40px}
+#miniBtn svg{transition:transform .3s var(--ease)}
+.dock.is-mini #miniBtn svg{transform:rotate(180deg)}
+@media(min-width:1060px){.dock.is-mini{right:24px;width:auto}}
+.status .ghost,.error .ghost{margin-left:auto;flex:none;padding:6px 12px;border-radius:999px;border:1px solid var(--line);background:var(--paper);color:var(--ink);font:600 .8rem var(--sans);cursor:pointer}
+.status .ghost:hover,.error .ghost:hover{background:var(--cream-2)}
+.status.is-on{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
