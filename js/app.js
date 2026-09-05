@@ -86,7 +86,7 @@ function showPage(p, { push = true } = {}) {
   if (p === 'account') renderAccount();
   if (push && location.hash !== '#' + p) history.replaceState(null, '', p === 'discover' ? location.pathname + location.search : '#' + p);
   window.scrollTo({ top: 0, behavior: 'instant' in window ? 'instant' : 'auto' });
-  document.title = p === 'discover' && S.book ? `${S.book.title} — MoodBook` : 'MoodBook — Instrumental soundtracks for the book you\'re reading';
+  document.title = p === 'discover' && S.book ? `${S.book.title} — MoodBook` : 'MoodBook — A soundtrack for the book you\'re reading';
 }
 document.addEventListener('click', (e) => {
   const a = e.target.closest('[data-nav]');
@@ -268,7 +268,7 @@ async function loadSoundtrack(mood = S.mood || '', style = S.style || '') {
     if (!mood && !d.degraded) await reconcileIdentity(d.book);
     renderBookCard(); renderTracks(); setStatus('');
     if (d.degraded) el.status.classList.add('is-on'), el.status.innerHTML = '<span aria-hidden="true">⚡</span><span>The AI curator is resting, so this soundtrack was matched by genre. Try again in a few minutes for a book-specific mix.</span>';
-    el.tracksMeta.textContent = `${S.tracks.length} long instrumental mixes${mood ? ' · ' + mood : ''}`;
+    el.tracksMeta.textContent = `${S.tracks.length} long mixes${mood ? ' · ' + mood : ''}`;
     document.title = `${b.title} — MoodBook`;
     // warm the first two searches so the first play is instant
     S.tracks.slice(0, 2).forEach((t) => api('/api/search', { q: t.query }).catch(() => {}));
@@ -353,7 +353,7 @@ function toggleLike(t, btn) {
 function resetSearch() {
   el.results.hidden = true; el.paywall.hidden = true; el.hero.hidden = false;
   history.replaceState(null, '', location.pathname);
-  document.title = 'MoodBook — Instrumental soundtracks for the book you\'re reading';
+  document.title = 'MoodBook — A soundtrack for the book you\'re reading';
   el.q.value = ''; el.q.focus({ preventScroll: true });
   window.scrollTo({ top: 0, behavior: 'auto' });
 }
@@ -370,7 +370,7 @@ el.saveBtn.addEventListener('click', () => {
 el.shareBtn.addEventListener('click', async () => {
   if (!S.book) return;
   const url = `${location.origin}/?b=${encodeURIComponent(S.book.title + (S.book.author ? ' ' + S.book.author : ''))}`;
-  const text = `Reading “${S.book.title}”? Here's an instrumental soundtrack for it 🎧`;
+  const text = `Reading “${S.book.title}”? Here's a soundtrack composed for it 🎧`;
   try {
     if (navigator.share) await navigator.share({ title: 'MoodBook', text, url });
     else { await navigator.clipboard.writeText(url); toast('Link copied'); }
