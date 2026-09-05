@@ -1,0 +1,13 @@
+{
+  "name": "MoodBook — Music for every page",
+  "short_name": "MoodBook",
+  "description": "AI-curated instrumental soundtracks for the book you're reading.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F8F5F0",
+  "theme_color": "#F8F5F0",
+  "icons": [
+    { "src": "/assets/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/assets/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

@@ -1,1 +1,9 @@
 .claude/skills/
+.env
+.env.local
+.vercel
+node_modules/
+ruvector.db
+.swarm/
+.claude-flow/
+reference/

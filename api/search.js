@@ -1,72 +1,100 @@
-const rateLimit = new Map();
+// GET /api/search?q=...  → best embeddable long YouTube video for a query
+// Requires YT_API_KEY (server-side only, never shipped to the browser).
+import { cors, guard, cacheFor, noCache, str, makeCache, fetchWithTimeout } from '../lib/http.js';
 
-function checkRateLimit(ip, maxRequests = 50, windowMs = 60 * 60 * 1000) {
-  const now = Date.now();
-  if (!rateLimit.has(ip)) {
-    rateLimit.set(ip, { count: 1, resetAt: now + windowMs });
-    return true;
-  }
-  const record = rateLimit.get(ip);
-  if (now > record.resetAt) {
-    rateLimit.set(ip, { count: 1, resetAt: now + windowMs });
-    return true;
-  }
-  record.count++;
-  return record.count <= maxRequests;
+const cache = makeCache(1000);
+const BLOCK = /lyrics|karaoke|vocal|sing|cover song|reaction|podcast|asmr talk|tutorial|review|trailer/i;
+
+const ENT = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ' };
+const decode = (s) => String(s || '').replace(/&(#x?[0-9a-f]+|[a-z]+);/gi, (m, e) => {
+  if (e[0] === '#') { const n = e[1].toLowerCase() === 'x' ? parseInt(e.slice(2), 16) : parseInt(e.slice(1), 10); return Number.isFinite(n) ? String.fromCodePoint(n) : m; }
+  return ENT[e.toLowerCase()] ?? m;
+});
+
+function isoToSec(iso) {
+  const m = /PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/.exec(iso || '');
+  if (!m) return 0;
+  return (+m[1] || 0) * 3600 + (+m[2] || 0) * 60 + (+m[3] || 0);
 }
 
 export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-  if (req.method === 'OPTIONS') return res.status(200).end();
+  if (cors(req, res, 'GET, OPTIONS')) return;
+  if (guard(req, res, { methods: ['GET'], max: 120 })) return;
 
-  const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || 'unknown';
-  if (!checkRateLimit(ip, 50)) {
-    return res.status(429).json({ error: 'Too many requests' });
+  const q = str(req.query?.q, 160);
+  if (!q) {
+    noCache(res);
+    return res.status(400).json({ error: 'Missing query' });
+  }
+  const key = process.env.YT_API_KEY;
+  if (!key) {
+    noCache(res);
+    return res.status(500).json({ error: 'Server configuration error', detail: 'YT_API_KEY is not set' });
   }
 
-  const { q } = req.query;
-  if (!q) return res.status(400).json({ error: 'Missing query' });
-  
-  // Sanitize query
-  const safeQ = String(q).slice(0, 200);
-
-  const YT_KEY = process.env.YT_API_KEY || 'AIzaSyD_GXtmqfc_rRVc7xa3v2g8tNoh-a4yR3o';
+  const cacheKey = q.toLowerCase();
+  const hit = cache.get(cacheKey);
+  if (hit) {
+    cacheFor(res, 24 * 3600);
+    return res.status(200).json(hit);
+  }
 
   try {
-    const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(safeQ)}&type=video&videoDuration=long&maxResults=10&key=${YT_KEY}`;
-    const r = await fetch(url);
-    const d = await r.json();
-
-    if (!d.items?.length) {
-      return res.status(200).json({ videoId: null });
-    }
-
-    // Get video details to check embeddable
-    const ids = d.items.map(v => v.id.videoId).join(',');
-    const detailUrl = `https://www.googleapis.com/youtube/v3/videos?part=status,contentDetails&id=${ids}&key=${YT_KEY}`;
-    const dr = await fetch(detailUrl);
-    const dd = await dr.json();
-
-    const good = dd.items?.find(v =>
-      v.status?.embeddable === true &&
-      v.status?.privacyStatus === 'public'
-    );
-
-    if (good) {
-      return res.status(200).json({
-        videoId: good.id,
-        title: d.items.find(i => i.id.videoId === good.id)?.snippet?.title || safeQ
-      });
-    }
-
-    const first = d.items[0];
-    return res.status(200).json({
-      videoId: first.id.videoId,
-      title: first.snippet?.title || safeQ
+    const sp = new URLSearchParams({
+      part: 'snippet', q, type: 'video', maxResults: '10',
+      videoEmbeddable: 'true', videoSyndicated: 'true', videoDuration: 'long',
+      safeSearch: 'moderate', key,
     });
+    const r = await fetchWithTimeout(`https://www.googleapis.com/youtube/v3/search?${sp}`, {}, 8000);
+    const d = await r.json();
+    if (!r.ok) throw new Error(d?.error?.message || `YouTube search ${r.status}`);
+    const items = d.items || [];
+    if (!items.length) {
+      const empty = { videoId: null };
+      cache.set(cacheKey, empty, 3600 * 1000);
+      cacheFor(res, 3600);
+      return res.status(200).json(empty);
+    }
 
-  } catch(e) {
-    return res.status(500).json({ error: 'Search failed' });
+    const ids = items.map((v) => v.id.videoId).join(',');
+    const vp = new URLSearchParams({ part: 'status,contentDetails,statistics', id: ids, key });
+    const vr = await fetchWithTimeout(`https://www.googleapis.com/youtube/v3/videos?${vp}`, {}, 8000);
+    const vd = await vr.json();
+    const meta = new Map((vd.items || []).map((v) => [v.id, v]));
+
+    const ranked = items
+      .map((it) => {
+        const m = meta.get(it.id.videoId);
+        const secs = isoToSec(m?.contentDetails?.duration);
+        const views = +(m?.statistics?.viewCount || 0);
+        const title = decode(it.snippet?.title || '');
+        let s = Math.log10(1 + views) * 10;
+        if (secs >= 3600) s += 15; else if (secs >= 1500) s += 6; else s -= 20;
+        if (BLOCK.test(title)) s -= 40;
+        if (/instrumental|ambient|no lyrics|soundtrack|music for|reading|study/i.test(title)) s += 6;
+        const ok = m?.status?.embeddable !== false && (m?.status?.privacyStatus || 'public') === 'public';
+        return { it, m, secs, views, s: ok ? s : -999 };
+      })
+      .filter((x) => x.s > -999)
+      .sort((a, b) => b.s - a.s);
+
+    const pick = ranked[0] || { it: items[0], secs: 0, views: 0 };
+    const sn = pick.it.snippet || {};
+    const payload = {
+      videoId: pick.it.id.videoId,
+      title: decode(sn.title) || q,
+      channel: decode(sn.channelTitle || ''),
+      thumb: sn.thumbnails?.medium?.url || '',
+      seconds: pick.secs,
+      views: pick.views,
+      alternatives: ranked.slice(1, 4).map((x) => ({ videoId: x.it.id.videoId, title: decode(x.it.snippet?.title || '') })),
+    };
+    cache.set(cacheKey, payload, 24 * 3600 * 1000);
+    cacheFor(res, 24 * 3600);
+    return res.status(200).json(payload);
+  } catch (e) {
+    console.error('[search] failed:', e.message);
+    noCache(res);
+    return res.status(502).json({ error: 'Search failed', detail: str(e.message, 200) });
   }
 }

@@ -13,13 +13,19 @@ MoodBook (moodbook.ink) — AI-сервіс музичної курації дл
 - Live: moodbook-six.vercel.app (цільовий домен moodbook.ink)
 - GitHub: portianoi1993/moodbook-
 
-## Технічний стек
-- Frontend: vanilla JS + HTML + CSS (без фреймворків)
-- Hosting: Vercel, serverless-функції в папці `api/`
-- AI-аналіз книги: OpenAI GPT-4o-mini
-- Музика: YouTube Data API (embeddable інструментальні треки). Раніше був SoundCloud — свідомо відмовились.
-- Метадані книг + автокомпліт: Google Books API
-- Безпека: rate limiting та санітизація інпутів вже додані
+## Технічний стек (v2, гілка `v2`)
+- Frontend: vanilla JS + HTML + CSS (без фреймворків). Файли: `index.html`, `css/app.css`, `js/app.js` (ES-module), статика в `assets/`.
+- Hosting: Vercel. Serverless-функції в `api/`, спільний код у `lib/http.js` (rate limit, CORS, кеш, таймаути). `package.json` має `"type":"module"`.
+- API:
+  - `GET /api/analyze?title&author&genre&desc&mood` — один AI-виклик → `{book, why, moods[6], tracks[6]}`; кеш у пам'яті 24 год + CDN 7 днів.
+  - `GET /api/books?q&limit` / `&best=1` — проксі Google Books з ранжуванням (ключ лише на сервері).
+  - `GET /api/search?q` — найкраще embeddable довге відео YouTube (+3 альтернативи).
+  - `GET /api/health?probe=1` — діагностика env і тестовий виклик AI (показує реальну помилку апстріму).
+- AI: будь-який OpenAI-сумісний ендпоінт. Env: `AI_API_KEY` (fallback `OPENAI_API_KEY`), `AI_BASE_URL` (default `https://api.openai.com/v1`), `AI_MODEL` (default `gpt-4o-mini`). Це дозволяє підключити OmniRoute/OpenRouter без зміни коду.
+- Музика: YouTube Data API v3 (`YT_API_KEY`). Плеєр — YouTube IFrame API у постійному доку (не ховати iframe: вимога YouTube до мінімального розміру).
+- Книги: Google Books (`GOOGLE_BOOKS_KEY`, fallback `YT_API_KEY`).
+- Локально: `npm run dev` → http://localhost:3939 (читає `.env.local`); `node scripts/mock-ai.mjs` — мок AI для UI-тестів без ключа.
+- Безпека: rate limiting per IP (best-effort, in-memory), санітизація довжин, security-заголовки у `vercel.json`, жодних ключів у клієнтському коді.
 
 ## Ключові продуктові рішення (вже ухвалені — не переглядати без запиту)
 - Тарифи: $9.99/міс або $99.99/рік; безкоштовний рівень — 3 пошуки
@@ -28,6 +34,7 @@ MoodBook (moodbook.ink) — AI-сервіс музичної курації дл
 - Бібліотека користувача: shelf-grid розкладка (полиці з книгами)
 
 ## Що вже зроблено
+- **v2 (вересень 2026):** повний переробок фронтенду під mobile-first + постійний плеєр + новий бекенд (див. `docs/AUDIT-2026-09-05-v2.md`). Live на `main` досі стара версія, у якої AI-ендпоінт повертає 502.
 - Робочий MVP: пошук книги → аналіз → плейлист
 - Перехід із SoundCloud на YouTube як джерело музики
 - Виправлені обмеження API-ключів у Google Cloud Console (Books API був заблокований)
@@ -47,4 +54,6 @@ MoodBook (moodbook.ink) — AI-сервіс музичної курації дл
 - Не ламати наявну структуру serverless-функцій на Vercel
 - API-ключі — тільки через environment variables на Vercel, ніколи не хардкодити в код
 - Після змін пояснювати, що саме змінилося і як це перевірити
+- Перед дизайн-роботою спершу перевірити, що прод реально працює (`/api/health?probe=1` і один живий пошук)
+- Дані користувача в localStorage: ключі `mb_books`, `mb_liked_tracks`, `mb_pro`, `mb_total_searches`, `mb_day_YYYY-MM-DD` — не перейменовувати
 - Коміти робити з короткими зрозумілими повідомленнями англійською
