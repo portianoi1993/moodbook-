@@ -1,11 +1,11 @@
 {
   "name": "MoodBook — Every book has a sound",
   "short_name": "MoodBook",
-  "description": "AI-curated instrumental soundtracks for the book you're reading.",
+  "description": "A reading soundtrack composed for the exact book in your hands.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#07070F",
-  "theme_color": "#07070F",
+  "background_color": "#F7F0E6",
+  "theme_color": "#F7F0E6",
   "icons": [
     {
       "src": "/assets/icon-192.png",
