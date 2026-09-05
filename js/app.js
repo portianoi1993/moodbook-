@@ -109,6 +109,8 @@ function attachAutocomplete(input, list, onPick) {
       </li>`).join('');
     list.hidden = false;
     input.setAttribute('aria-expanded', 'true');
+    // keep the whole list on screen (the hero form can sit low on short viewports)
+    requestAnimationFrame(() => { const r = list.getBoundingClientRect(); if (r.bottom > innerHeight - 8) window.scrollBy({ top: Math.min(r.bottom - innerHeight + 16, Math.max(0, r.top - 100)), behavior: 'smooth' }); });
   };
   input.addEventListener('input', () => {
     clearTimeout(timer);
@@ -266,7 +268,10 @@ async function loadSoundtrack(mood = '') {
 
 function renderBookCard() {
   const b = S.book, ai = S.ai;
-  const tags = [b.genre, ai?.book?.setting, ai?.book?.tone].filter(Boolean).slice(0, 3);
+  // short, de-duplicated tags: up to 2 genres + setting + tone
+  const seen = new Set();
+  const genres = String(ai?.book?.genre || b.genre || '').split(/[,/·]/).map((s) => s.trim()).filter((s) => s && s.length <= 26 && !/general|imaginary place/i.test(s) && !seen.has(s.toLowerCase()) && seen.add(s.toLowerCase())).slice(0, 2);
+  const tags = [...genres, ai?.book?.setting, ai?.book?.tone].filter(Boolean).map((s) => String(s).slice(0, 34)).slice(0, 4);
   el.bookCard.innerHTML = `
     ${b.cover ? `<div class="cover"><img src="${esc(b.cover)}" alt="Cover of ${esc(b.title)}" width="76" height="114"></div>` : '<div class="cover ph" aria-hidden="true">📖</div>'}
     <div>
@@ -400,10 +405,27 @@ function loadYT() {
   return ytReady;
 }
 function setDock(t, sub) {
+  if (dock.hidden && !dock.classList.contains('is-expanded')) {
+    // first play: open the dock with the video visible so pause/seek/YouTube controls are reachable
+    dock.classList.add('is-expanded');
+    $('#expandBtn').setAttribute('aria-expanded', 'true'); $('#expandBtn').setAttribute('aria-label', 'Hide video');
+  }
   dock.hidden = false;
-  document.documentElement.style.setProperty('--dock-h', (dock.classList.contains('is-expanded') ? 300 : 84) + 'px');
+  document.documentElement.style.setProperty('--dock-h', (dock.classList.contains('is-expanded') ? 360 : 96) + 'px');
   $('#dockTitle').textContent = t; $('#dockSub').textContent = sub || '';
 }
+const fmtTime = (s) => { s = Math.max(0, Math.floor(s || 0)); const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), x = s % 60; return (h ? `${h}:${String(m).padStart(2, '0')}` : String(m)) + ':' + String(x).padStart(2, '0'); };
+$('#dockProgress').addEventListener('click', (e) => {
+  if (!yt?.getDuration) return;
+  const r = e.currentTarget.getBoundingClientRect();
+  const pct = Math.min(1, Math.max(0, (e.clientX - r.left) / r.width));
+  yt.seekTo(pct * yt.getDuration(), true);
+});
+$('#dockProgress').addEventListener('keydown', (e) => {
+  if (!yt?.getDuration) return;
+  if (e.key === 'ArrowRight') { e.preventDefault(); yt.seekTo(yt.getCurrentTime() + 30, true); }
+  if (e.key === 'ArrowLeft') { e.preventDefault(); yt.seekTo(Math.max(0, yt.getCurrentTime() - 30), true); }
+});
 async function playFrom(list, i, from) {
   const t = list[i]; if (!t) return;
   S.queue = list; S.playingIdx = i; S.playingFrom = from;
@@ -436,6 +458,7 @@ function startProgress() {
     const pct = d ? Math.min(100, (c / d) * 100) : 0;
     $('#dockProgress span').style.width = pct + '%';
     $('#dockProgress').setAttribute('aria-valuenow', Math.round(pct));
+    const tl = $('#dockTime'); if (tl) tl.textContent = d ? `${fmtTime(c)} / ${fmtTime(d)}` : '';
   }, 1000);
 }
 $('#playBtn').addEventListener('click', () => {
@@ -449,7 +472,7 @@ $('#expandBtn').addEventListener('click', () => {
   const on = dock.classList.toggle('is-expanded');
   $('#expandBtn').setAttribute('aria-expanded', String(on));
   $('#expandBtn').setAttribute('aria-label', on ? 'Hide video' : 'Show video');
-  document.documentElement.style.setProperty('--dock-h', (on ? 300 : 84) + 'px');
+  document.documentElement.style.setProperty('--dock-h', (on ? 360 : 96) + 'px');
 });
 document.addEventListener('keydown', (e) => {
   if (e.target.matches('input,textarea') || !yt) return;

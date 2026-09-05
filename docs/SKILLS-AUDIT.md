@@ -39,6 +39,9 @@
 
 Ігрові (build-*-game, threejs-enemy, fog-of-war, tune-enemy-ai), agent/harness-інженерія (context-*, memory-systems, multi-agent-patterns, harness-engineering, tool-design, evaluation), продажі B2B (cold-email, prospecting, revops, sales-enablement), відео/озвучка (remotion, elevenlabs-tts, video), стилі, що суперечать напряму (brutalist, documentary-brutalist, minimalist light, clean-minimal-beige, light-mode-paper, editorial-service-booking, orange-clean-paper-saas, book-serif-index, skeuomorphic), Shopify/Notion/Slack-плагіни, X/Twitter-письмо.
 
+## 3b. Четвертий прохід — «Golden Hour Library»
+Власник: «не ламповий, не книжковий, як фінтех». Перезапит бази ui-ux-pro-max (`cozy bookstore reading app warm pastel playful premium soft`) дав сім'ю м'яких стилів (Claymorphism/Soft UI/Bento) і пастельні палітри; звідти взято м'які подвійні тіні, радіуси 20–28px, пастель + глибока пара для тексту. Архетип soft-skill змінено з «Ethereal Glass» на «Soft Structuralism» (світло, повітря, дуже м'які тіні). Додано orange-clean-paper-saas (тепла паперова оболонка, зона продукт-ілюстрації = справжні обкладинки) і blue-cloudy-clean-modern (світлова атмосфера на canvas, одна курсивна фраза в заголовку). Мono-шрифти прибрано як «техно»-сигнал.
+
 ## 4. Висновок
 
 Основний двигун напряму: **ui-ux-pro-max (база) + soft-skill (архітектура компонентів) + glass/mesh/motion-скіли (виконання)**. Це і є «Nocturne»: темне кіно-скло, одна брендова пара кольорів violet→teal, magnetic-кнопки, жива атмосфера в героі, продукт як доказ у першому екрані.

@@ -18,7 +18,7 @@ MoodBook (moodbook.ink) — AI-сервіс музичної курації дл
 - Hosting: Vercel. Serverless-функції в `api/`, спільний код у `lib/http.js` (rate limit, CORS, кеш, таймаути). `package.json` має `"type":"module"`.
 - API:
   - `GET /api/analyze?title&author&genre&desc&mood` — один AI-виклик → `{book, why, moods[6], tracks[6]}`; кеш у пам'яті 24 год + CDN 7 днів.
-  - `GET /api/books?q&limit` / `&best=1` — проксі Google Books з ранжуванням (ключ лише на сервері).
+  - `GET /api/books?q&limit` / `&best=1` — Google Books + Open Library паралельно (плюс title-wildcard для часткових слів), злиття й ранжування; працює навіть коли Google без квоти.
   - `GET /api/search?q` — найкраще embeddable довге відео YouTube (+3 альтернативи).
   - `GET /api/health?probe=1` — діагностика env і тестовий виклик AI (показує реальну помилку апстріму).
 - AI: **безкоштовні провайдери з авто-фолбеком** (`lib/ai.js`). Env: `AI_API_KEY` + `AI_BASE_URL` + `AI_MODEL` (основний), `AI_FALLBACK_*` і `AI_FALLBACK2_*` (запасні). Рекомендовано: основний Google Gemini (`https://generativelanguage.googleapis.com/v1beta/openai`, `gemini-2.5-flash`, ключ з aistudio.google.com без картки), запасний Groq (`https://api.groq.com/openai/v1`, `llama-3.3-70b-versatile`). OpenAI більше не потрібен. Якщо всі провайдери впали, `lib/fallback.js` збирає жанровий плейлист офлайн (`degraded:true`).

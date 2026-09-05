@@ -13,10 +13,11 @@ export function mountMesh(canvas) {
   if (!canvas) return;
   const ctx = canvas.getContext('2d', { alpha: true });
   const orbs = [
-    { c: [124, 109, 255], r: 0.55, x: 0.22, y: 0.35, dx: 0.00011, dy: 0.00007, a: 0.55 },
-    { c: [45, 212, 191], r: 0.42, x: 0.78, y: 0.30, dx: -0.00009, dy: 0.00012, a: 0.38 },
-    { c: [167, 139, 250], r: 0.48, x: 0.60, y: 0.85, dx: 0.00008, dy: -0.0001, a: 0.32 },
-    { c: [56, 189, 248], r: 0.30, x: 0.15, y: 0.9, dx: 0.00013, dy: -0.00006, a: 0.22 },
+    { c: [201, 184, 255], r: 0.55, x: 0.20, y: 0.30, dx: 0.00011, dy: 0.00007, a: 0.75 }, // lavender
+    { c: [255, 201, 169], r: 0.48, x: 0.80, y: 0.25, dx: -0.00009, dy: 0.00012, a: 0.70 }, // peach
+    { c: [184, 241, 220], r: 0.46, x: 0.62, y: 0.88, dx: 0.00008, dy: -0.0001, a: 0.65 }, // mint
+    { c: [255, 231, 163], r: 0.36, x: 0.12, y: 0.92, dx: 0.00013, dy: -0.00006, a: 0.55 }, // butter
+    { c: [191, 227, 255], r: 0.34, x: 0.45, y: 0.55, dx: -0.00007, dy: 0.00009, a: 0.45 }, // sky
   ];
   let w = 0, h = 0, raf = 0, t0 = performance.now(), running = false;
   const DPR = Math.min(window.devicePixelRatio || 1, 1.25) * 0.5; // render at half res, blur hides it
@@ -28,7 +29,7 @@ export function mountMesh(canvas) {
   function frame(now) {
     const t = now - t0;
     ctx.clearRect(0, 0, w, h);
-    ctx.globalCompositeOperation = 'lighter';
+    ctx.globalCompositeOperation = 'source-over';
     for (const o of orbs) {
       const x = (o.x + Math.sin(t * o.dx * 6) * 0.08) * w;
       const y = (o.y + Math.cos(t * o.dy * 6) * 0.08) * h;
@@ -41,7 +42,7 @@ export function mountMesh(canvas) {
     for (let i = 0; i < 3; i++) {
       const cx = ((0.2 + i * 0.3) + Math.sin(t * 0.00005 + i) * 0.06) * w;
       const g = ctx.createLinearGradient(cx - w * 0.12, 0, cx + w * 0.12, 0);
-      g.addColorStop(0, 'rgba(255,255,255,0)'); g.addColorStop(0.5, 'rgba(255,255,255,0.045)'); g.addColorStop(1, 'rgba(255,255,255,0)');
+      g.addColorStop(0, 'rgba(255,255,255,0)'); g.addColorStop(0.5, 'rgba(255,255,255,0.35)'); g.addColorStop(1, 'rgba(255,255,255,0)');
       ctx.fillStyle = g; ctx.fillRect(0, 0, w, h);
     }
     ctx.globalCompositeOperation = 'source-over';

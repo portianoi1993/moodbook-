@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>MoodBook — Every book has a sound</title>
 <meta name="description" content="Type the book you're reading and MoodBook composes an instrumental, lyric-free soundtrack that matches its world, mood and pace. Free to try, no account needed.">
-<meta name="theme-color" content="#07070F">
-<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#FBF6EE">
+<meta name="color-scheme" content="light">
 <link rel="icon" type="image/svg+xml" href="/assets/logo.svg">
 <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32.png">
 <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
@@ -19,8 +19,8 @@
 <meta name="twitter:card" content="summary">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700&family=Geist:wght@300;400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/css/app.css?v=20260905n1">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700&family=Fraunces:ital,opsz,wght,SOFT@1,9..144,400..600,50&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/app.css?v=20260905g1">
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"WebApplication","name":"MoodBook","url":"https://moodbook-six.vercel.app/","applicationCategory":"MusicApplication","operatingSystem":"Web","description":"AI-curated instrumental reading soundtracks matched to the book you are reading.","offers":[{"@type":"Offer","price":"0","priceCurrency":"USD","name":"Free"},{"@type":"Offer","price":"9.99","priceCurrency":"USD","name":"Pro monthly"}]}
 </script>
@@ -53,11 +53,11 @@
     <div id="hero">
       <!-- HERO SHELL with light field -->
       <div class="hero-shell">
-        <canvas id="mesh" aria-hidden="true"></canvas>
+        <div class="hero-bg" aria-hidden="true"><canvas id="mesh"></canvas></div>
         <div class="hero">
           <div class="hero-copy">
             <p class="eyebrow" data-reveal><i></i> Instrumental soundtracks for readers</p>
-            <h1 class="hero-h1" id="hero-title" data-words>Every book has a sound.</h1>
+            <h1 class="hero-h1" id="hero-title">Every book has <em class="it" data-words>a sound.</em></h1>
             <p class="hero-sub" data-reveal style="--d:200ms">Name what you're reading. MoodBook reads its world, mood and pace, then composes six long instrumental mixes to read to. No lyrics, no account, nothing to install.</p>
 
             <form class="search shell-glass" id="searchForm" role="search" autocomplete="off" data-reveal style="--d:320ms">
@@ -86,9 +86,14 @@
           <!-- LIVE-LOOKING PRODUCT DEMO (static sample, labelled) -->
           <aside class="demo" aria-label="Sample soundtrack" data-reveal style="--d:420ms">
             <div class="demo-glow" aria-hidden="true"></div>
-            <article class="demo-card shell-glass gborder" data-tilt data-spot>
+            <div class="stack" aria-hidden="true">
+              <img class="sb s1" src="https://covers.openlibrary.org/b/id/14407898-M.jpg" alt="" width="120" height="180" loading="lazy">
+              <img class="sb s2" src="https://covers.openlibrary.org/b/id/11481354-M.jpg" alt="" width="120" height="180" loading="lazy">
+              <img class="sb s3" src="https://covers.openlibrary.org/b/id/11200092-M.jpg" alt="" width="120" height="180" loading="lazy">
+            </div>
+            <article class="demo-card shell-glass" data-tilt data-spot>
               <div class="core">
-                <p class="mono" style="margin:0 0 12px 2px">Sample · what you get</p>
+                <p class="lbl" style="margin:0 0 12px 2px">Sample · what you get</p>
                 <div class="dc-head">
                   <div class="dc-cover" aria-hidden="true"><b>Dune</b><small>Frank Herbert</small></div>
                   <div>
@@ -126,24 +131,24 @@
           <p class="band-sub">No playlists to dig through. Name the book, and the room fills with the right music.</p>
         </div>
         <div class="bento">
-          <article class="shell-glass b1" data-spot data-reveal><div class="core">
+          <article class="shell-glass b1 tint-lav" data-spot data-reveal><div class="core">
             <span class="idx">01 · Read the room</span>
             <h3>We understand the book, not just the genre.</h3>
             <p>Setting, era, tone and pace become a sonic brief. Dune gets wind and drums, a self-help book gets steady focus beats.</p>
             <div class="tagcloud"><span class="hot">Desert Dawn Drift</span><span>Spice Vision Trance</span><span>Sietch Night Calm</span><span>Sandworm Surge</span><span>Court Intrigue</span><span>Deep Focus Lofi</span></div>
           </div></article>
-          <article class="shell-glass b2" data-spot data-reveal style="--d:80ms"><div class="core">
+          <article class="shell-glass b2 tint-peach" data-spot data-reveal style="--d:80ms"><div class="core">
             <span class="idx">02 · Six long mixes</span>
             <h3>Hour-long, lyric-free, ready to play.</h3>
             <p>Real YouTube mixes, checked for length and embeddability, in a player that stays with you.</p>
             <ul class="mini-tracks"><li><i>01</i><span>Arrakeen Sunrise</span><i>1 hr</i></li><li><i>02</i><span>The Spice Must Flow</span><i>1 hr</i></li><li><i>03</i><span>Sietch Tabr Nights</span><i>1 hr</i></li></ul>
           </div></article>
-          <article class="shell-glass b3" data-spot data-reveal style="--d:120ms"><div class="core">
+          <article class="shell-glass b3 tint-mint" data-spot data-reveal style="--d:120ms"><div class="core">
             <span class="idx">03 · Scenes</span>
             <h3>Switch the mood when the chapter turns.</h3>
             <p>Quiet night reading, then a battle. Pick a scene and the whole soundtrack re-tunes to it.</p>
           </div></article>
-          <article class="shell-glass b4" data-spot data-reveal style="--d:160ms"><div class="core">
+          <article class="shell-glass b4 tint-butter" data-spot data-reveal style="--d:160ms"><div class="core">
             <span class="idx">04 · Your shelf</span>
             <h3>Keep what you love.</h3>
             <p>Save books to a shelf, heart the mixes you'll want again, and jump back in with one tap.</p>
@@ -349,7 +354,8 @@
       <p class="mono accent">Now playing</p>
       <p class="dock-title" id="dockTitle">—</p>
       <p class="dock-sub" id="dockSub"></p>
-      <div class="dock-progress" id="dockProgress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Playback position"><span></span></div>
+      <div class="dock-progress" id="dockProgress" role="slider" tabindex="0" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Playback position, click or use arrow keys to seek"><span></span></div>
+      <p class="dock-time" id="dockTime" aria-hidden="true"></p>
     </div>
     <div class="dock-controls">
       <button type="button" class="icon-btn" id="prevBtn" aria-label="Previous track"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 5v14M20 5 8 12l12 7z"/></svg></button>
@@ -368,6 +374,6 @@
 </nav>
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
-<script type="module" src="/js/app.js?v=20260905n1"></script>
+<script type="module" src="/js/app.js?v=20260905g1"></script>
 </body>
 </html>

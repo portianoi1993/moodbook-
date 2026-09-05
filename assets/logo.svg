@@ -1,9 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="MoodBook">
   <defs>
     <linearGradient id="mb-g" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#8B7CFF"/>
-      <stop offset="0.55" stop-color="#6D5DF6"/>
-      <stop offset="1" stop-color="#2DD4BF"/>
+      <stop offset="0" stop-color="#FFB28C"/>
+      <stop offset="0.55" stop-color="#B29EFF"/>
+      <stop offset="1" stop-color="#78D6BA"/>
     </linearGradient>
     <linearGradient id="mb-hl" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0" stop-color="#fff" stop-opacity="0.32"/>
