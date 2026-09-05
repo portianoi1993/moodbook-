@@ -21,7 +21,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preconnect" href="https://covers.openlibrary.org">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT@0,9..144,400..700,30;1,9..144,400..600,50&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/css/app.css?v=20260905h8">
+<link rel="stylesheet" href="/css/app.css?v=20260905h9">
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"WebApplication","name":"MoodBook","url":"https://moodbook-six.vercel.app/","applicationCategory":"MusicApplication","operatingSystem":"Web","description":"AI-curated reading soundtracks matched to the book you are reading.","offers":[{"@type":"Offer","price":"0","priceCurrency":"USD","name":"Free"},{"@type":"Offer","price":"9.99","priceCurrency":"USD","name":"Pro monthly"}]}
 </script>
@@ -43,6 +43,7 @@
       <a href="#account" data-nav="account" class="tab-top">Account</a>
     </nav>
     <button class="plan-chip" id="planChip" data-nav="account" type="button" aria-label="Your plan">Free</button>
+    <button class="lang-chip" id="langBtn" type="button" aria-label="Language" title="Language">EN</button>
   </div>
 </header>
 
@@ -140,7 +141,7 @@
           </div></article>
           <article class="shell-glass b2 tint-peach" data-spot data-reveal style="--d:80ms"><div class="core">
             <span class="idx">02 · Six long mixes</span>
-            <h3>Hour-long, lyric-free, ready to play.</h3>
+            <h3>Hour-long and ready to play.</h3>
             <p>Real YouTube mixes, checked for length and embeddability, in a player that stays with you.</p>
             <ul class="mini-tracks"><li><i>01</i><span>Arrakeen Sunrise</span><i>1 hr</i></li><li><i>02</i><span>The Spice Must Flow</span><i>1 hr</i></li><li><i>03</i><span>Sietch Tabr Nights</span><i>1 hr</i></li></ul>
           </div></article>
@@ -213,7 +214,7 @@
       </section>
 
       <section class="final" data-reveal>
-        <h2 class="final-title">Pick up your book. <span class="grad-text">We'll set the mood.</span></h2>
+        <h2 class="final-title" id="final-title">Pick up your book. <span class="grad-text">We'll set the mood.</span></h2>
         <a href="#main" class="btn" id="finalCta" data-magnetic>Compose a soundtrack <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></a>
       </section>
     </div>
@@ -253,7 +254,7 @@
     <div class="paywall" id="paywall" hidden>
       <div class="pay-card shell-glass gborder"><div class="core">
         <span class="mono accent">Today's free searches are used</span>
-        <h2>Keep the music going with <em>Pro</em></h2>
+        <h2 id="pay-h2">Keep the music going with <em>Pro</em></h2>
         <ul class="perks"><li>Unlimited books, every day</li><li>All scene moods unlocked</li><li>Shelf and liked tracks synced across devices</li></ul>
         <div class="pay-price"><b id="payPrice">$9.99</b><span id="payPer">/month</span><span class="pay-alt" id="payAlt">or $99.99/year (save 17%)</span></div>
         <div class="pay-actions">
@@ -352,6 +353,7 @@
     <nav class="foot-links" aria-label="Legal">
       <a href="/privacy.html">Privacy</a>
       <a href="/terms.html">Terms</a>
+      <span class="foot-langs" id="footLangs" data-i18n-skip></span>
     </nav>
   </footer>
 </main>
@@ -404,7 +406,7 @@
 </div>
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
-<script type="module" src="/js/app.js?v=20260905h8"></script>
+<script type="module" src="/js/app.js?v=20260905h9"></script>
 <script defer src="/_vercel/insights/script.js"></script>
 </body>
 </html>

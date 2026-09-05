@@ -1,5 +1,7 @@
 import { mountAll, mountMagnetic, mountSpotlight } from './fx.js';
+import { t, applyI18n, getLang, setLang, LANGS } from './i18n.js';
 /* MoodBook v2 — vanilla JS, no build step. */
+applyI18n(); // translate static copy before anything measures or splits it
 
 // ═══════════════ config ═══════════════
 const FREE_DAILY_LIMIT = 3;
@@ -24,8 +26,8 @@ async function api(path, params = {}) {
   let data = null;
   try { data = await r.json(); } catch {}
   if (!r.ok) {
-    const e = new Error(data?.error || `Request failed (${r.status})`);
-    e.detail = data?.detail || (r.status === 429 ? 'Rate limit reached. Try again in a few minutes.' : '');
+    const e = new Error(data?.error || t('Request failed ({status})', { status: r.status }));
+    e.detail = data?.detail || (r.status === 429 ? t('Rate limit reached. Try again in a few minutes.') : '');
     e.status = r.status;
     throw e;
   }
@@ -50,9 +52,9 @@ const DB = {
 const save = () => { ls.set('mb_books', DB.books); ls.set('mb_liked_tracks', DB.liked); ls.set('mb_history', DB.history.slice(0, 30)); };
 const timeAgo = (ts) => {
   const m = Math.max(1, Math.round((Date.now() - ts) / 60000));
-  if (m < 60) return `${m} min ago`;
-  const h = Math.round(m / 60); if (h < 24) return `${h} h ago`;
-  const d = Math.round(h / 24); return d === 1 ? 'yesterday' : `${d} days ago`;
+  if (m < 60) return t('{m} min ago', { m });
+  const h = Math.round(m / 60); if (h < 24) return t('{h} h ago', { h });
+  const d = Math.round(h / 24); return d === 1 ? t('yesterday') : t('{d} days ago', { d });
 };
 const isPro = () => ls.raw('mb_pro') === 'true';
 const searchesToday = () => ls.get('mb_day_' + todayKey(), 0);
@@ -65,11 +67,11 @@ const freeLeft = () => Math.max(0, FREE_DAILY_LIMIT - searchesToday());
 // ═══════════════ toast ═══════════════
 let toastTimer, toastUndo;
 function toast(msg, { ms = 2800, undo } = {}) {
-  const t = $('#toast');
+  const box = $('#toast');
   clearTimeout(toastTimer);
   toastUndo = undo || null;
-  t.innerHTML = `<span>${msg}</span>${undo ? '<button type="button" id="undoBtn">Undo</button>' : ''}`;
-  t.classList.add('is-on');
+  box.innerHTML = `<span>${msg}</span>${undo ? `<button type="button" id="undoBtn">${t('Undo')}</button>` : ''}`;
+  box.classList.add('is-on');
   if (undo) $('#undoBtn').onclick = () => { toastUndo?.(); hideToast(); };
   toastTimer = setTimeout(hideToast, undo ? 5200 : ms);
 }
@@ -93,7 +95,7 @@ function showPage(p, { push = true } = {}) {
   if (p === 'account') renderAccount();
   if (push && location.hash !== '#' + p) history.replaceState(null, '', p === 'discover' ? location.pathname + location.search : '#' + p);
   window.scrollTo({ top: 0, behavior: 'instant' in window ? 'instant' : 'auto' });
-  document.title = p === 'discover' && S.book ? `${S.book.title} — MoodBook` : 'MoodBook — A soundtrack for the book you\'re reading';
+  document.title = p === 'discover' && S.book ? `${S.book.title} — MoodBook` : t("MoodBook — A soundtrack for the book you're reading");
 }
 document.addEventListener('click', (e) => {
   const a = e.target.closest('[data-nav]');
@@ -180,9 +182,9 @@ function renderQuota() {
   const chip = $('#planChip');
   chip.textContent = isPro() ? 'Pro' : 'Free';
   chip.classList.toggle('is-pro', isPro());
-  if (isPro()) { el.quota.innerHTML = '<b>Pro</b> · unlimited books'; el.quota.classList.remove('is-low'); return; }
+  if (isPro()) { el.quota.innerHTML = t('<b>Pro</b> · unlimited books'); el.quota.classList.remove('is-low'); return; }
   const left = freeLeft();
-  el.quota.innerHTML = left > 0 ? `<b>${left} of ${FREE_DAILY_LIMIT}</b> free ${left === 1 ? 'search' : 'searches'} left today` : `<b>0 of ${FREE_DAILY_LIMIT}</b> free searches left today · resets tomorrow`;
+  el.quota.innerHTML = left > 0 ? t('<b>{n} of {max}</b> free {word} left today', { n: left, max: FREE_DAILY_LIMIT, word: left === 1 ? 'search' : 'searches' }) : t('<b>0 of {max}</b> free searches left today · resets tomorrow', { max: FREE_DAILY_LIMIT });
   el.quota.classList.toggle('is-low', left <= 1);
 }
 
@@ -222,9 +224,9 @@ async function startSearch(raw, picked = null) {
   // reset view
   S.book = null; S.ai = null; S.mood = ''; S.style = ''; S.tracks = [];
   el.hero.hidden = true; el.paywall.hidden = true; el.results.hidden = false;
-  el.saveBtn.classList.remove('is-done'); el.saveBtn.textContent = '+ Save to shelf';
+  el.saveBtn.classList.remove('is-done'); el.saveBtn.textContent = t('+ Save to shelf');
   skeletonBook(picked?.title || q); skeletonMoods(); skeletonTracks(); el.tracksMeta.textContent = '';
-  setStatus('Identifying the book…');
+  setStatus(t('Identifying the book…'));
   history.replaceState(null, '', `${location.pathname}?b=${encodeURIComponent(q)}`);
   window.scrollTo({ top: 0, behavior: 'auto' });
 
@@ -264,11 +266,11 @@ async function reconcileIdentity(aiBook) {
 async function loadSoundtrack(mood = S.mood || '', style = S.style || '', { fresh = false } = {}) {
   S.mood = mood; S.style = style;
   const what = [mood, style].filter(Boolean).join(' · ');
-  setStatus(what ? `Re-tuning for “${what}”…` : 'Composing the soundtrack…');
+  setStatus(what ? t('Re-tuning for “{what}”…', { what }) : t('Composing the soundtrack…'));
   skeletonTracks();
   const b = S.book;
   try {
-    const d = await api('/api/analyze', { title: b.title, author: b.author, genre: b.genre, desc: (b.desc || '').slice(0, 600), mood, style, fresh: fresh ? '1' : '', r: fresh ? Date.now() : '' });
+    const d = await api('/api/analyze', { title: b.title, author: b.author, genre: b.genre, desc: (b.desc || '').slice(0, 600), mood, style, lang: getLang(), fresh: fresh ? '1' : '', r: fresh ? Date.now() : '' });
     if (!what || !S.ai) { S.ai = d; renderMoods(); }
     else { S.ai = { ...S.ai, tracks: d.tracks, why: d.why || S.ai.why }; }
     S.tracks = d.tracks || [];
@@ -277,18 +279,18 @@ async function loadSoundtrack(mood = S.mood || '', style = S.style || '', { fres
     showCoach();
     if (d.degraded) {
       el.status.classList.add('is-on');
-      el.status.innerHTML = '<span aria-hidden="true">⚡</span><span>Our AI is busy right now, so this soundtrack was matched by genre, not by this exact book.</span><button type="button" class="ghost" id="retryAi">Try again</button>';
+      el.status.innerHTML = `<span aria-hidden="true">⚡</span><span>${t('Our AI is busy right now, so this soundtrack was matched by genre, not by this exact book.')}</span><button type="button" class="ghost" id="retryAi">${t('Try again')}</button>`;
       $('#retryAi').onclick = () => loadSoundtrack(mood, style, { fresh: true });
     }
-    el.tracksMeta.textContent = `${S.tracks.length} long mixes${mood ? ' · ' + mood : ''}`;
+    el.tracksMeta.textContent = t('{n} long mixes', { n: S.tracks.length }) + (mood ? ' · ' + mood : '');
     document.title = `${b.title} — MoodBook`;
     // warm the first two searches so the first play is instant
     S.tracks.slice(0, 2).forEach((t) => api('/api/search', { q: t.query }).catch(() => {}));
   } catch (e) {
     setStatus('');
-    el.tracks.innerHTML = `<li class="error"><b>Couldn't compose the soundtrack.</b>${esc(e.message)}${e.detail ? `<small>${esc(e.detail)}</small>` : ''}<button type="button" class="ghost" id="retryBtn">Try again</button></li>`;
-    $('#retryBtn').onclick = () => loadSoundtrack(mood);
-    if (!S.ai) el.moodGrid.innerHTML = '<p class="muted small">Scenes will appear once the soundtrack loads.</p>';
+    el.tracks.innerHTML = `<li class="error"><b>${t("Couldn't compose the soundtrack.")}</b>${esc(e.message)}${e.detail ? `<small>${esc(e.detail)}</small>` : ''}<button type="button" class="ghost" id="retryBtn">${t('Try again')}</button></li>`;
+    $('#retryBtn').onclick = () => loadSoundtrack(mood, style);
+    if (!S.ai) el.moodGrid.innerHTML = `<p class="muted small">${t('Scenes will appear once the soundtrack loads.')}</p>`;
   }
 }
 
@@ -299,10 +301,10 @@ function renderBookCard() {
   const parts = (v, n) => String(v || '').split(/[,/·]/).map((s) => s.trim()).filter((s) => s && s.length <= 26 && !/general|imaginary place/i.test(s) && !seen.has(s.toLowerCase()) && seen.add(s.toLowerCase())).slice(0, n);
   const tags = [...parts(ai?.book?.genre || b.genre, 2), ...parts(ai?.book?.setting, 1), ...parts(ai?.book?.tone, 2)].slice(0, 5);
   el.bookCard.innerHTML = `
-    ${b.cover ? `<div class="cover"><img src="${esc(b.cover)}" alt="Cover of ${esc(b.title)}" width="76" height="114"></div>` : '<div class="cover ph" aria-hidden="true">📖</div>'}
+    ${b.cover ? `<div class="cover"><img src="${esc(b.cover)}" alt="${esc(t('Cover of {title}', { title: b.title }))}" width="76" height="114"></div>` : '<div class="cover ph" aria-hidden="true">📖</div>'}
     <div>
       <h2>${esc(b.title)}</h2>
-      <p class="by">${esc(b.author || (ai ? ai.book.author : '') || 'Unknown author')}</p>
+      <p class="by">${esc(b.author || (ai ? ai.book.author : '') || t('Unknown author'))}</p>
       ${tags.length ? `<div class="tags">${tags.map((t) => `<span class="tag">${esc(t)}</span>`).join('')}</div>` : ''}
       ${ai?.why ? `<p class="why">${esc(ai.why)}</p>` : '<p class="why sk" style="width:95%;height:38px">.</p>'}
     </div>`;
@@ -327,17 +329,17 @@ function renderMoods() {
 
 const isLiked = (t) => DB.liked.some((x) => x.query === t.query);
 function renderTracks() {
-  el.tracks.innerHTML = S.tracks.map((t, i) => `
-    <li class="track${S.playingFrom === 'results' && S.playingIdx === i ? ' is-playing' : ''}" data-i="${i}" tabindex="0" role="button" aria-label="Play ${esc(t.name)}">
+  el.tracks.innerHTML = S.tracks.map((tr, i) => `
+    <li class="track${S.playingFrom === 'results' && S.playingIdx === i ? ' is-playing' : ''}" data-i="${i}" tabindex="0" role="button" aria-label="${esc(t('Play {name}', { name: tr.name }))}">
       <span class="n">${i + 1}</span>
       <span class="info">
-        <span class="name">${esc(t.name)}${S.playingFrom === 'results' && S.playingIdx === i ? '<span class="eq" aria-hidden="true"><i></i><i></i><i></i></span>' : ''}</span>
-        <span class="vibe">${esc(t.vibe)} · ${esc(t.duration || '~1 hr')}</span>
-        ${t.ytTitle ? `<span class="yt">▶ ${esc(t.ytTitle)}</span>` : ''}
+        <span class="name">${esc(tr.name)}${S.playingFrom === 'results' && S.playingIdx === i ? '<span class="eq" aria-hidden="true"><i></i><i></i><i></i></span>' : ''}</span>
+        <span class="vibe">${esc(tr.vibe)} · ${esc(tr.duration || '~1 hr')}</span>
+        ${tr.ytTitle ? `<span class="yt">▶ ${esc(tr.ytTitle)}</span>` : ''}
       </span>
       <span class="acts">
-        <button type="button" class="icon-btn like" aria-pressed="${isLiked(t)}" aria-label="Like ${esc(t.name)}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-7-4.6-9.3-9A5.2 5.2 0 0 1 12 6.6 5.2 5.2 0 0 1 21.3 12C19 16.4 12 21 12 21z"/></svg></button>
-        <button type="button" class="icon-btn play" aria-label="Play ${esc(t.name)}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4v16l14-8z"/></svg></button>
+        <button type="button" class="icon-btn like" aria-pressed="${isLiked(tr)}" aria-label="${esc(t('Like {name}', { name: tr.name }))}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-7-4.6-9.3-9A5.2 5.2 0 0 1 12 6.6 5.2 5.2 0 0 1 21.3 12C19 16.4 12 21 12 21z"/></svg></button>
+        <button type="button" class="icon-btn play" aria-label="${esc(t('Play {name}', { name: tr.name }))}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4v16l14-8z"/></svg></button>
       </span>
     </li>`).join('');
 }
@@ -351,13 +353,13 @@ el.tracks.addEventListener('keydown', (e) => {
   if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('.track')) { e.preventDefault(); playFrom(S.tracks, +e.target.dataset.i, 'results'); }
 });
 
-function toggleLike(t, btn) {
-  const idx = DB.liked.findIndex((x) => x.query === t.query);
+function toggleLike(tr, btn) {
+  const idx = DB.liked.findIndex((x) => x.query === tr.query);
   if (idx >= 0) { DB.liked.splice(idx, 1); btn?.setAttribute('aria-pressed', 'false'); }
   else {
-    DB.liked.unshift({ name: t.name, vibe: t.vibe, query: t.query, duration: t.duration, book: S.book?.title || t.book || '' });
+    DB.liked.unshift({ name: tr.name, vibe: tr.vibe, query: tr.query, duration: tr.duration, book: S.book?.title || tr.book || '', cover: S.book?.cover || tr.cover || '' });
     btn?.setAttribute('aria-pressed', 'true');
-    toast('♥ Saved to liked tracks');
+    toast(t('♥ Saved to liked tracks'));
   }
   save();
 }
@@ -368,13 +370,13 @@ function showCoach() {
   if (!box || ls.raw('mb_seen_coach') === '1') return;
   box.hidden = false;
   box.innerHTML = `<div class="core">
-    <p class="mono accent">First time here?</p>
+    <p class="mono accent">${t('First time here?')}</p>
     <ol class="coach-steps">
-      <li><b>Press play</b> on any mix. The player stays with you while you browse.</li>
-      <li><b>Switch the scene</b> or the music style when the chapter changes mood.</li>
-      <li><b>Save to shelf</b> to come back to this book in one tap.</li>
+      <li><b>${t('Press play')}</b> ${t('on any mix. The player stays with you while you browse.')}</li>
+      <li><b>${t('Switch the scene')}</b> ${t('or the music style when the chapter changes mood.')}</li>
+      <li><b>${t('Save to shelf')}</b> ${t('to come back to this book in one tap.')}</li>
     </ol>
-    <button type="button" class="ghost" id="coachClose">Got it</button>
+    <button type="button" class="ghost" id="coachClose">${t('Got it')}</button>
   </div>`;
   $('#coachClose').onclick = hideCoach;
 }
@@ -383,7 +385,7 @@ function hideCoach() { const box = $('#coach'); if (!box) return; box.hidden = t
 function resetSearch() {
   el.results.hidden = true; el.paywall.hidden = true; el.hero.hidden = false;
   history.replaceState(null, '', location.pathname);
-  document.title = 'MoodBook — A soundtrack for the book you\'re reading';
+  document.title = t("MoodBook — A soundtrack for the book you're reading");
   el.q.value = ''; el.q.focus({ preventScroll: true });
   window.scrollTo({ top: 0, behavior: 'auto' });
 }
@@ -391,15 +393,15 @@ function resetSearch() {
 // save + share
 el.saveBtn.addEventListener('click', () => {
   if (!S.book) return;
-  if (DB.books.some((b) => b.title.toLowerCase() === S.book.title.toLowerCase())) { toast('Already on your shelf'); return; }
+  if (DB.books.some((b) => b.title.toLowerCase() === S.book.title.toLowerCase())) { toast(t('Already on your shelf')); return; }
   DB.books.unshift({ id: Date.now(), title: S.book.title, author: S.book.author || '', cover: S.book.cover || '' });
   save();
-  el.saveBtn.classList.add('is-done'); el.saveBtn.textContent = '✓ On your shelf';
-  toast(`📚 “${esc(S.book.title)}” added to your Library`);
+  el.saveBtn.classList.add('is-done'); el.saveBtn.textContent = t('✓ On your shelf');
+  toast('📚 ' + t('“{title}” added to your Library', { title: esc(S.book.title) }));
 });
 // ═══════════════ Reading Card (share) ═══════════════
 const shareUrl = () => `${location.origin}/?b=${encodeURIComponent(S.book.title + (S.book.author ? ' ' + S.book.author : ''))}`;
-const shareText = () => `Reading “${S.book.title}”? Here's a soundtrack composed for it 🎧`;
+const shareText = () => t("Reading “{title}”? Here's a soundtrack composed for it 🎧", { title: S.book.title });
 let cardBlob = null, cardObjUrl = null;
 function closeCard() {
   const m = $('#cardModal'); m.hidden = true; document.body.classList.remove('modal-open');
@@ -408,7 +410,7 @@ function closeCard() {
 $('#cardModal').addEventListener('click', (e) => { if (e.target.closest('[data-close]')) closeCard(); });
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('#cardModal').hidden) closeCard(); });
 $('#cardCopy').addEventListener('click', async () => {
-  try { await navigator.clipboard.writeText(shareUrl()); toast('Link copied'); } catch { toast('Copy failed. The link is in your address bar.'); }
+  try { await navigator.clipboard.writeText(shareUrl()); toast(t('Link copied')); } catch { toast(t('Copy failed. The link is in your address bar.')); }
 });
 $('#cardShare').addEventListener('click', async () => {
   if (!cardBlob) return;
@@ -423,7 +425,7 @@ el.shareBtn.addEventListener('click', async () => {
   const m = $('#cardModal'), prev = $('#cardPreview');
   m.hidden = false; document.body.classList.add('modal-open');
   cardBlob = null; $('#cardShare').hidden = true; $('#cardDownload').hidden = true;
-  prev.innerHTML = '<div class="card-loading"><span class="dots"><i></i><i></i><i></i></span> Drawing your card…</div>';
+  prev.innerHTML = `<div class="card-loading"><span class="dots"><i></i><i></i><i></i></span> ${t('Drawing your card…')}</div>`;
   try {
     const { renderReadingCard } = await import('./card.js' + new URL(import.meta.url).search);
     cardBlob = await renderReadingCard({
@@ -437,7 +439,7 @@ el.shareBtn.addEventListener('click', async () => {
     const file = new File([cardBlob], 'moodbook-reading-card.png', { type: 'image/png' });
     $('#cardShare').hidden = !(navigator.share && (navigator.canShare?.({ files: [file] }) || true));
   } catch (e) {
-    prev.innerHTML = `<div class="card-loading">Couldn't draw the card (${esc(e.message)}). You can still copy the link below.</div>`;
+    prev.innerHTML = `<div class="card-loading">${t("Couldn't draw the card ({msg}). You can still copy the link below.", { msg: esc(e.message) })}</div>`;
   }
 });
 
@@ -449,11 +451,11 @@ function showPaywall() {
 function applyPromo(code) {
   if (PROMO_CODES.includes(code.trim().toUpperCase())) {
     ls.put('mb_pro', 'true'); renderQuota(); renderAccount();
-    toast('🎉 Pro activated. Unlimited books, enjoy.', { ms: 4000 });
+    toast(t('🎉 Pro activated. Unlimited books, enjoy.'), { ms: 4000 });
     if (!el.paywall.hidden) { el.paywall.hidden = true; el.hero.hidden = false; }
     return true;
   }
-  toast('That code didn\'t work. Check the spelling and try again.');
+  toast(t("That code didn't work. Check the spelling and try again."));
   return false;
 }
 $('#promoForm').addEventListener('submit', (e) => { e.preventDefault(); applyPromo($('#promoInput').value); });
@@ -474,11 +476,11 @@ function loadYT() {
           onStateChange: (e) => {
             const st = e.data;
             dock.classList.toggle('is-paused', st !== YT.PlayerState.PLAYING && st !== YT.PlayerState.BUFFERING);
-            $('#playBtn').setAttribute('aria-label', st === YT.PlayerState.PLAYING ? 'Pause' : 'Play');
+            $('#playBtn').setAttribute('aria-label', st === YT.PlayerState.PLAYING ? t('Pause') : t('Play'));
             $$('.eq').forEach((q) => q.classList.toggle('paused', st !== YT.PlayerState.PLAYING));
             if (st === YT.PlayerState.ENDED) nextTrack();
           },
-          onError: () => { toast('YouTube refused that video. Skipping…'); nextTrack(true); },
+          onError: () => { toast(t('YouTube refused that video. Skipping…')); nextTrack(true); },
         },
       });
     };
@@ -493,8 +495,8 @@ function setDockHeight() {
 }
 function syncDockButtons() {
   const ex = dock.classList.contains('is-expanded'), mini = dock.classList.contains('is-mini');
-  $('#expandBtn').setAttribute('aria-expanded', String(ex)); $('#expandBtn').setAttribute('aria-label', ex ? 'Hide video' : 'Show video');
-  $('#miniBtn').setAttribute('aria-pressed', String(mini)); $('#miniBtn').setAttribute('aria-label', mini ? 'Restore player' : 'Minimize player');
+  $('#expandBtn').setAttribute('aria-expanded', String(ex)); $('#expandBtn').setAttribute('aria-label', ex ? t('Hide video') : t('Show video'));
+  $('#miniBtn').setAttribute('aria-pressed', String(mini)); $('#miniBtn').setAttribute('aria-label', mini ? t('Restore player') : t('Minimize player'));
 }
 function setDock(t, sub) {
   if (dock.hidden && !dock.classList.contains('is-expanded') && !dock.classList.contains('is-mini')) {
@@ -522,36 +524,36 @@ function rerenderPlaying() {
   else if (S.playingFrom === 'liked') renderLiked();
   else renderHistory();
 }
-function remember(t) {
-  const bookTitle = S.playingFrom === 'results' ? (S.book?.title || '') : (t.book || '');
-  const cover = S.playingFrom === 'results' ? (S.book?.cover || '') : (t.cover || '');
-  DB.history = DB.history.filter((x) => x.query !== t.query);
-  DB.history.unshift({ name: t.name, vibe: t.vibe, query: t.query, duration: t.duration, book: bookTitle, cover, at: Date.now() });
+function remember(tr) {
+  const bookTitle = S.playingFrom === 'results' ? (S.book?.title || '') : (tr.book || '');
+  const cover = S.playingFrom === 'results' ? (S.book?.cover || '') : (tr.cover || '');
+  DB.history = DB.history.filter((x) => x.query !== tr.query);
+  DB.history.unshift({ name: tr.name, vibe: tr.vibe, query: tr.query, duration: tr.duration, book: bookTitle, cover, at: Date.now() });
   save();
 }
 async function playFrom(list, i, from) {
-  const t = list[i]; if (!t) return;
+  const tr = list[i]; if (!tr) return;
   S.queue = list; S.playingIdx = i; S.playingFrom = from;
-  setDock(t.name, 'Finding the mix…'); dock.classList.remove('is-paused');
+  setDock(tr.name, t('Finding the mix…')); dock.classList.remove('is-paused');
   $('#dockTime').textContent = '0:00'; $('#dockProgress span').style.width = '0%';
   rerenderPlaying(); hideCoach();
   const p = loadYT();
   let hit;
-  try { hit = await api('/api/search', { q: t.query }); } catch (e) { toast(`Search failed: ${e.detail || e.message}`); return; }
-  if (!hit?.videoId) { toast('No good mix found for that one. Try another track.'); return; }
-  t.videoId = hit.videoId; t.ytTitle = hit.title; t.alts = hit.alternatives || [];
-  if (S.queue[S.playingIdx] !== t) return; // user moved on
+  try { hit = await api('/api/search', { q: tr.query }); } catch (e) { toast(t('Search failed: {msg}', { msg: e.detail || e.message })); return; }
+  if (!hit?.videoId) { toast(t('No good mix found for that one. Try another track.')); return; }
+  tr.videoId = hit.videoId; tr.ytTitle = hit.title; tr.alts = hit.alternatives || [];
+  if (S.queue[S.playingIdx] !== tr) return; // user moved on
   const player = await p;
   player.loadVideoById(hit.videoId);
-  setDock(t.name, `${hit.title}${hit.channel ? ' · ' + hit.channel : ''}`);
-  remember(t);
+  setDock(tr.name, `${hit.title}${hit.channel ? ' · ' + hit.channel : ''}`);
+  remember(tr);
   rerenderPlaying();
   startProgress();
 }
 function nextTrack(skipBroken = false) {
   if (!S.queue.length) return;
-  const t = S.queue[S.playingIdx];
-  if (skipBroken && t?.alts?.length) { const alt = t.alts.shift(); t.videoId = alt.videoId; t.ytTitle = alt.title; yt?.loadVideoById(alt.videoId); setDock(t.name, alt.title); return; }
+  const tr = S.queue[S.playingIdx];
+  if (skipBroken && tr?.alts?.length) { const alt = tr.alts.shift(); tr.videoId = alt.videoId; tr.ytTitle = alt.title; yt?.loadVideoById(alt.videoId); setDock(tr.name, alt.title); return; }
   playFrom(S.queue, (S.playingIdx + 1) % S.queue.length, S.playingFrom);
 }
 function prevTrack() { if (S.queue.length) playFrom(S.queue, (S.playingIdx - 1 + S.queue.length) % S.queue.length, S.playingFrom); }
@@ -608,22 +610,22 @@ $('#addForm').addEventListener('submit', async (e) => {
   addBook(b || { title: q, author: '', cover: '' });
 });
 function addBook(b) {
-  if (DB.books.some((x) => x.title.toLowerCase() === b.title.toLowerCase())) { toast('Already on your shelf'); return; }
+  if (DB.books.some((x) => x.title.toLowerCase() === b.title.toLowerCase())) { toast(t('Already on your shelf')); return; }
   DB.books.unshift({ id: Date.now(), title: b.title, author: b.author || '', cover: b.cover || '' });
   save(); renderShelf();
-  toast(`📖 “${esc(b.title)}” added`);
+  toast('📖 ' + t('“{title}” added', { title: esc(b.title) }));
 }
 function renderShelf() {
   const g = $('#shelf');
-  if (!DB.books.length) { g.innerHTML = '<div class="empty"><b>📚</b>Your shelf is empty. Add a book above, or save one from a search.</div>'; return; }
+  if (!DB.books.length) { g.innerHTML = `<div class="empty"><b>📚</b>${t('Your shelf is empty. Add a book above, or save one from a search.')}</div>`; return; }
   g.innerHTML = DB.books.map((b, i) => `
     <div class="book">
-      <button type="button" class="cvbtn" data-play="${i}" aria-label="Play soundtrack for ${esc(b.title)}" style="all:unset;display:block;cursor:pointer;width:100%">
+      <button type="button" class="cvbtn" data-play="${i}" aria-label="${esc(t('Play soundtrack for {title}', { title: b.title }))}" style="all:unset;display:block;cursor:pointer;width:100%">
         <span class="cv">${b.cover ? `<img src="${esc(b.cover)}" alt="" loading="lazy" width="120" height="180">` : '📖'}<span class="playo"><svg viewBox="0 0 24 24"><path d="M7 4v16l14-8z"/></svg></span></span>
       </button>
       <div class="t">${esc(b.title)}</div>
       <div class="a">${esc(b.author || '')}</div>
-      <button type="button" class="rm" data-rm="${i}" aria-label="Remove ${esc(b.title)} from shelf">✕</button>
+      <button type="button" class="rm" data-rm="${i}" aria-label="${esc(t('Remove {title} from shelf', { title: b.title }))}">✕</button>
     </div>`).join('');
   $('#statBooks').textContent = DB.books.length;
 }
@@ -632,7 +634,7 @@ $('#shelf').addEventListener('click', (e) => {
   if (p) { const b = DB.books[+p.dataset.play]; showPage('discover'); el.q.value = b.title; startSearch(b.title, { ...b, desc: '' }); }
   if (r) {
     const i = +r.dataset.rm; const [b] = DB.books.splice(i, 1); save(); renderShelf();
-    toast(`Removed “${esc(b.title)}”`, { undo: () => { DB.books.splice(i, 0, b); save(); renderShelf(); } });
+    toast(t('Removed “{name}”', { name: esc(b.title) }), { undo: () => { DB.books.splice(i, 0, b); save(); renderShelf(); } });
   }
 });
 let likedQuery = '';
@@ -640,19 +642,19 @@ function renderLiked() {
   const o = $('#liked');
   $('#statLiked').textContent = DB.liked.length;
   const tools = $('#likedTools'); if (tools) tools.hidden = DB.liked.length < 6;
-  if (!DB.liked.length) { o.innerHTML = '<li class="empty"><b>♡</b>No liked tracks yet. Tap the heart on any track while listening.</li>'; return; }
+  if (!DB.liked.length) { o.innerHTML = `<li class="empty"><b>♡</b>${t('No liked tracks yet. Tap the heart on any track while listening.')}</li>`; return; }
   const q = normT(likedQuery);
-  const rows = DB.liked.map((t, i) => ({ t, i })).filter(({ t }) => !q || normT(`${t.name} ${t.book} ${t.vibe}`).includes(q));
-  if (!rows.length) { o.innerHTML = `<li class="empty"><b>🔍</b>Nothing matches “${esc(likedQuery)}”.</li>`; return; }
-  o.innerHTML = rows.map(({ t, i }) => `
-    <li class="track${S.playingFrom === 'liked' && S.playingIdx === i ? ' is-playing' : ''}" data-l="${i}" tabindex="0" role="button" aria-label="Play ${esc(t.name)}">
+  const rows = DB.liked.map((tr, i) => ({ tr, i })).filter(({ tr }) => !q || normT(`${tr.name} ${tr.book} ${tr.vibe}`).includes(q));
+  if (!rows.length) { o.innerHTML = `<li class="empty"><b>🔍</b>${t('Nothing matches “{q}”.', { q: esc(likedQuery) })}</li>`; return; }
+  o.innerHTML = rows.map(({ tr, i }) => `
+    <li class="track${S.playingFrom === 'liked' && S.playingIdx === i ? ' is-playing' : ''}" data-l="${i}" tabindex="0" role="button" aria-label="${esc(t('Play {name}', { name: tr.name }))}">
       <span class="info">
-        <span class="name">${esc(t.name)}${S.playingFrom === 'liked' && S.playingIdx === i ? '<span class="eq" aria-hidden="true"><i></i><i></i><i></i></span>' : ''}</span>
-        <span class="vibe">${esc(t.vibe)}${t.book ? ' · ' + esc(t.book) : ''}</span>
+        <span class="name">${esc(tr.name)}${S.playingFrom === 'liked' && S.playingIdx === i ? '<span class="eq" aria-hidden="true"><i></i><i></i><i></i></span>' : ''}</span>
+        <span class="vibe">${esc(tr.vibe)}${tr.book ? ' · ' + esc(tr.book) : ''}</span>
       </span>
       <span class="acts">
-        <button type="button" class="icon-btn unlike" aria-label="Remove ${esc(t.name)} from liked"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
-        <button type="button" class="icon-btn play" aria-label="Play ${esc(t.name)}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4v16l14-8z"/></svg></button>
+        <button type="button" class="icon-btn unlike" aria-label="${esc(t('Remove {name} from liked', { name: tr.name }))}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+        <button type="button" class="icon-btn play" aria-label="${esc(t('Play {name}', { name: tr.name }))}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4v16l14-8z"/></svg></button>
       </span>
     </li>`).join('');
 }
@@ -660,24 +662,24 @@ $('#likedFilter')?.addEventListener('input', (e) => { likedQuery = e.target.valu
 
 function renderHistory() {
   const o = $('#history'); if (!o) return;
-  if (!DB.history.length) { o.innerHTML = '<li class="empty"><b>🕰</b>Nothing played yet. Your last 30 mixes will appear here.</li>'; return; }
-  o.innerHTML = DB.history.map((t, i) => `
-    <li class="track${S.playingFrom === 'history' && S.playingIdx === i ? ' is-playing' : ''}" data-h="${i}" tabindex="0" role="button" aria-label="Play ${esc(t.name)}">
-      ${t.cover ? `<img class="hcv" src="${esc(t.cover)}" alt="" width="30" height="44" loading="lazy">` : '<span class="hcv ph"></span>'}
+  if (!DB.history.length) { o.innerHTML = `<li class="empty"><b>🕰</b>${t('Nothing played yet. Your last 30 mixes will appear here.')}</li>`; return; }
+  o.innerHTML = DB.history.map((tr, i) => `
+    <li class="track${S.playingFrom === 'history' && S.playingIdx === i ? ' is-playing' : ''}" data-h="${i}" tabindex="0" role="button" aria-label="${esc(t('Play {name}', { name: tr.name }))}">
+      ${tr.cover ? `<img class="hcv" src="${esc(tr.cover)}" alt="" width="30" height="44" loading="lazy">` : '<span class="hcv ph"></span>'}
       <span class="info">
-        <span class="name">${esc(t.name)}${S.playingFrom === 'history' && S.playingIdx === i ? '<span class="eq" aria-hidden="true"><i></i><i></i><i></i></span>' : ''}</span>
-        <span class="vibe">${t.book ? esc(t.book) + ' · ' : ''}${esc(timeAgo(t.at))}</span>
+        <span class="name">${esc(tr.name)}${S.playingFrom === 'history' && S.playingIdx === i ? '<span class="eq" aria-hidden="true"><i></i><i></i><i></i></span>' : ''}</span>
+        <span class="vibe">${tr.book ? esc(tr.book) + ' · ' : ''}${esc(timeAgo(tr.at))}</span>
       </span>
       <span class="acts">
-        ${t.book ? `<button type="button" class="icon-btn openbook" aria-label="Open ${esc(t.book)}" title="Open this book"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h6a3 3 0 0 1 3 3v12a2 2 0 0 0-2-2H4zM20 5h-6a3 3 0 0 0-3 3v12a2 2 0 0 1 2-2h7z"/></svg></button>` : ''}
-        <button type="button" class="icon-btn play" aria-label="Play ${esc(t.name)}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4v16l14-8z"/></svg></button>
+        ${tr.book ? `<button type="button" class="icon-btn openbook" aria-label="${esc(t('Open {book}', { book: tr.book }))}" title="${esc(t('Open this book'))}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h6a3 3 0 0 1 3 3v12a2 2 0 0 0-2-2H4zM20 5h-6a3 3 0 0 0-3 3v12a2 2 0 0 1 2-2h7z"/></svg></button>` : ''}
+        <button type="button" class="icon-btn play" aria-label="${esc(t('Play {name}', { name: tr.name }))}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4v16l14-8z"/></svg></button>
       </span>
     </li>`).join('');
 }
 $('#history')?.addEventListener('click', (e) => {
   const li = e.target.closest('[data-h]'); if (!li) return;
-  const i = +li.dataset.h; const t = DB.history[i];
-  if (e.target.closest('.openbook')) { showPage('discover'); el.q.value = t.book; startSearch(t.book); return; }
+  const i = +li.dataset.h; const tr = DB.history[i];
+  if (e.target.closest('.openbook')) { showPage('discover'); el.q.value = tr.book; startSearch(tr.book); return; }
   playFrom(DB.history, i, 'history');
 });
 $('#history')?.addEventListener('keydown', (e) => { if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('[data-h]')) { e.preventDefault(); playFrom(DB.history, +e.target.dataset.h, 'history'); } });
@@ -700,7 +702,7 @@ async function hydrateCovers() {
 $('#liked').addEventListener('click', (e) => {
   const li = e.target.closest('[data-l]'); if (!li) return;
   const i = +li.dataset.l;
-  if (e.target.closest('.unlike')) { const [t] = DB.liked.splice(i, 1); save(); renderLiked(); toast(`Removed “${esc(t.name)}”`, { undo: () => { DB.liked.splice(i, 0, t); save(); renderLiked(); } }); return; }
+  if (e.target.closest('.unlike')) { const [tr] = DB.liked.splice(i, 1); save(); renderLiked(); toast(t('Removed “{name}”', { name: esc(tr.name) }), { undo: () => { DB.liked.splice(i, 0, tr); save(); renderLiked(); } }); return; }
   playFrom(DB.liked, i, 'liked');
 });
 $('#liked').addEventListener('keydown', (e) => { if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('[data-l]')) { e.preventDefault(); playFrom(DB.liked, +e.target.dataset.l, 'liked'); } });
@@ -713,14 +715,15 @@ function renderAccount() {
   $('#statBooks').textContent = DB.books.length;
   $('#statLiked').textContent = DB.liked.length;
   $('#statSearches').textContent = ls.raw('mb_total_searches') || '0';
-  $('#freeBtn').textContent = pro ? 'Included' : 'Current plan';
-  $('#proPrice').innerHTML = billing === 'monthly' ? `${PRICE.monthly}<span>/mo</span>` : `${PRICE.annual}<span>/yr</span>`;
-  $('#proCta').textContent = pro ? 'You\'re on Pro ✦' : 'Request early access →';
+  $('#freeBtn').textContent = pro ? t('Included') : t('Current plan');
+  const per = billing === 'monthly' ? t('/mo') : t('/yr');
+  $('#proPrice').innerHTML = `${billing === 'monthly' ? PRICE.monthly : PRICE.annual}<span>${per}</span>`;
+  const cta = $('#proCta'); cta.textContent = pro ? t("You're on Pro ✦") : t('Payments open soon'); cta.classList.toggle('is-soon', !pro);
   $$('.bill').forEach((b) => { const on = b.dataset.bill === billing; b.classList.toggle('is-on', on); b.setAttribute('aria-checked', String(on)); });
-  const lp = $('#landingProPrice'); if (lp) lp.innerHTML = billing === 'monthly' ? `${PRICE.monthly}<span>/mo</span>` : `${PRICE.annual}<span>/yr</span>`;
+  const lp = $('#landingProPrice'); if (lp) lp.innerHTML = `${billing === 'monthly' ? PRICE.monthly : PRICE.annual}<span>${per}</span>`;
   $('#payPrice').textContent = billing === 'monthly' ? PRICE.monthly : PRICE.annual;
-  $('#payPer').textContent = billing === 'monthly' ? '/month' : '/year';
-  $('#payAlt').textContent = billing === 'monthly' ? `or ${PRICE.annual}/year (save 17%)` : `or ${PRICE.monthly}/month`;
+  $('#payPer').textContent = billing === 'monthly' ? t('/month') : t('/year');
+  $('#payAlt').textContent = billing === 'monthly' ? t('or {price}/year (save 17%)', { price: PRICE.annual }) : t('or {price}/month', { price: PRICE.monthly });
 }
 $$('.bill').forEach((b) => b.addEventListener('click', () => { billing = b.dataset.bill; renderAccount(); }));
 
@@ -741,7 +744,11 @@ $('#finalCta')?.addEventListener('click', (e) => {
   renderQuota(); renderAccount();
   const params = new URLSearchParams(location.search);
   // Owner / tester switch: open the site once with ?pro=1 and this browser stays on Pro (no daily limit).
-  if (params.get('pro') === '1') { ls.put('mb_pro', 'true'); renderQuota(); renderAccount(); toast('Pro unlocked in this browser'); }
+  if (params.get('pro') === '1') { ls.put('mb_pro', 'true'); renderQuota(); renderAccount(); toast(t('Pro unlocked in this browser')); }
+  // language switch: header chip cycles, footer lists all
+  const cur = getLang();
+  const lb = $('#langBtn'); if (lb) { lb.textContent = (LANGS.find((l) => l.code === cur) || LANGS[0]).short; lb.title = t('Language'); lb.onclick = () => { const i = LANGS.findIndex((l) => l.code === cur); setLang(LANGS[(i + 1) % LANGS.length].code); }; }
+  const fl = $('#footLangs'); if (fl) { fl.innerHTML = LANGS.map((l) => `<button type="button" data-lang="${l.code}" aria-current="${l.code === cur}" lang="${l.code}">${l.label}</button>`).join(''); fl.onclick = (e) => { const b = e.target.closest('[data-lang]'); if (b) setLang(b.dataset.lang); }; }
   const hash = location.hash.slice(1);
   if (params.get('b')) { showPage('discover', { push: false }); el.q.value = params.get('b'); startSearch(params.get('b')); }
   else showPage(PAGES.includes(hash) ? hash : 'discover', { push: false });

@@ -47,9 +47,12 @@ RULES FOR STYLES (exactly 5): music styles that suit THIS book, 1-3 words, Title
 
 If the reader supplies a scene mood and/or a music style, ALL 6 tracks must serve that scene in that style while staying inside the book's world.`;
 
-function buildUser({ title, author, genre, desc, mood, style }) {
+const LANG_NAMES = { uk: 'Ukrainian', en: 'English', pl: 'Polish', de: 'German', es: 'Spanish', fr: 'French', it: 'Italian', pt: 'Portuguese', tr: 'Turkish', ja: 'Japanese', ko: 'Korean' };
+
+function buildUser({ title, author, genre, desc, mood, style, lang }) {
   const lines = [`Book: "${title}"${author ? ` by ${author}` : ''}`];
   if (author || desc) lines.push('This identity is confirmed by the reader. Do not substitute another book.');
+  if (lang && lang !== 'en' && LANG_NAMES[lang]) lines.push(`Write "why", scene labels, style labels, track names and vibes in ${LANG_NAMES[lang]}. Keep the book title as given and keep every "query" in English.`);
   if (genre) lines.push(`Catalogue genre: ${genre}`);
   if (desc) lines.push(`Catalogue description: ${desc}`);
   if (mood) lines.push(`Scene mood requested by the reader: "${mood}". Curate all 6 tracks for this scene.`);
@@ -124,6 +127,7 @@ export default async function handler(req, res) {
     desc: str(q.desc || q.description, 600),
     mood: str(q.mood, 60),
     style: str(q.style, 40),
+    lang: /^[a-z]{2}$/.test(String(q.lang || '')) ? String(q.lang) : 'en',
   };
   if (!input.title) {
     noCache(res);
@@ -132,7 +136,7 @@ export default async function handler(req, res) {
 
   const configured = getProviders().length > 0;
 
-  const cacheKey = [input.title, input.author, input.mood, input.style].join('|').toLowerCase();
+  const cacheKey = [input.title, input.author, input.mood, input.style, input.lang].join('|').toLowerCase();
   // `fresh=1` = the reader pressed "try again" after a degraded answer → skip the short-lived memory cache.
   const hit = q.fresh === '1' ? null : cache.get(cacheKey);
   if (hit) {
@@ -162,7 +166,7 @@ export default async function handler(req, res) {
       // Catalogue hints (wrong author / knock-off edition) can confuse the model → retry with the title alone.
       if (!input.author && !input.genre && !input.desc) throw ne;
       console.warn('[analyze] weak answer with hints, retrying title-only:', ne.message);
-      const bare = [messages[0], { role: 'user', content: buildUser({ title: input.title, mood: input.mood, style: input.style }) }];
+      const bare = [messages[0], { role: 'user', content: buildUser({ title: input.title, mood: input.mood, style: input.style, lang: input.lang }) }];
       ({ content, provider, model } = await chat(bare, { json: true, maxTokens: 2200, temperature: 0.5, timeoutMs: 25000 }));
       result = normalise(extractJson(content), input.title);
     }

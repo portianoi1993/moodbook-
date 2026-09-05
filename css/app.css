@@ -567,3 +567,11 @@ body.modal-open{overflow:hidden}
 .modal-actions{display:flex;flex-wrap:wrap;gap:10px;margin:14px 0 6px}
 .modal-actions .btn,.modal-actions .btn-glass{flex:1 1 150px;justify-content:center}
 @media(max-width:520px){.modal{padding:8px;align-items:end}.modal-card{border-radius:24px 24px 18px 18px}}
+
+/* ── language switch ── */
+.lang-chip{margin-left:6px;height:34px;padding:0 10px;border-radius:999px;border:1px solid var(--line);background:var(--paper);color:var(--ink-2);font:700 .72rem var(--sans);letter-spacing:.08em;cursor:pointer}
+.lang-chip:hover{background:var(--cream-2);color:var(--ink)}
+.foot-langs{display:inline-flex;gap:10px;margin-left:6px}
+.foot-langs button{all:unset;cursor:pointer;color:var(--ink-3);font-size:.86rem}
+.foot-langs button:hover,.foot-langs button[aria-current="true"]{color:var(--ink);text-decoration:underline;text-underline-offset:3px}
+@media(max-width:520px){.lang-chip{padding:0 8px;margin-left:4px}}
