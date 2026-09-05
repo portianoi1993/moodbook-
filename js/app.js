@@ -170,13 +170,13 @@ $$('.chip').forEach((c) => c.addEventListener('click', () => { el.q.value = c.da
 $('#backBtn').addEventListener('click', resetSearch);
 
 function renderQuota() {
+  const chip = $('#planChip');
+  chip.textContent = isPro() ? 'Pro' : 'Free';
+  chip.classList.toggle('is-pro', isPro());
   if (isPro()) { el.quota.innerHTML = '<b>Pro</b> · unlimited books'; el.quota.classList.remove('is-low'); return; }
   const left = freeLeft();
   el.quota.innerHTML = left > 0 ? `<b>${left} of ${FREE_DAILY_LIMIT}</b> free ${left === 1 ? 'search' : 'searches'} left today` : `<b>0 of ${FREE_DAILY_LIMIT}</b> free searches left today · resets tomorrow`;
   el.quota.classList.toggle('is-low', left <= 1);
-  const chip = $('#planChip');
-  chip.textContent = isPro() ? 'Pro' : 'Free';
-  chip.classList.toggle('is-pro', isPro());
 }
 
 function setStatus(msg) {
