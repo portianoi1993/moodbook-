@@ -1,3 +1,4 @@
+import { mountAll, mountMagnetic, mountSpotlight } from './fx.js';
 /* MoodBook v2 — vanilla JS, no build step. */
 
 // ═══════════════ config ═══════════════
@@ -537,33 +538,14 @@ function renderAccount() {
 $$('.bill').forEach((b) => b.addEventListener('click', () => { billing = b.dataset.bill; renderAccount(); }));
 
 
-// ═══════════════ landing: word reveal, band reveal, final CTA ═══════════════
-document.documentElement.classList.add('js');
-(function landing() {
+// ═══════════════ landing: motion layer + final CTA ═══════════════
+mountAll();
+$('#finalCta')?.addEventListener('click', (e) => {
+  e.preventDefault();
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  $$('[data-word-reveal]').forEach((el) => {
-    if (reduce) { el.classList.add('is-visible'); return; }
-    const text = el.textContent || '';
-    el.setAttribute('aria-label', text.trim());
-    el.textContent = '';
-    let i = 0;
-    text.split(/(\s+)/).forEach((part) => {
-      if (!part) return;
-      if (/^\s+$/.test(part)) { el.appendChild(document.createTextNode(' ')); return; }
-      const w = document.createElement('span'); w.className = 'word-reveal__word'; w.textContent = part; w.style.setProperty('--word-index', i++); w.setAttribute('aria-hidden', 'true');
-      el.appendChild(w);
-    });
-    requestAnimationFrame(() => requestAnimationFrame(() => el.classList.add('is-visible')));
-    setTimeout(() => el.classList.add('is-visible'), 1500); // background tabs never fire rAF; never leave the headline hidden
-  });
-  const bands = $$('.band');
-  if (!('IntersectionObserver' in window) || reduce) { bands.forEach((b) => b.classList.add('is-visible')); }
-  else {
-    const io = new IntersectionObserver((entries) => entries.forEach((en) => { if (en.isIntersecting) { en.target.classList.add('is-visible'); io.unobserve(en.target); } }), { rootMargin: '0px 0px -10% 0px', threshold: 0.12 });
-    bands.forEach((b) => io.observe(b));
-  }
-  $('#finalCta')?.addEventListener('click', (e) => { e.preventDefault(); window.scrollTo({ top: 0, behavior: reduce ? 'auto' : 'smooth' }); setTimeout(() => el.q.focus({ preventScroll: true }), reduce ? 0 : 450); });
-})();
+  window.scrollTo({ top: 0, behavior: reduce ? 'auto' : 'smooth' });
+  setTimeout(() => el.q.focus({ preventScroll: true }), reduce ? 0 : 500);
+});
 
 // ═══════════════ boot ═══════════════
 (function boot() {

@@ -50,7 +50,8 @@ MoodBook (moodbook.ink) — AI-сервіс музичної курації дл
 5. Паралельний клон MoodBoard — те саме для настільних ігор (BoardGameGeek API), поки лише план
 
 ## Дизайн
-- Візуальний контракт: `docs/DESIGN.md` («Reading room»: папір + Fraunces/DM Sans/DM Mono + одна теракота). Перед будь-якою UI-зміною читати його. Не повертати градієнти в текст/кнопки.
+- Візуальний контракт: `docs/DESIGN.md` («Nocturne»: темне кіно-скло, Bricolage Grotesque + Geist + Geist Mono, пара violet→teal, magnetic-кнопки, mesh-атмосфера в героі). Вердикти по всіх 232 скілах: `docs/SKILLS-AUDIT.md`; згенерована база: `design-system/moodbook/MASTER.md`. Перед будь-якою UI-зміною читати DESIGN.md.
+- Motion-шар живе в `js/fx.js` (mesh canvas, reveals, word split, magnetic, spotlight, marquee, tilt). Нові інтерактивні елементи: `data-magnetic` (не більше 1–2 на екран), `data-spot`, `data-reveal`.
 
 ## Правила для коду
 - Не додавати фреймворки (React тощо) — проєкт свідомо на vanilla JS

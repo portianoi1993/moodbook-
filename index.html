@@ -3,23 +3,24 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>MoodBook — Instrumental soundtracks for the book you're reading</title>
+<title>MoodBook — Every book has a sound</title>
 <meta name="description" content="Type the book you're reading and MoodBook composes an instrumental, lyric-free soundtrack that matches its world, mood and pace. Free to try, no account needed.">
-<meta name="theme-color" content="#F3EDE3">
-<meta name="color-scheme" content="light">
+<meta name="theme-color" content="#07070F">
+<meta name="color-scheme" content="dark">
+<link rel="icon" type="image/svg+xml" href="/assets/logo.svg">
 <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32.png">
 <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
 <link rel="manifest" href="/manifest.webmanifest">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="MoodBook">
-<meta property="og:title" content="MoodBook — Music for every page">
+<meta property="og:title" content="MoodBook — Every book has a sound">
 <meta property="og:description" content="An instrumental reading soundtrack, composed for the exact book in your hands.">
 <meta property="og:image" content="https://moodbook-six.vercel.app/assets/icon-512.png">
 <meta name="twitter:card" content="summary">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT@0,9..144,300..700,0;1,9..144,300..700,0&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/css/app.css?v=20260905d">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700&family=Geist:wght@300;400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/app.css?v=20260905n1">
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"WebApplication","name":"MoodBook","url":"https://moodbook-six.vercel.app/","applicationCategory":"MusicApplication","operatingSystem":"Web","description":"AI-curated instrumental reading soundtracks matched to the book you are reading.","offers":[{"@type":"Offer","price":"0","priceCurrency":"USD","name":"Free"},{"@type":"Offer","price":"9.99","priceCurrency":"USD","name":"Pro monthly"}]}
 </script>
@@ -27,11 +28,12 @@
 <body>
 <a class="skip" href="#main">Skip to content</a>
 <div class="grain" aria-hidden="true"></div>
+<div class="aurora" aria-hidden="true"></div>
 
 <header class="top">
   <div class="top-inner">
     <a class="brand" href="/" data-nav="discover" aria-label="MoodBook home">
-      <img src="/assets/logo.webp" width="36" height="36" alt="" fetchpriority="high">
+      <img src="/assets/logo.svg" width="30" height="30" alt="">
       <span class="brand-word">MoodBook</span>
     </a>
     <nav class="tabs-top" aria-label="Primary">
@@ -49,111 +51,152 @@
   <section class="page is-active" id="page-discover" aria-labelledby="hero-title">
 
     <div id="hero">
-      <!-- HERO -->
-      <div class="hero">
-        <div class="hero-copy">
-          <p class="eyebrow"><span class="idx">01</span> Instrumental soundtracks for readers</p>
-          <h1 class="hero-h1 word-reveal" id="hero-title" data-word-reveal>Music for every page.</h1>
-          <p class="hero-sub">Name the book you're reading. MoodBook reads its world, mood and pace, then composes six long instrumental mixes to read to. No lyrics, no account, nothing to install.</p>
+      <!-- HERO SHELL with light field -->
+      <div class="hero-shell">
+        <canvas id="mesh" aria-hidden="true"></canvas>
+        <div class="hero">
+          <div class="hero-copy">
+            <p class="eyebrow" data-reveal><i></i> Instrumental soundtracks for readers</p>
+            <h1 class="hero-h1" id="hero-title" data-words>Every book has a sound.</h1>
+            <p class="hero-sub" data-reveal style="--d:200ms">Name what you're reading. MoodBook reads its world, mood and pace, then composes six long instrumental mixes to read to. No lyrics, no account, nothing to install.</p>
 
-          <form class="search" id="searchForm" role="search" autocomplete="off">
-            <label class="search-label" for="q">What are you reading?</label>
-            <div class="search-row">
-              <input class="search-input" id="q" name="q" type="search" inputmode="search" enterkeyhint="search"
-                     placeholder="Book title or author…" autocomplete="off" spellcheck="false" autocapitalize="words"
-                     role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="suggest" aria-haspopup="listbox">
-              <button class="search-go" type="submit">Compose <span class="arrow" aria-hidden="true">→</span></button>
-            </div>
-            <ul class="suggest" id="suggest" role="listbox" hidden></ul>
-            <div class="try">
-              <span class="try-label">Try</span>
-              <button type="button" class="chip" data-q="Dune">Dune</button>
-              <button type="button" class="chip" data-q="Fourth Wing">Fourth Wing</button>
-              <button type="button" class="chip" data-q="Project Hail Mary">Project Hail Mary</button>
-              <button type="button" class="chip" data-q="The Song of Achilles">The Song of Achilles</button>
-              <button type="button" class="chip" data-q="Atomic Habits">Atomic Habits</button>
-            </div>
-            <p class="quota" id="quota" aria-live="polite"></p>
-          </form>
-        </div>
-
-        <!-- SAMPLE READING CARD (static, labelled) -->
-        <aside class="sample" aria-label="Sample soundtrack">
-          <p class="mono-label">Sample · what you get</p>
-          <article class="rcard">
-            <div class="rcard-head">
-              <div class="rcard-cover" aria-hidden="true"><span>Dune</span><small>Frank Herbert</small></div>
-              <div>
-                <h2 class="rcard-title">Dune</h2>
-                <p class="rcard-by">Frank Herbert · epic sci-fi</p>
-                <p class="rcard-why">Wide desert textures with a slow pulse underneath. Tension that never fully resolves.</p>
+            <form class="search shell-glass" id="searchForm" role="search" autocomplete="off" data-reveal style="--d:320ms">
+              <div class="core">
+                <label class="search-label" for="q">What are you reading?</label>
+                <div class="search-row">
+                  <input class="search-input" id="q" name="q" type="search" inputmode="search" enterkeyhint="search"
+                         placeholder="Book title or author…" autocomplete="off" spellcheck="false" autocapitalize="words"
+                         role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="suggest" aria-haspopup="listbox">
+                  <button class="btn" type="submit" data-magnetic aria-label="Compose soundtrack"><span class="txt">Compose</span> <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></button>
+                </div>
+                <div class="try">
+                  <span class="try-label">Try</span>
+                  <button type="button" class="chip" data-q="Dune">Dune</button>
+                  <button type="button" class="chip" data-q="Fourth Wing">Fourth Wing</button>
+                  <button type="button" class="chip" data-q="Project Hail Mary">Project Hail Mary</button>
+                  <button type="button" class="chip" data-q="The Song of Achilles">The Song of Achilles</button>
+                  <button type="button" class="chip" data-q="Atomic Habits">Atomic Habits</button>
+                </div>
+                <p class="quota" id="quota" aria-live="polite"></p>
               </div>
-            </div>
-            <ol class="rcard-tracks">
-              <li><span class="idx">01</span><span class="rt"><b>Arrakeen Sunrise</b><i>vast · warm · 1 hr</i></span><span class="eqs" aria-hidden="true"><i></i><i></i><i></i></span></li>
-              <li><span class="idx">02</span><span class="rt"><b>The Spice Must Flow</b><i>hypnotic · pulsing · 1 hr</i></span></li>
-              <li><span class="idx">03</span><span class="rt"><b>Sietch Tabr Nights</b><i>calm · intimate · 1 hr</i></span></li>
-              <li class="more"><span class="idx">+3</span><span class="rt"><i>more mixes, six scenes to switch between</i></span></li>
-            </ol>
-          </article>
-        </aside>
+              <ul class="suggest" id="suggest" role="listbox" hidden></ul>
+            </form>
+          </div>
+
+          <!-- LIVE-LOOKING PRODUCT DEMO (static sample, labelled) -->
+          <aside class="demo" aria-label="Sample soundtrack" data-reveal style="--d:420ms">
+            <div class="demo-glow" aria-hidden="true"></div>
+            <article class="demo-card shell-glass gborder" data-tilt data-spot>
+              <div class="core">
+                <p class="mono" style="margin:0 0 12px 2px">Sample · what you get</p>
+                <div class="dc-head">
+                  <div class="dc-cover" aria-hidden="true"><b>Dune</b><small>Frank Herbert</small></div>
+                  <div>
+                    <h2 class="dc-title">Dune</h2>
+                    <p class="dc-by">Frank Herbert · Epic sci-fi</p>
+                    <p class="dc-why">Wide desert textures with a slow pulse underneath. Tension that never fully resolves.</p>
+                  </div>
+                </div>
+                <ol class="dc-tracks">
+                  <li class="on"><span class="idx">01</span><span class="rt"><b>Arrakeen Sunrise</b><i>vast · warm · 1 hr</i></span><span class="eqs" aria-hidden="true"><i></i><i></i><i></i><i></i></span></li>
+                  <li><span class="idx">02</span><span class="rt"><b>The Spice Must Flow</b><i>hypnotic · pulsing · 1 hr</i></span><span class="play-dot" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 4v16l14-8z"/></svg></span></li>
+                  <li><span class="idx">03</span><span class="rt"><b>Sietch Tabr Nights</b><i>calm · intimate · 1 hr</i></span><span class="play-dot" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 4v16l14-8z"/></svg></span></li>
+                  <li><span class="idx">+3</span><span class="rt"><i>more mixes · six scenes to switch between</i></span></li>
+                </ol>
+              </div>
+            </article>
+            <div class="float f1" aria-hidden="true"><span class="dot"><svg viewBox="0 0 24 24"><path d="M7 4v16l14-8z"/></svg></span><span>Now playing <b>Arrakeen Sunrise</b></span></div>
+            <div class="float f2" aria-hidden="true"><span>Scene <b>Desert Dawn Drift</b></span></div>
+          </aside>
+        </div>
       </div>
 
-      <!-- HOW IT WORKS -->
+      <!-- MARQUEE -->
+      <div class="marq" data-marquee aria-label="Books readers composed for recently">
+        <ul>
+          <li>Dune</li><li>Fourth Wing</li><li>Project Hail Mary</li><li>The Song of Achilles</li><li>Atomic Habits</li><li>Intermezzo</li><li>The Hobbit</li><li>It Ends with Us</li><li>Дюна</li><li>1984</li><li>The Women</li><li>Circe</li>
+        </ul>
+      </div>
+
+      <!-- BENTO: how it works -->
       <section class="band" aria-labelledby="how-title">
-        <div class="band-head"><span class="idx">02</span><h2 id="how-title" class="band-title">How it works</h2></div>
-        <ol class="steps">
-          <li><span class="idx">01</span><h3>Name the book</h3><p>Any title, any language. Start typing and pick it from the list, or just press Compose.</p></li>
-          <li><span class="idx">02</span><h3>We read the room</h3><p>Genre, setting, tone and pace are turned into six scenes, from the quiet chapters to the ones you can't put down.</p></li>
-          <li><span class="idx">03</span><h3>Press play</h3><p>Six long instrumental mixes, sourced from YouTube, play in a small dock that stays with you while you read.</p></li>
-        </ol>
+        <div class="band-head" data-reveal>
+          <span class="eyebrow"><i></i> How it works</span>
+          <h2 id="how-title" class="band-title">From title to <span class="grad-text">soundtrack</span> in one breath.</h2>
+          <p class="band-sub">No playlists to dig through. Name the book, and the room fills with the right music.</p>
+        </div>
+        <div class="bento">
+          <article class="shell-glass b1" data-spot data-reveal><div class="core">
+            <span class="idx">01 · Read the room</span>
+            <h3>We understand the book, not just the genre.</h3>
+            <p>Setting, era, tone and pace become a sonic brief. Dune gets wind and drums, a self-help book gets steady focus beats.</p>
+            <div class="tagcloud"><span class="hot">Desert Dawn Drift</span><span>Spice Vision Trance</span><span>Sietch Night Calm</span><span>Sandworm Surge</span><span>Court Intrigue</span><span>Deep Focus Lofi</span></div>
+          </div></article>
+          <article class="shell-glass b2" data-spot data-reveal style="--d:80ms"><div class="core">
+            <span class="idx">02 · Six long mixes</span>
+            <h3>Hour-long, lyric-free, ready to play.</h3>
+            <p>Real YouTube mixes, checked for length and embeddability, in a player that stays with you.</p>
+            <ul class="mini-tracks"><li><i>01</i><span>Arrakeen Sunrise</span><i>1 hr</i></li><li><i>02</i><span>The Spice Must Flow</span><i>1 hr</i></li><li><i>03</i><span>Sietch Tabr Nights</span><i>1 hr</i></li></ul>
+          </div></article>
+          <article class="shell-glass b3" data-spot data-reveal style="--d:120ms"><div class="core">
+            <span class="idx">03 · Scenes</span>
+            <h3>Switch the mood when the chapter turns.</h3>
+            <p>Quiet night reading, then a battle. Pick a scene and the whole soundtrack re-tunes to it.</p>
+          </div></article>
+          <article class="shell-glass b4" data-spot data-reveal style="--d:160ms"><div class="core">
+            <span class="idx">04 · Your shelf</span>
+            <h3>Keep what you love.</h3>
+            <p>Save books to a shelf, heart the mixes you'll want again, and jump back in with one tap.</p>
+            <div class="shelf-mini" aria-hidden="true"><span></span><span></span><span></span></div>
+          </div></article>
+        </div>
       </section>
 
       <!-- WHY -->
-      <section class="band why" aria-labelledby="why-title">
-        <div class="band-head"><span class="idx">03</span><h2 id="why-title" class="band-title">Why instrumental</h2></div>
+      <section class="band" aria-labelledby="why-title">
         <div class="why-grid">
-          <p class="why-lead">Lyrics compete with the sentence you're reading. A soundtrack shouldn't. Every mix MoodBook picks is lyric-free and long enough to carry a whole chapter.</p>
-          <ul class="why-points">
-            <li><b>Matched, not generic.</b> A desert epic gets wind and drums. A self-help book gets steady focus beats.</li>
-            <li><b>Scenes, not playlists.</b> Switch from "Quiet Night Reading" to "Battle Surge" when the chapter turns.</li>
-            <li><b>Yours to keep.</b> Save books to a shelf and heart the mixes you want again.</li>
+          <div data-reveal>
+            <span class="eyebrow"><i></i> Why instrumental</span>
+            <p class="why-lead" id="why-title">Lyrics compete with the sentence you're reading. A soundtrack shouldn't.</p>
+          </div>
+          <ul class="why-points" data-reveal style="--d:120ms">
+            <li><b>Matched, not generic.</b> Every mix is composed for the exact book, its setting and its pace.</li>
+            <li><b>Long enough for a chapter.</b> Mixes run an hour or more, so nothing interrupts you mid-page.</li>
+            <li><b>Free to start.</b> Three books a day, no sign-up. Pro removes the limit and syncs your shelf.</li>
           </ul>
         </div>
       </section>
 
-      <!-- PRICING -->
+      <!-- PLANS -->
       <section class="band" aria-labelledby="price-title" id="pricing">
-        <div class="band-head"><span class="idx">04</span><h2 id="price-title" class="band-title">Plans</h2></div>
+        <div class="band-head" data-reveal>
+          <span class="eyebrow"><i></i> Plans</span>
+          <h2 id="price-title" class="band-title">Start free. Go unlimited when you're hooked.</h2>
+        </div>
         <div class="plans-row">
-          <div class="plan-col">
-            <p class="mono-label">Free</p>
+          <article class="shell-glass plan-col" data-spot data-reveal><div class="core">
+            <span class="mono">Free</span>
             <p class="plan-big">$0</p>
-            <ul>
-              <li>3 books a day</li>
-              <li>6 mixes and 6 scenes per book</li>
-              <li>Shelf and liked tracks in this browser</li>
-            </ul>
+            <ul><li>3 books a day</li><li>6 mixes and 6 scenes per book</li><li>Shelf and liked tracks in this browser</li></ul>
             <p class="plan-note">No sign-up. Start above.</p>
-          </div>
-          <div class="plan-col pro">
-            <p class="mono-label">Pro · early access</p>
+          </div></article>
+          <article class="shell-glass gborder plan-col" data-spot data-reveal style="--d:100ms"><div class="core">
+            <span class="mono accent">Pro · early access</span>
             <p class="plan-big" id="landingProPrice">$9.99<span>/mo</span></p>
-            <ul>
-              <li>Unlimited books</li>
-              <li>Everything synced across devices</li>
-              <li>Liked tracks saved forever</li>
-            </ul>
-            <a class="btn-primary" href="mailto:moodbook@moodbook.ink?subject=MoodBook%20Pro%20early%20access">Request early access →</a>
+            <ul><li>Unlimited books</li><li>Everything synced across devices</li><li>Liked tracks saved forever</li></ul>
+            <a class="btn grad" href="mailto:moodbook@moodbook.ink?subject=MoodBook%20Pro%20early%20access" data-magnetic>Request early access <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></a>
             <p class="plan-note">or $99.99 a year (save 17%). Card payments open with the public launch.</p>
-          </div>
+          </div></article>
         </div>
       </section>
 
       <!-- FAQ -->
       <section class="band" aria-labelledby="faq-title">
-        <div class="band-head"><span class="idx">05</span><h2 id="faq-title" class="band-title">Questions</h2></div>
-        <div class="faq">
+        <div class="band-head" data-reveal>
+          <span class="eyebrow"><i></i> Questions</span>
+          <h2 id="faq-title" class="band-title">Good to know.</h2>
+        </div>
+        <div class="faq" data-reveal>
           <details><summary>Where does the music come from?</summary><p>From YouTube. MoodBook searches for long, embeddable instrumental mixes that fit each scene and plays them in a built-in player. Nothing is downloaded or re-hosted.</p></details>
           <details><summary>Does it work for books in other languages?</summary><p>Yes. Type the title as you know it, in Ukrainian, Spanish, Korean or anything else. MoodBook identifies the book and composes for it.</p></details>
           <details><summary>What if it doesn't know my book?</summary><p>It still composes from the title and genre it can infer, and tells you so. Picking the book from the suggestion list gives the best result.</p></details>
@@ -163,67 +206,63 @@
         </div>
       </section>
 
-      <section class="band final">
-        <h2 class="final-title">Pick up your book. <em>We'll set the mood.</em></h2>
-        <a href="#main" class="btn-primary" id="finalCta">Compose a soundtrack →</a>
+      <section class="final" data-reveal>
+        <h2 class="final-title">Pick up your book. <span class="grad-text">We'll set the mood.</span></h2>
+        <a href="#main" class="btn" id="finalCta" data-magnetic>Compose a soundtrack <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></a>
       </section>
     </div>
 
     <!-- RESULTS -->
     <div class="results" id="results" hidden>
       <div class="results-head">
-        <button class="back" type="button" id="backBtn">← New search</button>
+        <button class="btn-glass sm" type="button" id="backBtn">← New search</button>
         <div class="results-actions">
-          <button class="ghost" type="button" id="saveBtn">+ Save to shelf</button>
-          <button class="ghost" type="button" id="shareBtn">Share</button>
+          <button class="btn-glass sm" type="button" id="saveBtn">+ Save to shelf</button>
+          <button class="btn-glass sm" type="button" id="shareBtn">Share</button>
         </div>
       </div>
       <div class="results-grid">
-        <article class="book-card" id="bookCard" aria-live="polite"></article>
-        <section class="tracks-col" aria-labelledby="tracks-title">
+        <article class="book-card shell-glass gborder" id="bookCardWrap" data-spot><div class="core" id="bookCard" aria-live="polite"></div></article>
+        <section class="tracks-col shell-glass" aria-labelledby="tracks-title"><div class="core">
           <div class="tracks-head">
-            <h2 class="mono-label" id="tracks-title">Soundtrack</h2>
-            <span class="mono-label dim" id="tracksMeta"></span>
+            <h2 class="mono" id="tracks-title">Soundtrack</h2>
+            <span class="mono" id="tracksMeta" style="text-transform:none;letter-spacing:.02em"></span>
           </div>
           <div id="status" class="status" role="status" aria-live="polite"></div>
           <ol class="tracks" id="tracks"></ol>
-        </section>
-        <section class="moods" aria-labelledby="moods-title">
-          <h2 class="mono-label" id="moods-title">Scenes from the book</h2>
-          <p class="muted small">Pick a scene and the soundtrack shifts to match that moment.</p>
+        </div></section>
+        <section class="moods shell-glass" aria-labelledby="moods-title"><div class="core">
+          <h2 class="mono" id="moods-title">Scenes from the book</h2>
+          <p class="muted small" style="margin-top:6px">Pick a scene and the soundtrack re-tunes to that moment.</p>
           <div class="mood-grid" id="moodGrid" role="group" aria-label="Scenes"></div>
-        </section>
+        </div></section>
       </div>
     </div>
 
     <!-- PAYWALL -->
     <div class="paywall" id="paywall" hidden>
-      <div class="pay-card">
-        <p class="mono-label">Today's free searches are used</p>
+      <div class="pay-card shell-glass gborder"><div class="core">
+        <span class="mono accent">Today's free searches are used</span>
         <h2>Keep the music going with <em>Pro</em></h2>
-        <ul class="perks">
-          <li>Unlimited books, every day</li>
-          <li>All scene moods unlocked</li>
-          <li>Shelf and liked tracks synced across devices</li>
-        </ul>
+        <ul class="perks"><li>Unlimited books, every day</li><li>All scene moods unlocked</li><li>Shelf and liked tracks synced across devices</li></ul>
         <div class="pay-price"><b id="payPrice">$9.99</b><span id="payPer">/month</span><span class="pay-alt" id="payAlt">or $99.99/year (save 17%)</span></div>
         <div class="pay-actions">
-          <a class="btn-primary" id="payCta" href="mailto:moodbook@moodbook.ink?subject=MoodBook%20Pro%20early%20access">Request early access →</a>
+          <a class="btn grad" id="payCta" href="mailto:moodbook@moodbook.ink?subject=MoodBook%20Pro%20early%20access" data-magnetic>Request early access <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></a>
           <form class="promo" id="promoForm">
             <label class="sr-only" for="promoInput">Promo code</label>
             <input id="promoInput" name="promo" type="text" placeholder="Promo code…" autocomplete="off" autocapitalize="characters" spellcheck="false">
             <button type="submit">Apply</button>
           </form>
         </div>
-        <p class="muted small">Free searches reset tomorrow. Card payments open with the public launch; early access is by invitation.</p>
-      </div>
+        <p class="dim small">Free searches reset tomorrow. Card payments open with the public launch; early access is by invitation.</p>
+      </div></div>
     </div>
   </section>
 
   <!-- ═══════════════ LIBRARY ═══════════════ -->
   <section class="page" id="page-library" aria-labelledby="lib-title" hidden>
     <div class="page-head">
-      <p class="eyebrow"><span class="idx">Shelf</span></p>
+      <span class="eyebrow"><i></i> Shelf</span>
       <h1 id="lib-title">My library</h1>
       <p class="muted">Your books, one tap from their soundtrack.</p>
     </div>
@@ -232,20 +271,20 @@
       <div class="add-row">
         <input id="addInput" name="add" type="search" placeholder="Add a book — title or author…" autocomplete="off" spellcheck="false"
                role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="addSuggest" aria-haspopup="listbox">
-        <button type="submit" class="btn-primary compact">Add</button>
+        <button type="submit" class="btn sm">Add <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></span></button>
       </div>
       <ul class="suggest" id="addSuggest" role="listbox" hidden></ul>
     </form>
-    <h2 class="mono-label section-label">Books</h2>
+    <h2 class="mono section-label">Books</h2>
     <div class="shelf" id="shelf"></div>
-    <h2 class="mono-label section-label">Liked tracks</h2>
+    <h2 class="mono section-label">Liked tracks</h2>
     <ol class="liked" id="liked"></ol>
   </section>
 
   <!-- ═══════════════ ACCOUNT ═══════════════ -->
   <section class="page" id="page-account" aria-labelledby="acct-title" hidden>
     <div class="page-head">
-      <p class="eyebrow"><span class="idx">Account</span></p>
+      <span class="eyebrow"><i></i> Account</span>
       <h1 id="acct-title">Plan &amp; usage</h1>
       <p class="muted">Everything here lives in this browser until sync arrives with Pro.</p>
     </div>
@@ -253,10 +292,7 @@
       <div class="card acct-card">
         <div class="acct-top">
           <div class="avatar" aria-hidden="true">R</div>
-          <div>
-            <div class="acct-name">Reader</div>
-            <div class="badge" id="acctBadge">Free</div>
-          </div>
+          <div><div class="acct-name">Reader</div><div class="badge" id="acctBadge">Free</div></div>
         </div>
         <dl class="stats">
           <div><dt>Books</dt><dd id="statBooks">0</dd></div>
@@ -272,30 +308,20 @@
         <div class="plan-cards">
           <article class="card plan">
             <header><h2>Free</h2><p class="price">$0</p></header>
-            <ul>
-              <li>3 book searches a day</li>
-              <li>6 mixes per book</li>
-              <li>Scene moods</li>
-              <li>Shelf in this browser</li>
-            </ul>
-            <button type="button" class="btn-ghost" disabled id="freeBtn">Current plan</button>
+            <ul><li>3 book searches a day</li><li>6 mixes per book</li><li>Scene moods</li><li>Shelf in this browser</li></ul>
+            <button type="button" class="btn-glass" disabled id="freeBtn">Current plan</button>
           </article>
-          <article class="card plan pro">
+          <article class="card plan gborder">
             <header><h2>Pro</h2><p class="price" id="proPrice">$9.99<span>/mo</span></p></header>
-            <ul>
-              <li>Unlimited books</li>
-              <li>All scene moods</li>
-              <li>Sync shelf across devices</li>
-              <li>Liked tracks saved forever</li>
-            </ul>
-            <a class="btn-primary" id="proCta" href="mailto:moodbook@moodbook.ink?subject=MoodBook%20Pro%20early%20access">Request early access →</a>
+            <ul><li>Unlimited books</li><li>All scene moods</li><li>Sync shelf across devices</li><li>Liked tracks saved forever</li></ul>
+            <a class="btn grad" id="proCta" href="mailto:moodbook@moodbook.ink?subject=MoodBook%20Pro%20early%20access">Request early access <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></a>
           </article>
         </div>
         <form class="card promo-acct" id="promoFormAcct">
-          <label for="promoInputAcct" class="mono-label">Have a promo code?</label>
+          <label for="promoInputAcct" class="mono">Have a promo code?</label>
           <div class="add-row">
             <input id="promoInputAcct" name="promo" type="text" placeholder="Enter code…" autocomplete="off" autocapitalize="characters" spellcheck="false">
-            <button type="submit" class="btn-primary compact">Apply</button>
+            <button type="submit" class="btn sm">Apply <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12l5 5L20 7"/></svg></span></button>
           </div>
         </form>
       </div>
@@ -304,8 +330,8 @@
 
   <footer class="foot">
     <div class="foot-row">
-      <span class="foot-brand">MoodBook</span>
-      <span class="mono-label dim">Made in Kyiv · music via YouTube · books via Google Books</span>
+      <span class="foot-brand"><img src="/assets/logo.svg" alt="" width="24" height="24">MoodBook</span>
+      <span class="mono" style="text-transform:none;letter-spacing:.02em">Made in Kyiv · music via YouTube · books via Google Books</span>
     </div>
     <nav class="foot-links" aria-label="Legal">
       <a href="/privacy.html">Privacy</a>
@@ -317,10 +343,10 @@
 
 <!-- PLAYER DOCK (persistent) -->
 <div class="dock" id="dock" hidden>
-  <div class="dock-inner">
+  <div class="dock-inner gborder">
     <div class="dock-video" id="dockVideo"><div id="yt"></div></div>
     <div class="dock-info">
-      <p class="mono-label accent">Now playing</p>
+      <p class="mono accent">Now playing</p>
       <p class="dock-title" id="dockTitle">—</p>
       <p class="dock-sub" id="dockSub"></p>
       <div class="dock-progress" id="dockProgress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Playback position"><span></span></div>
@@ -342,6 +368,6 @@
 </nav>
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
-<script type="module" src="/js/app.js?v=20260905d"></script>
+<script type="module" src="/js/app.js?v=20260905n1"></script>
 </body>
 </html>
