@@ -1,7 +1,7 @@
 // GET /api/health          → which env vars / providers are configured (no secrets)
 // GET /api/health?probe=1  → also pings every AI provider in the fallback chain and reports the real upstream answer
 import { cors, guard, noCache } from '../lib/http.js';
-import { getProviders, probeAll } from '../lib/ai.js';
+import { getProviders, probeAll, listModels } from '../lib/ai.js';
 
 export default async function handler(req, res) {
   if (cors(req, res, 'GET, OPTIONS')) return;
@@ -25,6 +25,12 @@ export default async function handler(req, res) {
   if (req.query?.probe === '1') {
     out.probe = await probeAll();
     out.ok = out.ok && out.probe.some((p) => p.ok);
+  }
+  if (req.query?.models === '1') {
+    // Model ids visible to each key (helps pick quota-sibling models); never returns secrets.
+    out.models = await Promise.all(getProviders().map(async (p) => {
+      try { return { provider: p.name, ids: await listModels(p) }; } catch (e) { return { provider: p.name, error: e.message }; }
+    }));
   }
   return res.status(out.ok ? 200 : 503).json(out);
 }
