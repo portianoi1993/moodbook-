@@ -651,6 +651,12 @@ body.modal-open{overflow:hidden}
 [data-theme="dark"] .add-row input,[data-theme="dark"] .liked-tools input,[data-theme="dark"] .promo input{background:var(--cream-2);color:var(--ink);border-color:var(--line)}
 [data-theme="dark"] .liked .track,[data-theme="dark"] .liked .empty{background:var(--paper);border-color:var(--line)}
 [data-theme="dark"] .liked .track:hover{background:var(--cream-2)}
-/* language select styled like the chips; native dropdown for 7 languages */
-select.lang-chip{-webkit-appearance:none;appearance:none;padding:0 22px 0 10px;background-image:linear-gradient(45deg,transparent 50%,currentColor 50%),linear-gradient(135deg,currentColor 50%,transparent 50%);background-position:calc(100% - 12px) 14px,calc(100% - 8px) 14px;background-size:4px 4px;background-repeat:no-repeat;max-width:118px;text-overflow:ellipsis;font-size:.76rem;letter-spacing:.02em;font-weight:600}
-@media(max-width:520px){select.lang-chip{max-width:92px;padding-right:18px}}
+/* language menu: a small paper popover instead of the OS dropdown */
+.lang-wrap{position:relative}
+.lang-menu{position:absolute;right:0;top:calc(100% + 8px);z-index:90;list-style:none;min-width:168px;padding:6px;background:rgba(255,253,249,.97);border:1px solid rgba(255,255,255,.9);border-radius:var(--r-m);box-shadow:var(--sh-3);display:grid;gap:2px;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
+.lang-menu li{padding:8px 12px;border-radius:10px;font-size:.9rem;font-weight:500;color:var(--ink-2);cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.lang-menu li:hover,.lang-menu li:focus-visible{background:var(--cream-2);color:var(--ink);outline:none}
+.lang-menu li[aria-selected="true"]{color:var(--ink);font-weight:600}
+.lang-menu li[aria-selected="true"]::after{content:"✓";font-size:.8rem;color:var(--lav-d)}
+[data-theme="dark"] .lang-menu{background:rgba(38,32,44,.97);border-color:rgba(255,255,255,.1)}
+@media(max-width:520px){.lang-menu{right:-40px}}

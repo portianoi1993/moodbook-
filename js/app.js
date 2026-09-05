@@ -1,5 +1,6 @@
-import { mountAll, mountMagnetic, mountSpotlight } from './fx.js';
-import { t, initI18n, getLang, setLang, LANGS } from './i18n.js';
+// Static imports carry the same cache-busting version as the <script> tag (browsers cache /js for an hour).
+import { mountAll, mountMagnetic, mountSpotlight } from './fx.js?v=20260905h13';
+import { t, initI18n, getLang, setLang, LANGS } from './i18n.js?v=20260905h13';
 /* MoodBook v2 — vanilla JS, no build step. */
 await initI18n(); // load the dictionary and translate static copy before anything measures or splits it
 
@@ -779,11 +780,22 @@ $('#finalCta')?.addEventListener('click', (e) => {
   });
   // language switch: header chip cycles, footer lists all
   const cur = getLang();
-  const lb = $('#langBtn');
-  if (lb) {
-    lb.innerHTML = LANGS.map((l) => `<option value="${l.code}" lang="${l.code}"${l.code === cur ? ' selected' : ''}>${l.label}</option>`).join('');
+  const lb = $('#langBtn'), lm = $('#langMenu');
+  if (lb && lm) {
+    lb.textContent = (LANGS.find((l) => l.code === cur) || LANGS[0]).short;
     lb.title = t('Language'); lb.setAttribute('aria-label', t('Language'));
-    lb.onchange = () => setLang(lb.value);
+    lm.innerHTML = LANGS.map((l) => `<li role="option" data-lang="${l.code}" lang="${l.code}" aria-selected="${l.code === cur}" tabindex="-1">${l.label}</li>`).join('');
+    const open = (on) => { lm.hidden = !on; lb.setAttribute('aria-expanded', String(on)); if (on) (lm.querySelector('[aria-selected="true"]') || lm.firstElementChild)?.focus(); };
+    lb.onclick = (e) => { e.stopPropagation(); open(lm.hidden); };
+    lm.onclick = (e) => { const li = e.target.closest('[data-lang]'); if (li) setLang(li.dataset.lang); };
+    lm.onkeydown = (e) => {
+      const items = [...lm.children], i = items.indexOf(document.activeElement);
+      if (e.key === 'ArrowDown') { e.preventDefault(); items[(i + 1) % items.length]?.focus(); }
+      else if (e.key === 'ArrowUp') { e.preventDefault(); items[(i - 1 + items.length) % items.length]?.focus(); }
+      else if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); document.activeElement?.click(); }
+      else if (e.key === 'Escape') { open(false); lb.focus(); }
+    };
+    document.addEventListener('click', (e) => { if (!lm.hidden && !e.target.closest('.lang-wrap')) open(false); });
   }
   const fl = $('#footLangs'); if (fl) { fl.innerHTML = LANGS.map((l) => `<button type="button" data-lang="${l.code}" aria-current="${l.code === cur}" lang="${l.code}">${l.label}</button>`).join(''); fl.onclick = (e) => { const b = e.target.closest('[data-lang]'); if (b) setLang(b.dataset.lang); }; }
   const hash = location.hash.slice(1);
