@@ -397,14 +397,48 @@ el.saveBtn.addEventListener('click', () => {
   el.saveBtn.classList.add('is-done'); el.saveBtn.textContent = '✓ On your shelf';
   toast(`📚 “${esc(S.book.title)}” added to your Library`);
 });
+// ═══════════════ Reading Card (share) ═══════════════
+const shareUrl = () => `${location.origin}/?b=${encodeURIComponent(S.book.title + (S.book.author ? ' ' + S.book.author : ''))}`;
+const shareText = () => `Reading “${S.book.title}”? Here's a soundtrack composed for it 🎧`;
+let cardBlob = null, cardObjUrl = null;
+function closeCard() {
+  const m = $('#cardModal'); m.hidden = true; document.body.classList.remove('modal-open');
+  if (cardObjUrl) { URL.revokeObjectURL(cardObjUrl); cardObjUrl = null; }
+}
+$('#cardModal').addEventListener('click', (e) => { if (e.target.closest('[data-close]')) closeCard(); });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('#cardModal').hidden) closeCard(); });
+$('#cardCopy').addEventListener('click', async () => {
+  try { await navigator.clipboard.writeText(shareUrl()); toast('Link copied'); } catch { toast('Copy failed. The link is in your address bar.'); }
+});
+$('#cardShare').addEventListener('click', async () => {
+  if (!cardBlob) return;
+  const file = new File([cardBlob], 'moodbook-reading-card.png', { type: 'image/png' });
+  try {
+    if (navigator.canShare?.({ files: [file] })) await navigator.share({ files: [file], title: 'MoodBook', text: `${shareText()} ${shareUrl()}` });
+    else await navigator.share({ title: 'MoodBook', text: shareText(), url: shareUrl() });
+  } catch {}
+});
 el.shareBtn.addEventListener('click', async () => {
   if (!S.book) return;
-  const url = `${location.origin}/?b=${encodeURIComponent(S.book.title + (S.book.author ? ' ' + S.book.author : ''))}`;
-  const text = `Reading “${S.book.title}”? Here's a soundtrack composed for it 🎧`;
+  const m = $('#cardModal'), prev = $('#cardPreview');
+  m.hidden = false; document.body.classList.add('modal-open');
+  cardBlob = null; $('#cardShare').hidden = true; $('#cardDownload').hidden = true;
+  prev.innerHTML = '<div class="card-loading"><span class="dots"><i></i><i></i><i></i></span> Drawing your card…</div>';
   try {
-    if (navigator.share) await navigator.share({ title: 'MoodBook', text, url });
-    else { await navigator.clipboard.writeText(url); toast('Link copied'); }
-  } catch {}
+    const { renderReadingCard } = await import('./card.js' + new URL(import.meta.url).search);
+    cardBlob = await renderReadingCard({
+      book: { title: S.book.title, author: S.book.author || S.ai?.book?.author || '', cover: S.book.cover, genre: (S.ai?.book?.genre || S.book.genre || '').split(/[,/·]/)[0].trim() },
+      why: S.ai?.why || '', tracks: S.tracks, scene: S.mood, style: S.style, url: shareUrl(), host: location.host,
+    });
+    if (cardObjUrl) URL.revokeObjectURL(cardObjUrl);
+    cardObjUrl = URL.createObjectURL(cardBlob);
+    prev.innerHTML = `<img src="${cardObjUrl}" alt="Reading Card for ${esc(S.book.title)}" width="540" height="675">`;
+    const dl = $('#cardDownload'); dl.href = cardObjUrl; dl.download = `moodbook-${S.book.title.replace(/[^\p{L}\p{N}]+/gu, '-').toLowerCase()}.png`; dl.hidden = false;
+    const file = new File([cardBlob], 'moodbook-reading-card.png', { type: 'image/png' });
+    $('#cardShare').hidden = !(navigator.share && (navigator.canShare?.({ files: [file] }) || true));
+  } catch (e) {
+    prev.innerHTML = `<div class="card-loading">Couldn't draw the card (${esc(e.message)}). You can still copy the link below.</div>`;
+  }
 });
 
 // ═══════════════ paywall + promo ═══════════════

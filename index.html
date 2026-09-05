@@ -21,7 +21,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preconnect" href="https://covers.openlibrary.org">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT@0,9..144,400..700,30;1,9..144,400..600,50&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/css/app.css?v=20260905h7">
+<link rel="stylesheet" href="/css/app.css?v=20260905h8">
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"WebApplication","name":"MoodBook","url":"https://moodbook-six.vercel.app/","applicationCategory":"MusicApplication","operatingSystem":"Web","description":"AI-curated reading soundtracks matched to the book you are reading.","offers":[{"@type":"Offer","price":"0","priceCurrency":"USD","name":"Free"},{"@type":"Offer","price":"9.99","priceCurrency":"USD","name":"Pro monthly"}]}
 </script>
@@ -385,8 +385,26 @@
   <a href="#account" data-nav="account" class="tab-bottom"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg><span>Account</span></a>
 </nav>
 
+<!-- READING CARD (share) -->
+<div class="modal" id="cardModal" hidden role="dialog" aria-modal="true" aria-labelledby="cardTitle">
+  <div class="modal-bg" data-close></div>
+  <div class="modal-card shell-glass gborder"><div class="core">
+    <div class="modal-head">
+      <div><p class="mono accent">Reading Card</p><h2 id="cardTitle">Share this soundtrack</h2></div>
+      <button type="button" class="icon-btn" data-close aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+    </div>
+    <div class="card-preview" id="cardPreview"><div class="card-loading"><span class="dots"><i></i><i></i><i></i></span> Drawing your card…</div></div>
+    <div class="modal-actions">
+      <button type="button" class="btn" id="cardShare" hidden>Share image <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7M12 4v12M7 9l5-5 5 5"/></svg></span></button>
+      <a class="btn" id="cardDownload" download="moodbook-reading-card.png" hidden>Download <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 4v12M7 11l5 5 5-5M4 20h16"/></svg></span></a>
+      <button type="button" class="btn-glass" id="cardCopy">Copy link</button>
+    </div>
+    <p class="dim small">The image is drawn in your browser. Nothing is uploaded.</p>
+  </div></div>
+</div>
+
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
-<script type="module" src="/js/app.js?v=20260905h7"></script>
+<script type="module" src="/js/app.js?v=20260905h8"></script>
 <script defer src="/_vercel/insights/script.js"></script>
 </body>
 </html>
