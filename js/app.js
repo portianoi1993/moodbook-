@@ -282,8 +282,8 @@ function renderBookCard() {
   const b = S.book, ai = S.ai;
   // short, de-duplicated tags: up to 2 genres + setting + tone
   const seen = new Set();
-  const genres = String(ai?.book?.genre || b.genre || '').split(/[,/·]/).map((s) => s.trim()).filter((s) => s && s.length <= 26 && !/general|imaginary place/i.test(s) && !seen.has(s.toLowerCase()) && seen.add(s.toLowerCase())).slice(0, 2);
-  const tags = [...genres, ai?.book?.setting, ai?.book?.tone].filter(Boolean).map((s) => String(s).slice(0, 34)).slice(0, 4);
+  const parts = (v, n) => String(v || '').split(/[,/·]/).map((s) => s.trim()).filter((s) => s && s.length <= 26 && !/general|imaginary place/i.test(s) && !seen.has(s.toLowerCase()) && seen.add(s.toLowerCase())).slice(0, n);
+  const tags = [...parts(ai?.book?.genre || b.genre, 2), ...parts(ai?.book?.setting, 1), ...parts(ai?.book?.tone, 2)].slice(0, 5);
   el.bookCard.innerHTML = `
     ${b.cover ? `<div class="cover"><img src="${esc(b.cover)}" alt="Cover of ${esc(b.title)}" width="76" height="114"></div>` : '<div class="cover ph" aria-hidden="true">📖</div>'}
     <div>
@@ -442,6 +442,7 @@ async function playFrom(list, i, from) {
   const t = list[i]; if (!t) return;
   S.queue = list; S.playingIdx = i; S.playingFrom = from;
   setDock(t.name, 'Finding the mix…'); dock.classList.remove('is-paused');
+  $('#dockTime').textContent = '0:00'; $('#dockProgress span').style.width = '0%';
   if (from === 'results') renderTracks(); else renderLiked();
   const p = loadYT();
   let hit;
