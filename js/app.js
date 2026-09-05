@@ -109,9 +109,21 @@ function attachAutocomplete(input, list, onPick) {
       </li>`).join('');
     list.hidden = false;
     input.setAttribute('aria-expanded', 'true');
-    // keep the whole list on screen (the hero form can sit low on short viewports)
-    requestAnimationFrame(() => { const r = list.getBoundingClientRect(); if (r.bottom > innerHeight - 8) window.scrollBy({ top: Math.min(r.bottom - innerHeight + 16, Math.max(0, r.top - 100)), behavior: 'smooth' }); });
+    place();
   };
+  // Never let the list run off screen: flip it above the field when there is more room there,
+  // and always cap its height to the space actually available.
+  const place = () => {
+    if (list.hidden) return;
+    const anchor = input.getBoundingClientRect();
+    const below = innerHeight - anchor.bottom - 16;
+    const above = anchor.top - 16;
+    const up = below < 220 && above > below;
+    list.classList.toggle('is-up', up);
+    list.style.maxHeight = Math.max(150, Math.min(380, up ? above : below)) + 'px';
+  };
+  addEventListener('resize', place, { passive: true });
+  addEventListener('scroll', place, { passive: true });
   input.addEventListener('input', () => {
     clearTimeout(timer);
     const q = input.value.trim();

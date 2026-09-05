@@ -163,6 +163,8 @@ h1,h2,h3{font-family:var(--display);font-weight:600;letter-spacing:-.025em;line-
 
 .suggest{position:absolute;left:6px;right:6px;top:calc(100% + 8px);z-index:80;list-style:none;background:rgba(255,253,249,.96);border:1px solid rgba(255,255,255,.9);border-radius:var(--r-m);box-shadow:var(--sh-3);overflow:hidden;max-height:min(380px,55vh);overflow-y:auto;overscroll-behavior:contain;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);transform-origin:top;animation:pop .22s var(--ease-out)}
 @keyframes pop{from{opacity:0;transform:translateY(-6px) scale(.98)}to{opacity:1;transform:none}}
+.suggest.is-up{top:auto;bottom:calc(100% + 8px);transform-origin:bottom;animation-name:popup}
+@keyframes popup{from{opacity:0;transform:translateY(6px) scale(.98)}to{opacity:1;transform:none}}
 .suggest li{display:flex;align-items:center;gap:12px;padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--line)}
 .suggest li:last-child{border-bottom:0}
 .suggest li:hover,.suggest li[aria-selected="true"]{background:#F3EEFF}
