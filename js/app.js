@@ -1,6 +1,6 @@
 // Static imports carry the same cache-busting version as the <script> tag (browsers cache /js for an hour).
-import { mountAll, mountMagnetic, mountSpotlight } from './fx.js?v=20260905h14';
-import { t, initI18n, getLang, setLang, LANGS } from './i18n.js?v=20260905h14';
+import { mountAll, mountMagnetic, mountSpotlight } from './fx.js?v=20260905h15';
+import { t, initI18n, getLang, setLang, LANGS } from './i18n.js?v=20260905h15';
 /* MoodBook v2 — vanilla JS, no build step. */
 await initI18n(); // load the dictionary and translate static copy before anything measures or splits it
 

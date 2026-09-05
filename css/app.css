@@ -249,7 +249,8 @@ h1,h2,h3{font-family:var(--display);font-weight:600;letter-spacing:-.02em;line-h
 .mini-tracks li{display:grid;grid-template-columns:20px 1fr auto;gap:10px;align-items:center;font-size:.92rem;font-weight:500;padding:9px 12px;border-radius:var(--r-s);background:#fff;border:1px solid var(--line)}
 .mini-tracks li i{font-style:normal;font-size:.7rem;color:var(--ink-3);font-weight:600}
 .shelf-mini{display:flex;gap:10px;margin-top:6px}
-.shelf-mini span{width:54px;aspect-ratio:2/3;border-radius:6px;box-shadow:var(--sh-1);border:2px solid #fff}
+.shelf-mini span,.shelf-mini img{width:54px;aspect-ratio:2/3;border-radius:6px;box-shadow:var(--sh-1);border:2px solid #fff;object-fit:cover;background:var(--grad-soft)}
+.shelf-mini img:nth-child(1){transform:rotate(-6deg) translateY(3px)}.shelf-mini img:nth-child(2){transform:translateY(-3px)}.shelf-mini img:nth-child(3){transform:rotate(6deg) translateY(3px)}
 .shelf-mini span:nth-child(1){background:linear-gradient(160deg,var(--peach),var(--rose))}
 .shelf-mini span:nth-child(2){background:linear-gradient(160deg,var(--lav),var(--sky))}
 .shelf-mini span:nth-child(3){background:linear-gradient(160deg,var(--mint),var(--butter))}
