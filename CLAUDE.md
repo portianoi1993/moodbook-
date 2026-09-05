@@ -21,7 +21,7 @@ MoodBook (moodbook.ink) — AI-сервіс музичної курації дл
   - `GET /api/books?q&limit` / `&best=1` — проксі Google Books з ранжуванням (ключ лише на сервері).
   - `GET /api/search?q` — найкраще embeddable довге відео YouTube (+3 альтернативи).
   - `GET /api/health?probe=1` — діагностика env і тестовий виклик AI (показує реальну помилку апстріму).
-- AI: будь-який OpenAI-сумісний ендпоінт. Env: `AI_API_KEY` (fallback `OPENAI_API_KEY`), `AI_BASE_URL` (default `https://api.openai.com/v1`), `AI_MODEL` (default `gpt-4o-mini`). Це дозволяє підключити OmniRoute/OpenRouter без зміни коду.
+- AI: **безкоштовні провайдери з авто-фолбеком** (`lib/ai.js`). Env: `AI_API_KEY` + `AI_BASE_URL` + `AI_MODEL` (основний), `AI_FALLBACK_*` і `AI_FALLBACK2_*` (запасні). Рекомендовано: основний Google Gemini (`https://generativelanguage.googleapis.com/v1beta/openai`, `gemini-2.5-flash`, ключ з aistudio.google.com без картки), запасний Groq (`https://api.groq.com/openai/v1`, `llama-3.3-70b-versatile`). OpenAI більше не потрібен. Якщо всі провайдери впали, `lib/fallback.js` збирає жанровий плейлист офлайн (`degraded:true`).
 - Музика: YouTube Data API v3 (`YT_API_KEY`). Плеєр — YouTube IFrame API у постійному доку (не ховати iframe: вимога YouTube до мінімального розміру).
 - Книги: Google Books (`GOOGLE_BOOKS_KEY`, fallback `YT_API_KEY`).
 - Локально: `npm run dev` → http://localhost:3939 (читає `.env.local`); `node scripts/mock-ai.mjs` — мок AI для UI-тестів без ключа.

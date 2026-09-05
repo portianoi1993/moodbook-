@@ -248,8 +248,9 @@ async function loadSoundtrack(mood = '') {
     if (!mood || !S.ai) { S.ai = d; renderMoods(); }
     else { S.ai = { ...S.ai, tracks: d.tracks, why: d.why || S.ai.why }; }
     S.tracks = d.tracks || [];
-    if (!mood) await reconcileIdentity(d.book);
+    if (!mood && !d.degraded) await reconcileIdentity(d.book);
     renderBookCard(); renderTracks(); setStatus('');
+    if (d.degraded) el.status.classList.add('is-on'), el.status.innerHTML = '<span aria-hidden="true">⚡</span><span>The AI curator is resting, so this soundtrack was matched by genre. Try again in a few minutes for a book-specific mix.</span>';
     el.tracksMeta.textContent = `${S.tracks.length} long instrumental mixes${mood ? ' · ' + mood : ''}`;
     document.title = `${b.title} — MoodBook`;
     // warm the first two searches so the first play is instant

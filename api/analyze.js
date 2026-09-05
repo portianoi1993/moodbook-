@@ -1,8 +1,11 @@
 // GET /api/analyze?title=...&author=...&genre=...&desc=...&mood=...
 // One AI call → book identity + 6 mood scenes + 6 instrumental track queries.
-// Works with any OpenAI-compatible endpoint (OpenAI, OmniRoute, OpenRouter…):
-//   AI_API_KEY (falls back to OPENAI_API_KEY), AI_BASE_URL, AI_MODEL
-import { cors, guard, cacheFor, noCache, str, makeCache, fetchWithTimeout } from '../lib/http.js';
+// Works with any OpenAI-compatible endpoint (Gemini free tier, Groq, OpenRouter, OmniRoute, OpenAI)
+// with an automatic fallback chain — see lib/ai.js for the env variables.
+// If every provider fails, lib/fallback.js composes a genre-based soundtrack offline.
+import { cors, guard, cacheFor, noCache, str, makeCache } from '../lib/http.js';
+import { chat, getProviders } from '../lib/ai.js';
+import { composeOffline } from '../lib/fallback.js';
 
 const cache = makeCache(400);
 const DAY = 24 * 60 * 60 * 1000;
@@ -83,27 +86,6 @@ function normalise(raw, fallbackTitle) {
   };
 }
 
-async function callAI(messages, { key, baseUrl, model }, useJsonMode) {
-  const body = { model, messages, temperature: 0.6, max_tokens: 1100 };
-  if (useJsonMode) body.response_format = { type: 'json_object' };
-  const r = await fetchWithTimeout(`${baseUrl}/chat/completions`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
-    body: JSON.stringify(body),
-  }, 25000);
-  const text = await r.text();
-  if (!r.ok) {
-    let msg = text;
-    try { msg = JSON.parse(text)?.error?.message || text; } catch {}
-    const err = new Error(`upstream ${r.status}: ${str(msg, 200)}`);
-    err.status = r.status;
-    err.retryWithoutJsonMode = useJsonMode && r.status === 400 && /response_format|json_object/i.test(msg);
-    throw err;
-  }
-  const data = JSON.parse(text);
-  return data.choices?.[0]?.message?.content || '';
-}
-
 export default async function handler(req, res) {
   if (cors(req, res, 'GET, OPTIONS')) return;
   if (guard(req, res, { methods: ['GET'], max: 40 })) return;
@@ -121,13 +103,7 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Missing title' });
   }
 
-  const key = process.env.AI_API_KEY || process.env.OPENAI_API_KEY;
-  const baseUrl = (process.env.AI_BASE_URL || 'https://api.openai.com/v1').replace(/\/+$/, '');
-  const model = process.env.AI_MODEL || 'gpt-4o-mini';
-  if (!key) {
-    noCache(res);
-    return res.status(500).json({ error: 'Server configuration error', detail: 'AI_API_KEY / OPENAI_API_KEY is not set' });
-  }
+  const configured = getProviders().length > 0;
 
   const cacheKey = [input.title, input.author, input.mood].join('|').toLowerCase();
   const hit = cache.get(cacheKey);
@@ -143,26 +119,23 @@ export default async function handler(req, res) {
   ];
 
   try {
-    let content;
-    try {
-      content = await callAI(messages, { key, baseUrl, model }, true);
-    } catch (e) {
-      if (!e.retryWithoutJsonMode) throw e;
-      content = await callAI(messages, { key, baseUrl, model }, false);
-    }
+    if (!configured) throw Object.assign(new Error('No AI provider configured'), { status: 500 });
+    const { content, provider, model } = await chat(messages, { json: true, maxTokens: 1100, temperature: 0.6, timeoutMs: 25000 });
     const result = normalise(extractJson(content), input.title);
-    result.model = model;
+    result.provider = provider; result.model = model;
     cache.set(cacheKey, result, DAY);
     cacheFor(res, 7 * 24 * 3600);
     res.setHeader('X-Cache', 'MISS');
     return res.status(200).json(result);
   } catch (e) {
-    console.error('[analyze] failed:', e.message);
-    noCache(res);
-    const status = e.name === 'AbortError' ? 504 : 502;
-    return res.status(status).json({
-      error: 'AI service error',
-      detail: e.name === 'AbortError' ? 'upstream timeout' : str(e.message, 220),
-    });
+    // Every provider failed (no credits, rate limit, outage, bad JSON) → offline composer keeps the product alive.
+    console.error('[analyze] AI unavailable:', e.message);
+    const offline = composeOffline(input);
+    offline.reason = str(e.message, 220);
+    cache.set(cacheKey, offline, 10 * 60 * 1000); // short cache so we retry the AI soon
+    res.setHeader('Cache-Control', 'public, max-age=0, s-maxage=300');
+    res.setHeader('X-Cache', 'MISS');
+    res.setHeader('X-Degraded', '1');
+    return res.status(200).json(offline);
   }
 }
