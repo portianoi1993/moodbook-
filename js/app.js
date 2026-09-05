@@ -213,7 +213,7 @@ async function startSearch(raw, picked = null) {
   if (!isPro() && freeLeft() <= 0) { showPaywall(); return; }
 
   // reset view
-  S.book = null; S.ai = null; S.mood = ''; S.tracks = [];
+  S.book = null; S.ai = null; S.mood = ''; S.style = ''; S.tracks = [];
   el.hero.hidden = true; el.paywall.hidden = true; el.results.hidden = false;
   el.saveBtn.classList.remove('is-done'); el.saveBtn.textContent = '+ Save to shelf';
   skeletonBook(picked?.title || q); skeletonMoods(); skeletonTracks(); el.tracksMeta.textContent = '';
@@ -241,8 +241,9 @@ async function startSearch(raw, picked = null) {
 async function reconcileIdentity(aiBook) {
   const b = S.book;
   if (!aiBook?.author || aiBook.known === false) return;
-  const agree = b.trusted && normT(b.author) && normT(aiBook.author).split(' ').pop() === normT(b.author).split(' ').pop();
-  if (agree) { b.author = b.author || aiBook.author; b.genre = b.genre || aiBook.genre; return; }
+  // A book the reader picked from the list (or that the catalogue matched confidently) is the truth:
+  // only fill in blanks, never let the model swap it for a different book.
+  if (b.trusted) { b.author = b.author || aiBook.author; b.genre = b.genre || aiBook.genre; return; }
   try {
     const better = (await api('/api/books', { q: `${aiBook.title} ${aiBook.author}`, best: '1' })).book;
     if (better && candidateMatches(better, `${aiBook.title} ${aiBook.author}`)) {
@@ -253,14 +254,15 @@ async function reconcileIdentity(aiBook) {
   Object.assign(b, { title: aiBook.title || b.title, author: aiBook.author, genre: b.genre || aiBook.genre, trusted: true });
 }
 
-async function loadSoundtrack(mood = '') {
-  S.mood = mood;
-  setStatus(mood ? `Re-tuning for “${mood}”…` : 'Composing the soundtrack…');
+async function loadSoundtrack(mood = S.mood || '', style = S.style || '') {
+  S.mood = mood; S.style = style;
+  const what = [mood, style].filter(Boolean).join(' · ');
+  setStatus(what ? `Re-tuning for “${what}”…` : 'Composing the soundtrack…');
   skeletonTracks();
   const b = S.book;
   try {
-    const d = await api('/api/analyze', { title: b.title, author: b.author, genre: b.genre, desc: (b.desc || '').slice(0, 600), mood });
-    if (!mood || !S.ai) { S.ai = d; renderMoods(); }
+    const d = await api('/api/analyze', { title: b.title, author: b.author, genre: b.genre, desc: (b.desc || '').slice(0, 600), mood, style });
+    if (!what || !S.ai) { S.ai = d; renderMoods(); }
     else { S.ai = { ...S.ai, tracks: d.tracks, why: d.why || S.ai.why }; }
     S.tracks = d.tracks || [];
     if (!mood && !d.degraded) await reconcileIdentity(d.book);
@@ -295,16 +297,20 @@ function renderBookCard() {
 }
 
 function renderMoods() {
-  const moods = S.ai?.moods || [];
-  el.moodGrid.innerHTML = moods.map((m) => `<button type="button" class="mood" aria-pressed="${m === S.mood}">${esc(m)}</button>`).join('');
-  $$('.mood', el.moodGrid).forEach((btn) => btn.addEventListener('click', () => {
+  const scenes = S.ai?.scenes || S.ai?.moods || [];
+  const styles = S.ai?.styles || [];
+  const pills = (list, cur) => list.map((m) => `<button type="button" class="mood" aria-pressed="${m === cur}">${esc(m)}</button>`).join('');
+  el.moodGrid.innerHTML = pills(scenes, S.mood);
+  const sg = $('#styleGrid'); if (sg) sg.innerHTML = pills(styles, S.style);
+  const wire = (grid, key) => grid && $$('.mood', grid).forEach((btn) => btn.addEventListener('click', () => {
     const m = btn.textContent;
     const off = btn.getAttribute('aria-pressed') === 'true';
-    $$('.mood', el.moodGrid).forEach((x) => x.setAttribute('aria-pressed', 'false'));
+    $$('.mood', grid).forEach((x) => x.setAttribute('aria-pressed', 'false'));
     if (!off) btn.setAttribute('aria-pressed', 'true');
-    loadSoundtrack(off ? '' : m);
+    if (key === 'mood') loadSoundtrack(off ? '' : m, S.style); else loadSoundtrack(S.mood, off ? '' : m);
     if (window.innerWidth < 1000) $('#tracks-title').scrollIntoView({ behavior: 'smooth', block: 'start' });
   }));
+  wire(el.moodGrid, 'mood'); wire(sg, 'style');
 }
 
 const isLiked = (t) => DB.liked.some((x) => x.query === t.query);
@@ -480,6 +486,13 @@ $('#playBtn').addEventListener('click', () => {
   if (st === YT.PlayerState.PLAYING) yt.pauseVideo(); else yt.playVideo();
 });
 $('#nextBtn').addEventListener('click', () => nextTrack());
+$('#closeDock')?.addEventListener('click', () => {
+  try { yt?.stopVideo?.(); } catch {}
+  clearInterval(progressTimer);
+  dock.hidden = true; dock.classList.remove('is-expanded');
+  document.documentElement.style.setProperty('--dock-h', '0px');
+  S.playingIdx = -1; if (S.playingFrom === 'results') renderTracks(); else renderLiked();
+});
 $('#prevBtn').addEventListener('click', prevTrack);
 $('#expandBtn').addEventListener('click', () => {
   const on = dock.classList.toggle('is-expanded');
@@ -589,6 +602,8 @@ $('#finalCta')?.addEventListener('click', (e) => {
   if (!DB.books.length && ls.raw('mb_books')) { try { DB.books = JSON.parse(ls.raw('mb_books')) || []; } catch {} }
   renderQuota(); renderAccount();
   const params = new URLSearchParams(location.search);
+  // Owner / tester switch: open the site once with ?pro=1 and this browser stays on Pro (no daily limit).
+  if (params.get('pro') === '1') { ls.put('mb_pro', 'true'); renderQuota(); renderAccount(); toast('Pro unlocked in this browser'); }
   const hash = location.hash.slice(1);
   if (params.get('b')) { showPage('discover', { push: false }); el.q.value = params.get('b'); startSearch(params.get('b')); }
   else showPage(PAGES.includes(hash) ? hash : 'discover', { push: false });

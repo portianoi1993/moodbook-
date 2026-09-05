@@ -14,11 +14,17 @@ const SYSTEM = `You are MoodBook, an expert music curator for readers. Given a b
 
 Return ONLY a JSON object with this exact shape:
 {
-  "book": {"title": "official English title", "author": "author", "genre": "short genre", "setting": "place/era in a few words", "tone": "3-5 mood words", "known": true},
+  "book": {"title": "title as the reader knows it (keep the original language if the input is not English)", "author": "author", "genre": "short genre", "setting": "place/era in a few words", "tone": "3-5 mood words", "known": true},
   "why": "one sentence (max 22 words) explaining the sonic direction for this book",
-  "moods": ["6 scene labels"],
+  "scenes": ["5 scene-mood labels"],
+  "styles": ["5 music-style labels"],
   "tracks": [{"name": "track name", "vibe": "2-3 words", "query": "youtube search query", "duration": "~1 hr"}]
 }
+
+IDENTITY RULES:
+- If the user supplies an author and/or a catalogue description, that IS the book. Never swap it for a better-known book with a similar title. Compose for the described book even if you have never heard of it, and keep the given title and author verbatim.
+- Only when nothing but a title is given may you resolve it to the best-known work with that title.
+- If you do not recognise the book, set "known": false, infer the genre from the title and description, and still produce a sensible soundtrack.
 
 RULES FOR TRACKS (exactly 6):
 - Instrumental only. Every query MUST end with "instrumental no lyrics" and should target long mixes (1 hour+), e.g. "arrakis desert ambient music 1 hour instrumental no lyrics".
@@ -35,15 +41,19 @@ RULES FOR TRACKS (exactly 6):
 - Track names are evocative and specific to the book's world (place names, motifs, characters), never generic like "Track 1".
 - If the user supplies a scene mood, ALL 6 tracks serve that scene while staying inside the genre.
 
-RULES FOR MOODS (exactly 6): 2-4 words, Title Case, each tied to a real moment or theme in the book and clearly implying a music style ("Epic Battle Surge", "Quiet Night Reading", "Dark Mystery Ambient", "Heartfelt Reunion", "Deep Focus Lofi", "Desert Dawn Drift").
+RULES FOR SCENES (exactly 5): scene moods that exist IN THIS BOOK, 2-4 words, Title Case, covering different energies — e.g. a tense/suspense moment, a calm or intimate moment, an action or climax moment, a melancholic or emotional moment, a wondrous or atmospheric moment. Name them after the book's own places, events or feelings ("Sietch Night Calm", "Sandworm Surge", "Court Intrigue Tension").
 
-If you do not recognise the book, set "known": false, infer the genre from the title, and still produce a sensible soundtrack.`;
+RULES FOR STYLES (exactly 5): music styles that suit THIS book, 1-3 words, Title Case, always including "Lofi Beats" and at least one of "Ambient", "Piano" — the rest chosen for the book (e.g. "Epic Orchestral", "Celtic Folk", "Dark Synth", "Noir Jazz", "Acoustic Guitar", "Choral", "Space Ambient", "Guzheng & Koto").
 
-function buildUser({ title, author, genre, desc, mood }) {
+If the reader supplies a scene mood and/or a music style, ALL 6 tracks must serve that scene in that style while staying inside the book's world.`;
+
+function buildUser({ title, author, genre, desc, mood, style }) {
   const lines = [`Book: "${title}"${author ? ` by ${author}` : ''}`];
+  if (author || desc) lines.push('This identity is confirmed by the reader. Do not substitute another book.');
   if (genre) lines.push(`Catalogue genre: ${genre}`);
   if (desc) lines.push(`Catalogue description: ${desc}`);
   if (mood) lines.push(`Scene mood requested by the reader: "${mood}". Curate all 6 tracks for this scene.`);
+  if (style) lines.push(`Music style requested by the reader: "${style}". Every track must be in this style.`);
   lines.push('Respond with the JSON object only.');
   return lines.join('\n');
 }
@@ -81,10 +91,9 @@ function normalise(raw, fallbackTitle) {
     }))
     .filter((t) => t.name && t.query)
     .slice(0, 6);
-  const moods = (Array.isArray(raw.moods) ? raw.moods : [])
-    .map((m) => str(m, 40))
-    .filter(Boolean)
-    .slice(0, 6);
+  const list = (v, n) => (Array.isArray(v) ? v : []).map((m) => str(m, 40)).filter(Boolean).slice(0, n);
+  const scenes = list(raw.scenes || raw.moods, 5);
+  const styles = list(raw.styles, 5);
   if (tracks.length < 3) throw new Error('AI returned too few tracks');
   return {
     book: {
@@ -96,7 +105,9 @@ function normalise(raw, fallbackTitle) {
       known: book.known !== false,
     },
     why: str(raw.why, 200),
-    moods,
+    scenes,
+    styles,
+    moods: scenes, // backwards compatibility
     tracks,
   };
 }
@@ -112,6 +123,7 @@ export default async function handler(req, res) {
     genre: str(q.genre, 80),
     desc: str(q.desc || q.description, 600),
     mood: str(q.mood, 60),
+    style: str(q.style, 40),
   };
   if (!input.title) {
     noCache(res);
@@ -120,7 +132,7 @@ export default async function handler(req, res) {
 
   const configured = getProviders().length > 0;
 
-  const cacheKey = [input.title, input.author, input.mood].join('|').toLowerCase();
+  const cacheKey = [input.title, input.author, input.mood, input.style].join('|').toLowerCase();
   const hit = cache.get(cacheKey);
   if (hit) {
     cacheFor(res, 7 * 24 * 3600);
@@ -149,7 +161,7 @@ export default async function handler(req, res) {
       // Catalogue hints (wrong author / knock-off edition) can confuse the model → retry with the title alone.
       if (!input.author && !input.genre && !input.desc) throw ne;
       console.warn('[analyze] weak answer with hints, retrying title-only:', ne.message);
-      const bare = [messages[0], { role: 'user', content: buildUser({ title: input.title, mood: input.mood }) }];
+      const bare = [messages[0], { role: 'user', content: buildUser({ title: input.title, mood: input.mood, style: input.style }) }];
       ({ content, provider, model } = await chat(bare, { json: true, maxTokens: 2200, temperature: 0.5, timeoutMs: 25000 }));
       result = normalise(extractJson(content), input.title);
     }

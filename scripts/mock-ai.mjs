@@ -11,7 +11,8 @@ http.createServer(async (req, res) => {
   const out = {
     book: (() => { const k = title.toLowerCase(); const known = k.includes('dune') ? ['Dune', 'Frank Herbert'] : k.includes('hail mary') ? ['Project Hail Mary', 'Andy Weir'] : k.includes('women') ? ['The Women', 'Kristin Hannah'] : null; return known ? { title: known[0], author: known[1], genre: 'Epic sci-fi', setting: 'Desert planet, far future', tone: 'vast, tense, mystical', known: true } : { title, author: '', genre: 'Fiction', setting: '', tone: 'unknown', known: false }; })(),
     why: `A slow-burning desert epic asks for wide, wind-swept textures with a pulse underneath${tag}.`,
-    moods: ['Desert Dawn Drift', 'Spice Vision Trance', 'Sietch Night Calm', 'Sandworm Surge', 'Court Intrigue Tension', 'Deep Focus Lofi'],
+    scenes: ['Desert Dawn Drift', 'Spice Vision Trance', 'Sietch Night Calm', 'Sandworm Surge', 'Court Intrigue Tension'],
+    styles: ['Lofi Beats', 'Space Ambient', 'Piano', 'Epic Orchestral', 'Dark Synth'],
     tracks: [
       t('Arrakeen Sunrise' + tag, 'vast · warm', 'arrakis desert ambient music'),
       t('The Spice Must Flow', 'hypnotic · pulsing', 'dune inspired dark ambient'),
