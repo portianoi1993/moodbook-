@@ -19,8 +19,9 @@
 <meta name="twitter:card" content="summary">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://covers.openlibrary.org">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT@0,9..144,400..700,30;1,9..144,400..600,50&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/css/app.css?v=20260905h3">
+<link rel="stylesheet" href="/css/app.css?v=20260905h4">
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"WebApplication","name":"MoodBook","url":"https://moodbook-six.vercel.app/","applicationCategory":"MusicApplication","operatingSystem":"Web","description":"AI-curated instrumental reading soundtracks matched to the book you are reading.","offers":[{"@type":"Offer","price":"0","priceCurrency":"USD","name":"Free"},{"@type":"Offer","price":"9.99","priceCurrency":"USD","name":"Pro monthly"}]}
 </script>
@@ -87,9 +88,9 @@
           <aside class="demo" aria-label="Sample soundtrack" data-reveal style="--d:420ms">
             <div class="demo-glow" aria-hidden="true"></div>
             <div class="stack" aria-hidden="true">
-              <img class="sb s1" src="https://covers.openlibrary.org/b/id/14407898-M.jpg" alt="" width="120" height="180" loading="lazy">
-              <img class="sb s2" src="https://covers.openlibrary.org/b/id/11481354-M.jpg" alt="" width="120" height="180" loading="lazy">
-              <img class="sb s3" src="https://covers.openlibrary.org/b/id/11200092-M.jpg" alt="" width="120" height="180" loading="lazy">
+              <img class="sb s1" src="https://covers.openlibrary.org/b/id/14407898-M.jpg" alt="" width="120" height="180" loading="eager" fetchpriority="high" decoding="async">
+              <img class="sb s2" src="https://covers.openlibrary.org/b/id/11481354-M.jpg" alt="" width="120" height="180" loading="eager" fetchpriority="high" decoding="async">
+              <img class="sb s3" src="https://covers.openlibrary.org/b/id/11200092-M.jpg" alt="" width="120" height="180" loading="eager" fetchpriority="high" decoding="async">
             </div>
             <article class="demo-card shell-glass" data-tilt data-spot>
               <div class="core">
@@ -378,6 +379,6 @@
 </nav>
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
-<script type="module" src="/js/app.js?v=20260905h3"></script>
+<script type="module" src="/js/app.js?v=20260905h4"></script>
 </body>
 </html>

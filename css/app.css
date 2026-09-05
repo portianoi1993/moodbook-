@@ -180,7 +180,7 @@ h1,h2,h3{font-family:var(--display);font-weight:600;letter-spacing:-.02em;line-h
 .demo{position:relative;display:grid;place-items:center;padding-top:26px}
 .stack::after{content:"";position:absolute;left:4%;right:4%;top:118px;height:8px;border-radius:4px;background:linear-gradient(180deg,#D9B98F,#B8935F);box-shadow:0 10px 18px -8px rgba(90,60,30,.45)}
 .stack{position:absolute;top:-14px;left:50%;transform:translateX(-50%);width:min(100%,420px);height:120px;pointer-events:none;z-index:0}
-.sb{position:absolute;width:88px;height:auto;border-radius:4px 8px 8px 4px;box-shadow:0 18px 40px -14px rgba(36,31,46,.5),inset 3px 0 0 rgba(255,255,255,.35),-3px 0 0 rgba(36,31,46,.08);border:2px solid #fff}
+.sb{position:absolute;width:88px;height:auto;border-radius:4px 8px 8px 4px;box-shadow:0 18px 40px -14px rgba(36,31,46,.5),inset 3px 0 0 rgba(255,255,255,.35),-3px 0 0 rgba(36,31,46,.08);border:2px solid #fff;background:linear-gradient(160deg,var(--peach),var(--lav) 60%,var(--mint))}
 .sb.s1{left:8%;top:0;transform:rotate(-10deg)}
 .sb.s2{left:50%;top:-18px;transform:translateX(-50%) rotate(3deg);z-index:1;width:96px}
 .sb.s3{right:8%;top:4px;transform:rotate(10deg)}
