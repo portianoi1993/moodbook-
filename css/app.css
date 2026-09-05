@@ -651,3 +651,6 @@ body.modal-open{overflow:hidden}
 [data-theme="dark"] .add-row input,[data-theme="dark"] .liked-tools input,[data-theme="dark"] .promo input{background:var(--cream-2);color:var(--ink);border-color:var(--line)}
 [data-theme="dark"] .liked .track,[data-theme="dark"] .liked .empty{background:var(--paper);border-color:var(--line)}
 [data-theme="dark"] .liked .track:hover{background:var(--cream-2)}
+/* language select styled like the chips; native dropdown for 7 languages */
+select.lang-chip{-webkit-appearance:none;appearance:none;padding:0 22px 0 10px;background-image:linear-gradient(45deg,transparent 50%,currentColor 50%),linear-gradient(135deg,currentColor 50%,transparent 50%);background-position:calc(100% - 12px) 14px,calc(100% - 8px) 14px;background-size:4px 4px;background-repeat:no-repeat;max-width:118px;text-overflow:ellipsis;font-size:.76rem;letter-spacing:.02em;font-weight:600}
+@media(max-width:520px){select.lang-chip{max-width:92px;padding-right:18px}}

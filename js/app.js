@@ -1,7 +1,7 @@
 import { mountAll, mountMagnetic, mountSpotlight } from './fx.js';
-import { t, applyI18n, getLang, setLang, LANGS } from './i18n.js';
+import { t, initI18n, getLang, setLang, LANGS } from './i18n.js';
 /* MoodBook v2 — vanilla JS, no build step. */
-applyI18n(); // translate static copy before anything measures or splits it
+await initI18n(); // load the dictionary and translate static copy before anything measures or splits it
 
 // ═══════════════ config ═══════════════
 const FREE_TOTAL = 5; // five books to try, ever (not per day); then Pro. Books already on the shelf replay for free.
@@ -779,7 +779,12 @@ $('#finalCta')?.addEventListener('click', (e) => {
   });
   // language switch: header chip cycles, footer lists all
   const cur = getLang();
-  const lb = $('#langBtn'); if (lb) { lb.textContent = (LANGS.find((l) => l.code === cur) || LANGS[0]).short; lb.title = t('Language'); lb.onclick = () => { const i = LANGS.findIndex((l) => l.code === cur); setLang(LANGS[(i + 1) % LANGS.length].code); }; }
+  const lb = $('#langBtn');
+  if (lb) {
+    lb.innerHTML = LANGS.map((l) => `<option value="${l.code}" lang="${l.code}"${l.code === cur ? ' selected' : ''}>${l.label}</option>`).join('');
+    lb.title = t('Language'); lb.setAttribute('aria-label', t('Language'));
+    lb.onchange = () => setLang(lb.value);
+  }
   const fl = $('#footLangs'); if (fl) { fl.innerHTML = LANGS.map((l) => `<button type="button" data-lang="${l.code}" aria-current="${l.code === cur}" lang="${l.code}">${l.label}</button>`).join(''); fl.onclick = (e) => { const b = e.target.closest('[data-lang]'); if (b) setLang(b.dataset.lang); }; }
   const hash = location.hash.slice(1);
   if (params.get('b')) { showPage('discover', { push: false }); el.q.value = params.get('b'); startSearch(params.get('b')); }

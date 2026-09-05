@@ -48,7 +48,7 @@ RULES FOR STYLES (exactly 5): music styles that suit THIS book, 1-3 words, Title
 
 If the reader supplies a scene mood and/or a music style, ALL 6 tracks must serve that scene in that style while staying inside the book's world.`;
 
-const LANG_NAMES = { uk: 'Ukrainian', en: 'English', pl: 'Polish', de: 'German', es: 'Spanish', fr: 'French', it: 'Italian', pt: 'Portuguese', tr: 'Turkish', ja: 'Japanese', ko: 'Korean' };
+const LANG_NAMES = { uk: 'Ukrainian', en: 'English', pl: 'Polish', de: 'German', es: 'Spanish', fr: 'French', it: 'Italian', pt: 'Portuguese', tr: 'Turkish', ja: 'Japanese', ko: 'Korean', zh: 'Simplified Chinese' };
 
 function buildUser({ title, author, genre, desc, mood, style, lang }) {
   const lines = [`Book: "${title}"${author ? ` by ${author}` : ''}`];
