@@ -1,4 +1,4 @@
-# MoodBook — DESIGN.md · «Golden Hour Library» (v4, 5 вересня 2026)
+# MoodBook — DESIGN.md · «Golden Hour Library» v4 → «Lamp Light» v5 (5 вересня 2026)
 
 Контракт візуального напряму. Історія: v2 «чистий SaaS» → v3 «Reading room» (папір) → «Nocturne» (темне скло) → **v4 «Golden Hour Library»**: власник попросив ламповий книжковий настрій і пастельні різні кольори замість «фінтех/тех»-вигляду. Джерела: `docs/SKILLS-AUDIT.md`, `design-system/moodbook/MASTER.md` (ui-ux-pro-max), soft-skill (Soft Structuralism), orange-clean-paper-saas, blue-cloudy-clean-modern, css-border-gradient, animation-systems, emil-design-eng, marquee-loop, reveal-hover.
 
@@ -49,3 +49,17 @@
 
 ## 9. Не робити
 Темні теми, mono-шрифти, неонові glow, суцільні сірі рамки, більше двох пастелей в одному елементі, чорні тіні, емодзі як іконки, blur на скролених контейнерах.
+
+---
+
+## v5 · «Lamp Light» — теплий книжковий прохід (5 вересня 2026, вечір)
+Власник: «шрифти тепліші, кольори приглушені й лампові, книжкові елементи; дизайн ще не ідеальний». Зміни поверх v4:
+
+- **Шрифти:** display → **Fraunces** (opsz 96–144, SOFT 30, заголовок H1 з курсивним акцентом SOFT 50), UI → **Figtree**. Bricolage Grotesque і Plus Jakarta Sans прибрано.
+- **Палітра приглушена:** `--cream #F7F0E6`, `--cream-2 #EFE5D7`, `--paper #FFFBF4`, `--ink #2C2430 / #655A66 / #948896`. Пастелі: `--lav #D3C8F0` `--peach #F2CDB5` `--mint #C4E6D6` `--butter #F1E0B0` `--sky #C9DDEE` `--rose #EFC9D3`; глибокі пари `#6B5AA8 #B5643A #2E7D63 #9A6E1F #3A6C93 #A94A6C`. Градієнт `135deg, #EDAE8A → #B3A2E6 55% → #8CCDB4`.
+- **Книжкові деталі:** закладка-стрічка на картці книги і демо-картці (`.book-card::after`), дерев'яна полиця під стеком обкладинок (`.stack::after`), «край сторінок» на корінцях (`.sb`), орнамент ❦ перед заголовками секцій (`.band-head::before`).
+- **Пошук помітніший:** інпут 58px, тепле «дихаюче» сяйво навколо форми (`.search::after`), форма в `shell-glass gborder`. На ≤520px бровка переноситься, кнопка Compose лише іконка.
+- **Результати:** дві групи перемикачів — «Scenes in this book» (5 сцен з самої книги) і «Music style» (5 стилів, завжди є Lofi Beats + Ambient/Piano); комбінуються між собою. Стилі мають прямокутніші кути (`.mood-grid.styles .mood{border-radius:12px}`).
+- **Док плеєра:** кнопка ✕ (`#closeDock`) зупиняє відео і ховає док; ⌄ згортає до міні-смужки 96px.
+- **Ідентичність книги:** обрана з підказок книга (`trusted`) ніколи не підміняється; промпт має IDENTITY RULES. Перевірено на «Танець недоумка» (Павлюк) — сцени/треки про планету Іш-Чел, а не інша книга.
+- **Власник завжди Pro:** відкрити сайт з `?pro=1` один раз — браузер лишається на Pro (бейдж PRO у навігації, без денного ліміту).
