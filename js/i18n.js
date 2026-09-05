@@ -104,7 +104,8 @@ const UK = {
   'Copy failed. The link is in your address bar.': 'Не вдалося скопіювати. Посилання є в адресному рядку.', "Couldn't draw the card ({msg}). You can still copy the link below.": 'Не вдалося намалювати картку ({msg}). Посилання нижче все одно можна скопіювати.',
   "Reading “{title}”? Here's a soundtrack composed for it 🎧": 'Читаєш «{title}»? Ось саундтрек, складений під неї 🎧',
   // dynamic: search / status / toasts
-  'Identifying the book…': 'Визначаю книгу…', 'Composing the soundtrack…': 'Складаю саундтрек…', 'Re-tuning for “{what}”…': 'Підлаштовую під «{what}»…',
+  'Identifying the book…': 'Визначаю книгу…',
+  'Showing the best-known book by {author}. Pick another one from the suggestions.': 'Показую найвідомішу книгу автора {author}. Іншу можна обрати з підказок.', 'Composing the soundtrack…': 'Складаю саундтрек…', 'Re-tuning for “{what}”…': 'Підлаштовую під «{what}»…',
   'Our AI is busy right now, so this soundtrack was matched by genre, not by this exact book.': 'Наш AI зараз зайнятий, тож цей саундтрек підібрано за жанром, а не під саме цю книгу.', 'Try again': 'Спробувати ще раз',
   "Couldn't compose the soundtrack.": 'Не вдалося скласти саундтрек.', 'Scenes will appear once the soundtrack loads.': 'Сцени з’являться, щойно завантажиться саундтрек.',
   '{n} long mixes': '{n} довгих міксів', 'Unknown author': 'Невідомий автор', 'Cover of {title}': 'Обкладинка «{title}»',

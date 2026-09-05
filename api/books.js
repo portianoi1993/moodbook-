@@ -79,17 +79,29 @@ function score(b, q, index) {
   const cyr = /[а-яіїєґ]/i.test(q);
   if (b.lang) s += (cyr ? /^(uk|ru)$/.test(b.lang) : b.lang === 'en') ? 6 : -10;
   if (/[\(\[]/.test(b.title)) s -= 4;
+  // Readers type "dune", "frank herbert", "herbert dune" or "dune frank herbert": every token may land in the
+  // title or in any author name, and the last token may still be half-typed ("stephen ki").
   const qTokens = qn.split(' ').filter((t) => t.length > 1);
-  const tTokens = new Set(tn.split(' ')), aTokens = new Set(an.split(' '));
+  const tTokens = tn.split(' '), aTokens = norm((b.authors || []).join(' ') + ' ' + an).split(' ');
+  const hit = (list, t, prefix) => list.some((x) => x === t || (prefix && t.length >= 3 && x.startsWith(t)));
   let titleHits = 0, authorHits = 0;
-  for (const t of qTokens) { if (tTokens.has(t)) titleHits += 1; else if (aTokens.has(t)) authorHits += 1; }
+  qTokens.forEach((t, i) => {
+    const last = i === qTokens.length - 1;
+    if (hit(tTokens, t, last)) titleHits += 1; else if (hit(aTokens, t, last)) authorHits += 1;
+  });
   const coverage = qTokens.length ? (titleHits + authorHits) / qTokens.length : 0;
   s += coverage * 30;
+  const authorOnly = qTokens.length > 0 && authorHits === qTokens.length && titleHits === 0;
+  const both = titleHits > 0 && authorHits > 0;
+  if (both && coverage === 1) s += 14;            // "herbert dune": title and author both named → almost certainly it
+  if (authorOnly) s += 8 + Math.min(12, Math.log10(1 + b.ratingsCount + b.pop * 3) * 5); // author search: surface their best-known books
   if (tn === qn) s += 25;
   else if (qn && tn.startsWith(qn + ' ') && tn.split(' ').length - qn.split(' ').length <= 2) s += 8;
   else if (qn && tn.startsWith(qn)) s += 4; // prefix typing: "fourth wi" → "fourth wing"
-  const extra = tn.split(' ').length - titleHits;
-  s -= Math.min(15, Math.max(0, extra - 1) * 3);
+  if (!authorOnly) {
+    const extra = tTokens.length - titleHits;
+    s -= Math.min(15, Math.max(0, extra - 1) * 3);
+  }
   return s;
 }
 
@@ -139,13 +151,22 @@ export default async function handler(req, res) {
   if (hit) { cacheFor(res, 24 * 3600); return res.status(200).json(hit); }
 
   const key = process.env.GOOGLE_BOOKS_KEY || process.env.YT_API_KEY || '';
-  // While the user is still typing a word ("intermez"), add a title-prefix wildcard query so partial words resolve.
-  const partial = !best && /[a-zа-яіїєґ]$/i.test(q) && q.length >= 3 ? openLibrary(`title:${q}*`) : Promise.resolve([]);
-  const [g, o, p] = await Promise.allSettled([google(q, key), openLibrary(q), partial]);
+  // Three ways people type: a title, an author, or both in any order. Ask both catalogues in every mode
+  // and let the scorer sort it out. While a word is still being typed ("intermez", "stephen ki"), add
+  // prefix wildcards so partial words resolve too.
+  const typing = !best && /[a-zа-яіїєґ]$/i.test(q) && q.length >= 3;
+  const tasks = [
+    google(q, key),
+    openLibrary(q),
+    typing ? openLibrary(`title:${q}*`) : Promise.resolve([]),
+    q.length >= 3 ? google(`inauthor:"${q.replace(/"/g, '')}"`, key) : Promise.resolve([]),
+    q.length >= 3 ? openLibrary(`author:${q}${typing ? '*' : ''}`) : Promise.resolve([]),
+  ];
+  const [g, o, p, ga, oa] = await Promise.allSettled(tasks);
   const errors = [];
   if (g.status === 'rejected') errors.push(`google: ${str(g.reason?.message, 120)}`);
   if (o.status === 'rejected') errors.push(`openlibrary: ${str(o.reason?.message, 120)}`);
-  const raw = [...(g.value || []), ...(o.value || []), ...(p.value || [])].filter((b) => b.title);
+  const raw = [...(g.value || []), ...(o.value || []), ...(p.value || []), ...(ga.value || []), ...(oa.value || [])].filter((b) => b.title);
   if (!raw.length && errors.length === 2) {
     console.error('[books] both sources failed:', errors.join(' | '));
     noCache(res);

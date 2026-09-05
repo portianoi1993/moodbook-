@@ -216,6 +216,14 @@ function candidateMatches(cand, q) {
   return qt.length >= 2 && hits === qt.length && tw.length <= qt.length + 2;         // all meaningful words present, title not much longer
 }
 
+// Every meaningful word of the query is part of the author's name(s) and none is in the title → an author search.
+function authorMatches(cand, q) {
+  if (!cand?.author) return false;
+  const a = normT([cand.author, ...(cand.authors || [])].join(' ')).split(' '), tl = normT(cand.title).split(' ');
+  const words = normT(q).split(' ').filter((x) => x.length > 1 && !STOP.has(x));
+  return words.length > 0 && words.every((w) => a.some((x) => x === w || x.startsWith(w))) && !words.some((w) => tl.includes(w));
+}
+
 async function startSearch(raw, picked = null) {
   const q = String(raw || '').trim();
   if (!q) { el.q.focus(); return; }
@@ -236,6 +244,11 @@ async function startSearch(raw, picked = null) {
     let cand = null;
     try { cand = (await api('/api/books', { q, best: '1' })).book; } catch {}
     trusted = candidateMatches(cand, q);
+    if (!trusted && authorMatches(cand, q)) {
+      // The reader typed an author's name: open their best-known book and say so.
+      trusted = true;
+      toast(t('Showing the best-known book by {author}. Pick another one from the suggestions.', { author: esc(cand.author) }), { ms: 4200 });
+    }
     book = trusted ? cand : { title: q, author: '', cover: '', genre: '', desc: '' };
   }
   S.book = { ...book, genre: book.genre || book.categories || '', trusted };
