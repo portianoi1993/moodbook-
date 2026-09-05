@@ -174,9 +174,9 @@ export default async function handler(req, res) {
     // Every provider failed (no credits, rate limit, outage, bad JSON) → offline composer keeps the product alive.
     console.error('[analyze] AI unavailable:', e.message);
     const offline = composeOffline(input);
-    offline.reason = str(e.message, 220);
-    cache.set(cacheKey, offline, 10 * 60 * 1000); // short cache so we retry the AI soon
-    res.setHeader('Cache-Control', 'public, max-age=0, s-maxage=300');
+    offline.reason = str(e.message, 400);
+    cache.set(cacheKey, offline, 3 * 60 * 1000); // short cache so we retry the AI soon
+    res.setHeader('Cache-Control', 'public, max-age=0, s-maxage=120');
     res.setHeader('X-Cache', 'MISS');
     res.setHeader('X-Degraded', '1');
     return res.status(200).json(offline);
