@@ -8,7 +8,7 @@ const ALLOWED = new Set(['books.google.com', 'books.googleusercontent.com', 'cov
 
 export default async function handler(req, res) {
   if (cors(req, res, 'GET, OPTIONS')) return;
-  if (guard(req, res, { methods: ['GET'], max: 60 })) return;
+  if (await guard(req, res, { methods: ['GET'], max: 60 })) return;
 
   let url;
   try { url = new URL(String(req.query?.u || '')); } catch { url = null; }

@@ -2,9 +2,11 @@
 // GET /api/books?q=...&best=1         → single best match for a typed title
 // Sources: Google Books (key server-side) + Open Library (free, no key) queried in parallel,
 // merged and ranked. If Google is over quota or slow, Open Library alone still answers.
-import { cors, guard, cacheFor, noCache, str, makeCache, fetchWithTimeout } from '../lib/http.js';
+import { cors, guard, cacheFor, noCache, str, fetchWithTimeout } from '../lib/http.js';
+import { layeredCache, getFlag, setFlag } from '../lib/store.js';
 
-const cache = makeCache(1500);
+const cache = layeredCache('books', { limit: 1500 });
+let googleDownUntil = 0; // Google Books quota (1 000/day free) exhausted → Open Library only for a while
 const ACADEMIC = /methodolog|методичк|методичн|підручник|посібник|workbook|curriculum|syllabus|lecture notes|study guide|teacher'?s (guide|manual)|instructor'?s manual|dissertation|\bthesis\b|proceedings|conference paper|summary of|summary & analysis|sparknotes|cliffsnotes|analysis of|companion to|trivia|quiz book|coloring book|activity book|journal|notebook|planner|summary|summarized|key takeaways|book club questions|discussion guide|conversation starters/i;
 
 const norm = (s) => String(s || '').toLowerCase().normalize('NFKD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9а-яіїєґ\s]/gi, ' ').replace(/\s+/g, ' ').trim();
@@ -139,7 +141,7 @@ async function openLibrary(q) {
 
 export default async function handler(req, res) {
   if (cors(req, res, 'GET, OPTIONS')) return;
-  if (guard(req, res, { methods: ['GET'], max: 400 })) return;
+  if (await guard(req, res, { methods: ['GET'], max: 400 })) return;
 
   const q = str(req.query?.q, 160);
   const limit = Math.min(10, Math.max(1, parseInt(req.query?.limit, 10) || 6));
@@ -147,7 +149,7 @@ export default async function handler(req, res) {
   if (q.length < 2) { noCache(res); return res.status(400).json({ error: 'Query too short' }); }
 
   const cacheKey = `${q.toLowerCase()}|${best ? 'best' : limit}`;
-  const hit = cache.get(cacheKey);
+  const hit = await cache.get(cacheKey);
   if (hit) { cacheFor(res, 24 * 3600); return res.status(200).json(hit); }
 
   const key = process.env.GOOGLE_BOOKS_KEY || process.env.YT_API_KEY || '';
@@ -155,16 +157,27 @@ export default async function handler(req, res) {
   // and let the scorer sort it out. While a word is still being typed ("intermez", "stephen ki"), add
   // prefix wildcards so partial words resolve too.
   const typing = !best && /[a-zа-яіїєґ]$/i.test(q) && q.length >= 3;
+  // Google Books budget (1 000 requests/day free): skip it while a quota error is fresh, ask the author
+  // index only for two-word queries (names), and never for very short strings. Open Library has no quota.
+  const words = q.split(/\s+/).filter(Boolean).length;
+  let gDown = Date.now() < googleDownUntil;
+  if (!gDown) { const until = await getFlag('gb-quota-down'); if (until && Date.now() < until) { googleDownUntil = until; gDown = true; } }
+  const useGoogle = !!key && !gDown && q.length >= 3;
   const tasks = [
-    google(q, key),
+    useGoogle ? google(q, key) : Promise.resolve([]),
     openLibrary(q),
     typing ? openLibrary(`title:${q}*`) : Promise.resolve([]),
-    q.length >= 3 ? google(`inauthor:"${q.replace(/"/g, '')}"`, key) : Promise.resolve([]),
+    useGoogle && words >= 2 ? google(`inauthor:"${q.replace(/"/g, '')}"`, key) : Promise.resolve([]),
     q.length >= 3 ? openLibrary(`author:${q}${typing ? '*' : ''}`) : Promise.resolve([]),
   ];
   const [g, o, p, ga, oa] = await Promise.allSettled(tasks);
   const errors = [];
-  if (g.status === 'rejected') errors.push(`google: ${str(g.reason?.message, 120)}`);
+  for (const r of [g, ga]) {
+    if (r.status !== 'rejected') continue;
+    const msg = str(r.reason?.message, 120);
+    errors.push(`google: ${msg}`);
+    if (/quota|rate ?limit|429|403/i.test(msg)) { googleDownUntil = Date.now() + 15 * 60 * 1000; await setFlag('gb-quota-down', googleDownUntil, 15 * 60); }
+  }
   if (o.status === 'rejected') errors.push(`openlibrary: ${str(o.reason?.message, 120)}`);
   const raw = [...(g.value || []), ...(o.value || []), ...(p.value || []), ...(ga.value || []), ...(oa.value || [])].filter((b) => b.title);
   if (!raw.length && errors.length === 2) {
@@ -176,7 +189,7 @@ export default async function handler(req, res) {
   const books = dedupe(scored).sort((a, b) => b._s - a._s).map(({ _s, src, pop, ...b }) => b);
   const payload = best ? { book: books[0] || null } : { items: books.slice(0, limit) };
   if (errors.length) payload.warn = errors.join(' | ');
-  cache.set(cacheKey, payload, 6 * 3600 * 1000);
+  await cache.set(cacheKey, payload, 7 * 24 * 3600 * 1000);
   cacheFor(res, 24 * 3600);
   return res.status(200).json(payload);
 }

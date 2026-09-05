@@ -5,8 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>MoodBook — Every book has a sound</title>
 <meta name="description" content="Type the book you're reading and MoodBook composes a reading soundtrack that matches its world, mood and pace. Free to try, no account needed.">
-<meta name="theme-color" content="#FBF6EE">
-<meta name="color-scheme" content="light">
+<meta name="theme-color" content="#F7F0E6" id="themeColor">
+<meta name="color-scheme" content="light dark">
+<script>/* apply the saved or system theme before first paint (no flash) */try{var t=localStorage.getItem('mb_theme');var d=t?t==='dark':matchMedia('(prefers-color-scheme: dark)').matches;document.documentElement.dataset.theme=d?'dark':'light';}catch(e){}</script>
 <link rel="icon" type="image/svg+xml" href="/assets/logo.svg">
 <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32.png">
 <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
@@ -22,7 +23,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preconnect" href="https://covers.openlibrary.org">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT@0,9..144,400..700,30;1,9..144,400..600,50&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/css/app.css?v=20260905h10">
+<link rel="stylesheet" href="/css/app.css?v=20260905h11">
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"WebApplication","name":"MoodBook","url":"https://moodbook-six.vercel.app/","applicationCategory":"MusicApplication","operatingSystem":"Web","description":"AI-curated reading soundtracks matched to the book you are reading.","offers":[{"@type":"Offer","price":"0","priceCurrency":"USD","name":"Free"},{"@type":"Offer","price":"9.99","priceCurrency":"USD","name":"Pro monthly"}]}
 </script>
@@ -45,6 +46,10 @@
     </nav>
     <button class="plan-chip" id="planChip" data-nav="account" type="button" aria-label="Your plan">Free</button>
     <button class="lang-chip" id="langBtn" type="button" aria-label="Language" title="Language">EN</button>
+    <button class="theme-chip" id="themeBtn" type="button" aria-label="Night mode" title="Night mode">
+      <svg class="i-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z"/></svg>
+      <svg class="i-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+    </button>
   </div>
 </header>
 
@@ -170,7 +175,7 @@
           <ul class="why-points" data-reveal style="--d:120ms">
             <li><b>Matched, not generic.</b> Every mix is composed for the exact book, its setting and its pace.</li>
             <li><b>Long enough for a chapter.</b> Mixes run an hour or more, so nothing interrupts you mid-page.</li>
-            <li><b>Free to start.</b> Three books a day, no sign-up. Pro removes the limit and syncs your shelf.</li>
+            <li><b>Free to start.</b> Your first five books are free, no sign-up. Pro removes the limit and syncs your shelf.</li>
           </ul>
         </div>
       </section>
@@ -185,7 +190,7 @@
           <article class="shell-glass plan-col" data-spot data-reveal><div class="core">
             <span class="mono">Free</span>
             <p class="plan-big">$0</p>
-            <ul><li>3 books a day</li><li>6 mixes and 6 scenes per book</li><li>Shelf and liked tracks in this browser</li></ul>
+            <ul><li>5 books to try</li><li>6 mixes and 6 scenes per book</li><li>Shelf and liked tracks in this browser</li></ul>
             <p class="plan-note">No sign-up. Start above.</p>
           </div></article>
           <article class="shell-glass gborder plan-col" data-spot data-reveal style="--d:100ms"><div class="core">
@@ -210,7 +215,7 @@
           <details><summary>What if it doesn't know my book?</summary><p>It still composes from the title and genre it can infer, and tells you so. Picking the book from the suggestion list gives the best result.</p></details>
           <details><summary>Can I listen on my phone?</summary><p>Yes. MoodBook is a website that works on any phone or tablet. Add it to your home screen for an app-like experience.</p></details>
           <details><summary>Is my library private?</summary><p>Your shelf and liked tracks are stored in your browser only. Account sync arrives with Pro.</p></details>
-          <details><summary>How much does it cost?</summary><p>Three books a day are free. Pro is $9.99 a month or $99.99 a year and opens unlimited books and sync.</p></details>
+          <details><summary>How much does it cost?</summary><p>Your first five books are free. Pro is $9.99 a month or $99.99 a year and opens unlimited books and sync.</p></details>
         </div>
       </section>
 
@@ -254,7 +259,7 @@
     <!-- PAYWALL -->
     <div class="paywall" id="paywall" hidden>
       <div class="pay-card shell-glass gborder"><div class="core">
-        <span class="mono accent">Today's free searches are used</span>
+        <span class="mono accent">Your five free books are used</span>
         <h2 id="pay-h2">Keep the music going with <em>Pro</em></h2>
         <ul class="perks"><li>Unlimited books, every day</li><li>All scene moods unlocked</li><li>Shelf and liked tracks synced across devices</li></ul>
         <div class="pay-price"><b id="payPrice">$9.99</b><span id="payPer">/month</span><span class="pay-alt" id="payAlt">or $99.99/year (save 17%)</span></div>
@@ -266,7 +271,7 @@
             <button type="submit">Apply</button>
           </form>
         </div>
-        <p class="dim small">Free searches reset tomorrow. Card payments open with the public launch; until then a promo code unlocks Pro.</p>
+        <p class="dim small">Books already on your shelf keep playing for free. Card payments open with the public launch; until then a promo code unlocks Pro.</p>
       </div></div>
     </div>
   </section>
@@ -326,7 +331,7 @@
         <div class="plan-cards">
           <article class="card plan">
             <header><h2>Free</h2><p class="price">$0</p></header>
-            <ul><li>3 book searches a day</li><li>6 mixes per book</li><li>Scene moods</li><li>Shelf in this browser</li></ul>
+            <ul><li>5 books to try</li><li>6 mixes per book</li><li>Scene moods</li><li>Shelf in this browser</li></ul>
             <button type="button" class="btn-glass" disabled id="freeBtn">Current plan</button>
           </article>
           <article class="card plan gborder">
@@ -407,7 +412,7 @@
 </div>
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
-<script type="module" src="/js/app.js?v=20260905h10"></script>
+<script type="module" src="/js/app.js?v=20260905h11"></script>
 <script defer src="/_vercel/insights/script.js"></script>
 </body>
 </html>

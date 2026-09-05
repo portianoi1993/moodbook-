@@ -3,11 +3,12 @@
 // Works with any OpenAI-compatible endpoint (Gemini free tier, Groq, OpenRouter, OmniRoute, OpenAI)
 // with an automatic fallback chain — see lib/ai.js for the env variables.
 // If every provider fails, lib/fallback.js composes a genre-based soundtrack offline.
-import { cors, guard, cacheFor, noCache, str, makeCache } from '../lib/http.js';
+import { cors, guard, cacheFor, noCache, str } from '../lib/http.js';
+import { layeredCache } from '../lib/store.js';
 import { chat, getProviders } from '../lib/ai.js';
 import { composeOffline } from '../lib/fallback.js';
 
-const cache = makeCache(400);
+const cache = layeredCache('ai', { limit: 400 });
 const DAY = 24 * 60 * 60 * 1000;
 
 const SYSTEM = `You are MoodBook, an expert music curator for readers. Given a book, you design an instrumental reading soundtrack.
@@ -117,7 +118,7 @@ function normalise(raw, fallbackTitle) {
 
 export default async function handler(req, res) {
   if (cors(req, res, 'GET, OPTIONS')) return;
-  if (guard(req, res, { methods: ['GET'], max: 40 })) return;
+  if (await guard(req, res, { methods: ['GET'], max: 40 })) return;
 
   const q = req.query || {};
   const input = {
@@ -138,7 +139,7 @@ export default async function handler(req, res) {
 
   const cacheKey = [input.title, input.author, input.mood, input.style, input.lang].join('|').toLowerCase();
   // `fresh=1` = the reader pressed "try again" after a degraded answer → skip the short-lived memory cache.
-  const hit = q.fresh === '1' ? null : cache.get(cacheKey);
+  const hit = q.fresh === '1' ? null : await cache.get(cacheKey);
   if (hit) {
     cacheFor(res, 7 * 24 * 3600);
     res.setHeader('X-Cache', 'HIT');
@@ -171,7 +172,7 @@ export default async function handler(req, res) {
       result = normalise(extractJson(content), input.title);
     }
     result.provider = provider; result.model = model;
-    cache.set(cacheKey, result, DAY);
+    await cache.set(cacheKey, result, 7 * DAY); // shared store: a book composed once is composed for everyone, for a week
     cacheFor(res, 7 * 24 * 3600);
     res.setHeader('X-Cache', 'MISS');
     return res.status(200).json(result);
@@ -180,7 +181,7 @@ export default async function handler(req, res) {
     console.error('[analyze] AI unavailable:', e.message);
     const offline = composeOffline(input);
     offline.reason = str(e.message, 400);
-    cache.set(cacheKey, offline, 3 * 60 * 1000); // short cache so we retry the AI soon
+    await cache.set(cacheKey, offline, 3 * 60 * 1000, { shared: false }); // memory only, retry the AI soon
     res.setHeader('Cache-Control', 'public, max-age=0, s-maxage=120');
     res.setHeader('X-Cache', 'MISS');
     res.setHeader('X-Degraded', '1');

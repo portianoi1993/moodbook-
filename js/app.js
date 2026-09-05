@@ -4,7 +4,7 @@ import { t, applyI18n, getLang, setLang, LANGS } from './i18n.js';
 applyI18n(); // translate static copy before anything measures or splits it
 
 // ═══════════════ config ═══════════════
-const FREE_DAILY_LIMIT = 3;
+const FREE_TOTAL = 5; // five books to try, ever (not per day); then Pro. Books already on the shelf replay for free.
 const PROMO_CODES = ['MOODBOOK2024', 'BLOGGER2024', 'PROMOBOOK', 'READERPRO', 'MBREADER'];
 const PRICE = { monthly: '$9.99', annual: '$99.99' };
 
@@ -57,12 +57,12 @@ const timeAgo = (ts) => {
   const d = Math.round(h / 24); return d === 1 ? t('yesterday') : t('{d} days ago', { d });
 };
 const isPro = () => ls.raw('mb_pro') === 'true';
-const searchesToday = () => ls.get('mb_day_' + todayKey(), 0);
+const totalSearches = () => +(ls.raw('mb_total_searches') || 0);
 const bumpSearches = () => {
-  ls.set('mb_day_' + todayKey(), searchesToday() + 1);
-  ls.put('mb_total_searches', String(+(ls.raw('mb_total_searches') || 0) + 1));
+  ls.set('mb_day_' + todayKey(), ls.get('mb_day_' + todayKey(), 0) + 1); // kept for stats
+  ls.put('mb_total_searches', String(totalSearches() + 1));
 };
-const freeLeft = () => Math.max(0, FREE_DAILY_LIMIT - searchesToday());
+const freeLeft = () => Math.max(0, FREE_TOTAL - totalSearches());
 
 // ═══════════════ toast ═══════════════
 let toastTimer, toastUndo;
@@ -184,7 +184,7 @@ function renderQuota() {
   chip.classList.toggle('is-pro', isPro());
   if (isPro()) { el.quota.innerHTML = t('<b>Pro</b> · unlimited books'); el.quota.classList.remove('is-low'); return; }
   const left = freeLeft();
-  el.quota.innerHTML = left > 0 ? t('<b>{n} of {max}</b> free {word} left today', { n: left, max: FREE_DAILY_LIMIT, word: left === 1 ? 'search' : 'searches' }) : t('<b>0 of {max}</b> free searches left today · resets tomorrow', { max: FREE_DAILY_LIMIT });
+  el.quota.innerHTML = left > 0 ? t('<b>{n} of {max}</b> free {word} left', { n: left, max: FREE_TOTAL, word: left === 1 ? 'book' : 'books' }) : t('<b>Your {max} free books are used</b> · Pro continues where you left off', { max: FREE_TOTAL });
   el.quota.classList.toggle('is-low', left <= 1);
 }
 
@@ -224,10 +224,12 @@ function authorMatches(cand, q) {
   return words.length > 0 && words.every((w) => a.some((x) => x === w || x.startsWith(w))) && !words.some((w) => tl.includes(w));
 }
 
-async function startSearch(raw, picked = null) {
+async function startSearch(raw, picked = null, { free = false } = {}) {
   const q = String(raw || '').trim();
   if (!q) { el.q.focus(); return; }
-  if (!isPro() && freeLeft() <= 0) { showPaywall(); return; }
+  // Books already on the shelf were paid for with a free credit once; replaying them never costs another.
+  const onShelf = free || DB.books.some((b) => b.title.toLowerCase() === (picked?.title || q).toLowerCase());
+  if (!isPro() && !onShelf && freeLeft() <= 0) { showPaywall(); return; }
 
   // reset view
   S.book = null; S.ai = null; S.mood = ''; S.style = ''; S.tracks = [];
@@ -255,7 +257,8 @@ async function startSearch(raw, picked = null) {
   renderBookCard();
 
   // 2) AI identifies the book (its strength) and composes the soundtrack
-  bumpSearches(); renderQuota();
+  if (!onShelf) bumpSearches();
+  renderQuota();
   await loadSoundtrack();
 }
 
@@ -297,8 +300,8 @@ async function loadSoundtrack(mood = S.mood || '', style = S.style || '', { fres
     }
     el.tracksMeta.textContent = t('{n} long mixes', { n: S.tracks.length }) + (mood ? ' · ' + mood : '');
     document.title = `${b.title} — MoodBook`;
-    // warm the first two searches so the first play is instant
-    S.tracks.slice(0, 2).forEach((t) => api('/api/search', { q: t.query }).catch(() => {}));
+    // warm the first search so the first play is instant (each YouTube search costs quota, so only one)
+    S.tracks.slice(0, 1).forEach((tr) => api('/api/search', { q: tr.query }).catch(() => {}));
   } catch (e) {
     setStatus('');
     el.tracks.innerHTML = `<li class="error"><b>${t("Couldn't compose the soundtrack.")}</b>${esc(e.message)}${e.detail ? `<small>${esc(e.detail)}</small>` : ''}<button type="button" class="ghost" id="retryBtn">${t('Try again')}</button></li>`;
@@ -554,6 +557,7 @@ async function playFrom(list, i, from) {
   let hit;
   try { hit = await api('/api/search', { q: tr.query }); } catch (e) { toast(t('Search failed: {msg}', { msg: e.detail || e.message })); return; }
   if (!hit?.videoId) { toast(t('No good mix found for that one. Try another track.')); return; }
+  if (hit.fallback && !S.toldFallback) { S.toldFallback = true; toast(t('YouTube search is rate-limited right now, so this is a matching evergreen mix instead of a book-specific one.'), { ms: 5000 }); }
   tr.videoId = hit.videoId; tr.ytTitle = hit.title; tr.alts = hit.alternatives || [];
   if (S.queue[S.playingIdx] !== tr) return; // user moved on
   const player = await p;
@@ -644,7 +648,7 @@ function renderShelf() {
 }
 $('#shelf').addEventListener('click', (e) => {
   const p = e.target.closest('[data-play]'); const r = e.target.closest('[data-rm]');
-  if (p) { const b = DB.books[+p.dataset.play]; showPage('discover'); el.q.value = b.title; startSearch(b.title, { ...b, desc: '' }); }
+  if (p) { const b = DB.books[+p.dataset.play]; showPage('discover'); el.q.value = b.title; startSearch(b.title, { ...b, desc: '' }, { free: true }); }
   if (r) {
     const i = +r.dataset.rm; const [b] = DB.books.splice(i, 1); save(); renderShelf();
     toast(t('Removed “{name}”', { name: esc(b.title) }), { undo: () => { DB.books.splice(i, 0, b); save(); renderShelf(); } });
@@ -758,6 +762,21 @@ $('#finalCta')?.addEventListener('click', (e) => {
   const params = new URLSearchParams(location.search);
   // Owner / tester switch: open the site once with ?pro=1 and this browser stays on Pro (no daily limit).
   if (params.get('pro') === '1') { ls.put('mb_pro', 'true'); renderQuota(); renderAccount(); toast(t('Pro unlocked in this browser')); }
+  // theme: auto (system) by default; the header button toggles night/day and remembers it
+  const themeBtn = $('#themeBtn');
+  const applyTheme = () => {
+    const saved = ls.raw('mb_theme');
+    const dark = saved ? saved === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+    document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+    $('#themeColor')?.setAttribute('content', dark ? '#1B1720' : '#F7F0E6');
+    if (themeBtn) { const label = dark ? t('Day mode') : t('Night mode'); themeBtn.setAttribute('aria-label', label); themeBtn.title = label; themeBtn.setAttribute('aria-pressed', String(dark)); }
+  };
+  applyTheme();
+  matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', () => { if (!ls.raw('mb_theme')) applyTheme(); });
+  themeBtn?.addEventListener('click', () => {
+    const dark = document.documentElement.dataset.theme === 'dark';
+    ls.put('mb_theme', dark ? 'light' : 'dark'); applyTheme();
+  });
   // language switch: header chip cycles, footer lists all
   const cur = getLang();
   const lb = $('#langBtn'); if (lb) { lb.textContent = (LANGS.find((l) => l.code === cur) || LANGS[0]).short; lb.title = t('Language'); lb.onclick = () => { const i = LANGS.findIndex((l) => l.code === cur); setLang(LANGS[(i + 1) % LANGS.length].code); }; }

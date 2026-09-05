@@ -11,7 +11,7 @@ export const LANGS = [
 const UK = {
   // header / nav
   'Skip to content': 'До вмісту', 'Discover': 'Пошук', 'Library': 'Бібліотека', 'Account': 'Акаунт', 'Free': 'Free', 'Pro': 'Pro',
-  'Your plan': 'Ваш план', 'MoodBook home': 'На головну', 'Language': 'Мова',
+  'Your plan': 'Ваш план', 'MoodBook home': 'На головну', 'Language': 'Мова', 'Night mode': 'Нічний режим', 'Day mode': 'Денний режим',
   // hero
   'A soundtrack for every book': 'Саундтрек до кожної книги',
   hero_h1: 'У кожної книги є <em class="it" data-words>свій звук.</em>',
@@ -37,10 +37,10 @@ const UK = {
   'Why it works': 'Чому це працює', 'The right music pulls you deeper into the page. The wrong music pulls you out.': 'Правильна музика затягує глибше в сторінку. Неправильна — витягує з неї.',
   'Matched, not generic.': 'Підібрано, а не навмання.', 'Every mix is composed for the exact book, its setting and its pace.': 'Кожен мікс складено саме під цю книгу, її світ і темп.',
   'Long enough for a chapter.': 'Вистачить на розділ.', 'Mixes run an hour or more, so nothing interrupts you mid-page.': 'Мікси тривають годину й більше, тож ніщо не перерве тебе посеред сторінки.',
-  'Free to start.': 'Безкоштовний старт.', 'Three books a day, no sign-up. Pro removes the limit and syncs your shelf.': 'Три книги на день без реєстрації. Pro знімає ліміт і синхронізує полицю.',
+  'Free to start.': 'Безкоштовний старт.', 'Your first five books are free, no sign-up. Pro removes the limit and syncs your shelf.': 'Перші пʼять книг безкоштовно, без реєстрації. Pro знімає ліміт і синхронізує полицю.',
   // plans
   'Plans': 'Тарифи', "Start free. Go unlimited when you're hooked.": 'Почни безкоштовно. Знімай ліміт, коли затягне.',
-  '3 books a day': '3 книги на день', '6 mixes and 6 scenes per book': '6 міксів і 6 сцен на книгу', 'Shelf and liked tracks in this browser': 'Полиця й лайки в цьому браузері',
+  '5 books to try': '5 книг на пробу', '6 mixes and 6 scenes per book': '6 міксів і 6 сцен на книгу', 'Shelf and liked tracks in this browser': 'Полиця й лайки в цьому браузері',
   'No sign-up. Start above.': 'Без реєстрації. Починай вище.', 'Pro · early access': 'Pro · ранній доступ', '/mo': '/міс', '/yr': '/рік',
   'Unlimited books': 'Необмежено книг', 'Everything synced across devices': 'Синхронізація між пристроями', 'Liked tracks saved forever': 'Лайкнуті треки назавжди',
   'See the Pro plan': 'Дивитися план Pro', 'or $99.99 a year (save 17%). Card payments open with the public launch.': 'або $99.99 на рік (економія 17%). Оплата карткою відкриється з публічним запуском.',
@@ -57,7 +57,7 @@ const UK = {
   'Is my library private?': 'Моя бібліотека приватна?',
   'Your shelf and liked tracks are stored in your browser only. Account sync arrives with Pro.': 'Полиця й лайки зберігаються лише у твоєму браузері. Синхронізація з акаунтом з’явиться разом із Pro.',
   'How much does it cost?': 'Скільки це коштує?',
-  'Three books a day are free. Pro is $9.99 a month or $99.99 a year and opens unlimited books and sync.': 'Три книги на день безкоштовно. Pro коштує $9.99 на місяць або $99.99 на рік і відкриває необмежену кількість книг та синхронізацію.',
+  'Your first five books are free. Pro is $9.99 a month or $99.99 a year and opens unlimited books and sync.': 'Перші пʼять книг безкоштовно. Pro коштує $9.99 на місяць або $99.99 на рік і відкриває необмежену кількість книг та синхронізацію.',
   final_h2: 'Бери книгу. <span class="grad-text">Настрій ми створимо.</span>', 'Compose a soundtrack': 'Підібрати саундтрек',
   // results
   '← New search': '← Новий пошук', '+ Save to shelf': '+ На полицю', '✓ On your shelf': '✓ На полиці', 'Share': 'Поділитися', 'Soundtrack': 'Саундтрек',
@@ -68,11 +68,11 @@ const UK = {
   'Switch the scene': 'Перемикай сцену', 'or the music style when the chapter changes mood.': 'або стиль музики, коли настрій розділу змінюється.',
   'Save to shelf': 'Збережи на полицю', 'to come back to this book in one tap.': 'щоб повернутися до книги одним дотиком.', 'Got it': 'Зрозуміло',
   // paywall
-  "Today's free searches are used": 'Безкоштовні пошуки на сьогодні вичерпано', pay_h2: 'Хай музика грає далі з <em>Pro</em>',
+  'Your five free books are used': 'Пʼять безкоштовних книг використано', pay_h2: 'Хай музика грає далі з <em>Pro</em>',
   'Unlimited books, every day': 'Необмежено книг щодня', 'All scene moods unlocked': 'Усі сцени відкрито', 'Shelf and liked tracks synced across devices': 'Полиця й лайки на всіх пристроях',
   '/month': '/місяць', '/year': '/рік', 'or {price}/year (save 17%)': 'або {price}/рік (економія 17%)', 'or {price}/month': 'або {price}/місяць',
   'Payments open soon': 'Оплата скоро відкриється', 'Promo code…': 'Промокод…', 'Promo code': 'Промокод', 'Apply': 'Застосувати',
-  'Free searches reset tomorrow. Card payments open with the public launch; until then a promo code unlocks Pro.': 'Безкоштовні пошуки оновляться завтра. Оплата карткою відкриється з публічним запуском, а до того Pro відкриває промокод.',
+  'Books already on your shelf keep playing for free. Card payments open with the public launch; until then a promo code unlocks Pro.': 'Книги, що вже на полиці, граються безкоштовно й далі. Оплата карткою відкриється з публічним запуском, а до того Pro відкриває промокод.',
   // library
   'Shelf': 'Полиця', 'My library': 'Моя бібліотека', 'Your books, one tap from their soundtrack.': 'Твої книги за один дотик від їхнього саундтреку.',
   'Add a book': 'Додати книгу', 'Add a book — title or author…': 'Додати книгу — назва або автор…', 'Add': 'Додати', 'Books': 'Книги', 'Liked tracks': 'Лайкнуті треки',
@@ -88,7 +88,7 @@ const UK = {
   // account
   'Plan & usage': 'План і використання', 'Everything here lives in this browser until sync arrives with Pro.': 'Усе тут живе в цьому браузері, поки не з’явиться синхронізація з Pro.',
   'Reader': 'Читач', 'Liked': 'Лайки', 'Searches': 'Пошуки', 'Billing period': 'Період оплати', 'Monthly': 'Щомісяця', 'Annual': 'Щороку', 'save 17%': 'економія 17%',
-  '3 book searches a day': '3 пошуки книг на день', '6 mixes per book': '6 міксів на книгу', 'Scene moods': 'Сцени-настрої', 'Shelf in this browser': 'Полиця в цьому браузері',
+  '6 mixes per book': '6 міксів на книгу', 'Scene moods': 'Сцени-настрої', 'Shelf in this browser': 'Полиця в цьому браузері',
   'Current plan': 'Поточний план', 'Included': 'Включено', 'All scene moods': 'Усі сцени', 'Sync shelf across devices': 'Полиця на всіх пристроях',
   "You're on Pro ✦": 'У тебе Pro ✦', 'Have a promo code?': 'Є промокод?', 'Enter code…': 'Введи код…',
   // footer
@@ -109,8 +109,9 @@ const UK = {
   'Our AI is busy right now, so this soundtrack was matched by genre, not by this exact book.': 'Наш AI зараз зайнятий, тож цей саундтрек підібрано за жанром, а не під саме цю книгу.', 'Try again': 'Спробувати ще раз',
   "Couldn't compose the soundtrack.": 'Не вдалося скласти саундтрек.', 'Scenes will appear once the soundtrack loads.': 'Сцени з’являться, щойно завантажиться саундтрек.',
   '{n} long mixes': '{n} довгих міксів', 'Unknown author': 'Невідомий автор', 'Cover of {title}': 'Обкладинка «{title}»',
-  '<b>Pro</b> · unlimited books': '<b>Pro</b> · без обмежень', '<b>{n} of {max}</b> free {word} left today': '<b>{n} з {max}</b> безкоштовних пошуків на сьогодні',
-  '<b>0 of {max}</b> free searches left today · resets tomorrow': '<b>0 з {max}</b> безкоштовних пошуків · оновиться завтра',
+  '<b>Pro</b> · unlimited books': '<b>Pro</b> · без обмежень', '<b>{n} of {max}</b> free {word} left': '<b>{n} з {max}</b> безкоштовних книг',
+  '<b>Your {max} free books are used</b> · Pro continues where you left off': '<b>{max} безкоштовних книг використано</b> · Pro продовжує з цього місця',
+  'YouTube search is rate-limited right now, so this is a matching evergreen mix instead of a book-specific one.': 'Пошук YouTube зараз обмежений, тож грає підібраний за стилем постійний мікс замість міксу під саму книгу.',
   'Pro unlocked in this browser': 'Pro увімкнено в цьому браузері', '🎉 Pro activated. Unlimited books, enjoy.': '🎉 Pro активовано. Книг без обмежень, насолоджуйся.',
   "That code didn't work. Check the spelling and try again.": 'Цей код не спрацював. Перевір написання і спробуй ще раз.',
   'YouTube refused that video. Skipping…': 'YouTube відмовив у цьому відео. Пропускаю…', 'Search failed: {msg}': 'Пошук не вдався: {msg}', 'No good mix found for that one. Try another track.': 'Гарного міксу не знайшлося. Спробуй інший трек.',
