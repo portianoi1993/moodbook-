@@ -554,6 +554,7 @@ document.documentElement.classList.add('js');
       el.appendChild(w);
     });
     requestAnimationFrame(() => requestAnimationFrame(() => el.classList.add('is-visible')));
+    setTimeout(() => el.classList.add('is-visible'), 1500); // background tabs never fire rAF; never leave the headline hidden
   });
   const bands = $$('.band');
   if (!('IntersectionObserver' in window) || reduce) { bands.forEach((b) => b.classList.add('is-visible')); }
