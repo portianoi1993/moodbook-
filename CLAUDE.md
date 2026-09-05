@@ -63,4 +63,5 @@ MoodBook (moodbook.ink) — AI-сервіс музичної курації дл
 `) правити через Edit/Write, а не через bash-heredoc + python: heredoc у цьому середовищі зʼїдає екранування
 - Перед дизайн-роботою спершу перевірити, що прод реально працює (`/api/health?probe=1` і один живий пошук)
 - Дані користувача в localStorage: ключі `mb_books`, `mb_liked_tracks`, `mb_pro`, `mb_total_searches`, `mb_day_YYYY-MM-DD` — не перейменовувати
+- Після змін у CSS/JS піднімати версію `?v=YYYYMMDDxN` одночасно в index.html, privacy.html, terms.html **і в статичних import-ах js/app.js** (fx.js, i18n.js) — браузер кешує /js на годину, і без цього користувачі отримують старий модуль
 - Коміти робити з короткими зрозумілими повідомленнями англійською
