@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Privacy — MoodBook</title>
+<meta name="description" content="What MoodBook stores, what it sends to third parties, and what it never collects.">
+<meta name="theme-color" content="#F3EDE3">
+<link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32.png">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT@0,9..144,300..700,0;1,9..144,300..700,0&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/app.css">
+<style>.legal{max-width:68ch;padding:40px 0 80px}.legal h1{font-size:clamp(2rem,5vw,2.8rem);margin:10px 0 6px}.legal h2{font-size:1.35rem;margin:34px 0 10px}.legal p,.legal li{color:var(--ink-2);text-wrap:pretty}.legal ul{padding-left:20px;display:grid;gap:6px}.legal .upd{font-family:var(--mono);font-size:.7rem;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3)}</style>
+</head>
+<body>
+<div class="grain" aria-hidden="true"></div>
+<header class="top"><div class="top-inner"><a class="brand" href="/" aria-label="MoodBook home"><img src="/assets/logo.webp" width="36" height="36" alt=""><span class="brand-word">MoodBook</span></a><a class="plan-chip" href="/">← Back</a></div></header>
+<main class="shell">
+  <article class="legal">
+    <p class="upd">Updated 5 September 2026</p>
+    <h1>Privacy</h1>
+    <p>MoodBook is a small service run by an individual founder in Kyiv, Ukraine. This page says plainly what the site stores and where data goes.</p>
+
+    <h2>What stays in your browser</h2>
+    <p>Your shelf of books, liked tracks, daily search count and Pro status are saved in your browser's local storage on your device. They are not sent to us and we cannot see them. Clearing site data removes them.</p>
+
+    <h2>What we process on our servers</h2>
+    <ul>
+      <li><b>The book title you type.</b> It is sent to our serverless functions on Vercel so we can look the book up and compose a soundtrack. We do not store it beyond short-lived caches (up to 7 days) that speed up the same search for everyone.</li>
+      <li><b>Your IP address.</b> Vercel sees it as part of serving the site; our functions use it only for temporary rate limiting (in memory, not written to a database).</li>
+    </ul>
+
+    <h2>Third parties we rely on</h2>
+    <ul>
+      <li><b>Vercel</b> hosts the site and functions.</li>
+      <li><b>Google Books API</b> receives book titles to return metadata and cover images.</li>
+      <li><b>An AI model provider</b> (currently Google Gemini) receives the book title and catalogue description to compose the soundtrack. No personal data is included in these requests.</li>
+      <li><b>YouTube</b> supplies and plays the music through an embedded player. When a track plays, YouTube sets its own cookies and applies the <a href="https://policies.google.com/privacy">Google Privacy Policy</a>.</li>
+      <li><b>Google Fonts</b> serves the typefaces.</li>
+    </ul>
+
+    <h2>What we do not do</h2>
+    <ul>
+      <li>No accounts, passwords or e-mail collection today. Pro early access is arranged by e-mail you send us.</li>
+      <li>No advertising, no tracking pixels, no sale of data.</li>
+      <li>No analytics cookies at the moment. If we add privacy-friendly analytics later, this page will say so.</li>
+    </ul>
+
+    <h2>Your choices</h2>
+    <p>Use a content blocker to stop YouTube cookies if you prefer; the player will still work in most cases. Clear site data to remove your shelf. Write to <a href="mailto:moodbook@moodbook.ink">moodbook@moodbook.ink</a> with any question.</p>
+  </article>
+  <footer class="foot"><div class="foot-row"><span class="foot-brand">MoodBook</span><span class="mono-label dim">Made in Kyiv</span></div><nav class="foot-links" aria-label="Legal"><a href="/privacy.html">Privacy</a><a href="/terms.html">Terms</a><a href="mailto:moodbook@moodbook.ink">Contact</a></nav></footer>
+</main>
+</body>
+</html>

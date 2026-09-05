@@ -200,7 +200,7 @@ async function startSearch(raw, picked = null) {
   // reset view
   S.book = null; S.ai = null; S.mood = ''; S.tracks = [];
   el.hero.hidden = true; el.paywall.hidden = true; el.results.hidden = false;
-  el.saveBtn.classList.remove('is-done'); el.saveBtn.textContent = '+ Save to Library';
+  el.saveBtn.classList.remove('is-done'); el.saveBtn.textContent = '+ Save to shelf';
   skeletonBook(picked?.title || q); skeletonMoods(); skeletonTracks(); el.tracksMeta.textContent = '';
   setStatus('Identifying the book…');
   history.replaceState(null, '', `${location.pathname}?b=${encodeURIComponent(q)}`);
@@ -529,11 +529,40 @@ function renderAccount() {
   $('#proPrice').innerHTML = billing === 'monthly' ? `${PRICE.monthly}<span>/mo</span>` : `${PRICE.annual}<span>/yr</span>`;
   $('#proCta').textContent = pro ? 'You\'re on Pro ✦' : 'Request early access →';
   $$('.bill').forEach((b) => { const on = b.dataset.bill === billing; b.classList.toggle('is-on', on); b.setAttribute('aria-checked', String(on)); });
+  const lp = $('#landingProPrice'); if (lp) lp.innerHTML = billing === 'monthly' ? `${PRICE.monthly}<span>/mo</span>` : `${PRICE.annual}<span>/yr</span>`;
   $('#payPrice').textContent = billing === 'monthly' ? PRICE.monthly : PRICE.annual;
   $('#payPer').textContent = billing === 'monthly' ? '/month' : '/year';
   $('#payAlt').textContent = billing === 'monthly' ? `or ${PRICE.annual}/year (save 17%)` : `or ${PRICE.monthly}/month`;
 }
 $$('.bill').forEach((b) => b.addEventListener('click', () => { billing = b.dataset.bill; renderAccount(); }));
+
+
+// ═══════════════ landing: word reveal, band reveal, final CTA ═══════════════
+document.documentElement.classList.add('js');
+(function landing() {
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  $$('[data-word-reveal]').forEach((el) => {
+    if (reduce) { el.classList.add('is-visible'); return; }
+    const text = el.textContent || '';
+    el.setAttribute('aria-label', text.trim());
+    el.textContent = '';
+    let i = 0;
+    text.split(/(\s+)/).forEach((part) => {
+      if (!part) return;
+      if (/^\s+$/.test(part)) { el.appendChild(document.createTextNode(' ')); return; }
+      const w = document.createElement('span'); w.className = 'word-reveal__word'; w.textContent = part; w.style.setProperty('--word-index', i++); w.setAttribute('aria-hidden', 'true');
+      el.appendChild(w);
+    });
+    requestAnimationFrame(() => requestAnimationFrame(() => el.classList.add('is-visible')));
+  });
+  const bands = $$('.band');
+  if (!('IntersectionObserver' in window) || reduce) { bands.forEach((b) => b.classList.add('is-visible')); }
+  else {
+    const io = new IntersectionObserver((entries) => entries.forEach((en) => { if (en.isIntersecting) { en.target.classList.add('is-visible'); io.unobserve(en.target); } }), { rootMargin: '0px 0px -10% 0px', threshold: 0.12 });
+    bands.forEach((b) => io.observe(b));
+  }
+  $('#finalCta')?.addEventListener('click', (e) => { e.preventDefault(); window.scrollTo({ top: 0, behavior: reduce ? 'auto' : 'smooth' }); setTimeout(() => el.q.focus({ preventScroll: true }), reduce ? 0 : 450); });
+})();
 
 // ═══════════════ boot ═══════════════
 (function boot() {
