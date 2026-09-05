@@ -45,7 +45,9 @@ function score(b, q, index) {
   const text = `${b.title} ${b.subtitle} ${b.categories} ${b.desc}`;
   let s = Math.max(0, 14 - index) * 1.0; // keep Google's relevance order as a mild prior
   if (ACADEMIC.test(text)) s -= 40;
-  if (b.title.length > 6 && b.title === b.title.toUpperCase()) s -= 10; // ALL-CAPS knock-offs
+  if (b.title.length > 6 && b.title === b.title.toUpperCase()) s -= 28; // ALL-CAPS knock-offs
+  if (/^[A-Z].s?[A-Z]/.test(b.author) || /(summary|analysis|workbook|publishing|press|books?)/i.test(b.author)) s -= 12; // initial-only / publisher "authors"
+  if (b.desc.length < 40) s -= 6;
   if (b.desc.length > 200) s += 5;
   if (b.pages >= 150) s += 4;
   if (b.cover) s += 12;

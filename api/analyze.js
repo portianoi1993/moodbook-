@@ -144,7 +144,15 @@ export default async function handler(req, res) {
       ({ content, provider, model } = await chat(strict, { json: true, maxTokens: 2200, temperature: 0.2, timeoutMs: 25000 }));
       parsed = extractJson(content);
     }
-    const result = normalise(parsed, input.title);
+    let result;
+    try { result = normalise(parsed, input.title); } catch (ne) {
+      // Catalogue hints (wrong author / knock-off edition) can confuse the model → retry with the title alone.
+      if (!input.author && !input.genre && !input.desc) throw ne;
+      console.warn('[analyze] weak answer with hints, retrying title-only:', ne.message);
+      const bare = [messages[0], { role: 'user', content: buildUser({ title: input.title, mood: input.mood }) }];
+      ({ content, provider, model } = await chat(bare, { json: true, maxTokens: 2200, temperature: 0.5, timeoutMs: 25000 }));
+      result = normalise(extractJson(content), input.title);
+    }
     result.provider = provider; result.model = model;
     cache.set(cacheKey, result, DAY);
     cacheFor(res, 7 * 24 * 3600);
