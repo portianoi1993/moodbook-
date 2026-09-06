@@ -9,7 +9,7 @@
 1. Vercel → проєкт **moodbook** → вкладка **Storage** (або **Marketplace**) → **Upstash for Redis** → Create → план **Free**.
 2. У майстрі постав галочки **Production** і **Preview**, натисни Connect. Vercel сам додасть змінні `UPSTASH_REDIS_REST_URL` і `UPSTASH_REDIS_REST_TOKEN` (або `KV_REST_API_URL`/`KV_REST_API_TOKEN`). Код розуміє обидві пари.
 3. Redeploy (Deployments → останній → Redeploy) або просто дочекайся наступного пушу.
-4. Перевірка: відкрий `https://moodbook-six.vercel.app/api/health?probe=1` — має бути `"store": true` і `"store": {"ok": true}`.
+4. Перевірка: відкрий `https://moodbook.ink/api/health?probe=1` — має бути `"store": true` і `"store": {"ok": true}`.
 
 Без Redis усе працює як раніше (памʼять + CDN), просто менш стійко.
 
@@ -27,7 +27,7 @@ APIs & Services → **Books API** → Quotas → «Queries per day» → Apply. 
 Коли будеш готовий платити: aistudio.google.com → **Get API key** → **Set up billing** → постав **бюджетний ліміт** (наприклад $10/міс). Один підбір коштує близько $0.001 і кешується.
 
 ## 3. Моніторинг (безкоштовно)
-- **UptimeRobot** (uptimerobot.com, безкоштовний план): монітор типу HTTP(s) на `https://moodbook-six.vercel.app/api/health?probe=1`, інтервал 10 хвилин, alert на email/Telegram. Health повертає 503, якщо жодний AI-провайдер не відповідає.
+- **UptimeRobot** (uptimerobot.com, безкоштовний план): монітор типу HTTP(s) на `https://moodbook.ink/api/health?probe=1`, інтервал 10 хвилин, alert на email/Telegram. Health повертає 503, якщо жодний AI-провайдер не відповідає.
 - **Vercel → Logs**: фільтр `[ai]`, `[search]`, `[books]`, `[store]` показує, що саме впало.
 
 ## Що код робить сам (нічого натискати не треба)

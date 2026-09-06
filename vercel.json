@@ -2,6 +2,20 @@
   "functions": {
     "api/*.js": { "maxDuration": 60 }
   },
+  "redirects": [
+    {
+      "source": "/(.*)",
+      "has": [{ "type": "host", "value": "www.moodbook.ink" }],
+      "destination": "https://moodbook.ink/$1",
+      "permanent": true
+    },
+    {
+      "source": "/(.*)",
+      "has": [{ "type": "host", "value": "moodbook-six.vercel.app" }],
+      "destination": "https://moodbook.ink/$1",
+      "permanent": true
+    }
+  ],
   "rewrites": [
     {
       "source": "/((?!blocked\\.html$).*)",

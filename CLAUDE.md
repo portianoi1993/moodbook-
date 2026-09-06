@@ -10,7 +10,7 @@
 ## Що таке MoodBook
 MoodBook (moodbook.ink) — AI-сервіс музичної курації для читачів: генерує інструментальні плейлисти, підібрані під конкретну книгу. Користувач вводить назву книги → AI аналізує її настрій/атмосферу → сервіс видає добірку інструментальних треків для читання під цю книгу.
 
-- Live: moodbook-six.vercel.app (цільовий домен moodbook.ink)
+- Live: **https://moodbook.ink** (стара адреса moodbook-six.vercel.app і www робить 301 на неї; домен у Namecheap на BasicDNS, A @ 216.198.79.1 + CNAME www → Vercel)
 - GitHub: portianoi1993/moodbook-
 
 ## Технічний стек (v2, гілка `v2`)

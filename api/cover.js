@@ -19,7 +19,7 @@ export default async function handler(req, res) {
   if (url.hostname === 'books.google.com') { url.protocol = 'https:'; url.searchParams.set('zoom', '2'); url.searchParams.delete('edge'); }
 
   try {
-    const up = await fetchWithTimeout(url.toString(), { headers: { 'User-Agent': 'MoodBook/1.0 (+https://moodbook-six.vercel.app)' } }, 8000);
+    const up = await fetchWithTimeout(url.toString(), { headers: { 'User-Agent': 'MoodBook/1.0 (+https://moodbook.ink)' } }, 8000);
     const type = up.headers.get('content-type') || '';
     if (!up.ok || !type.startsWith('image/')) {
       noCache(res);

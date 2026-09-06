@@ -54,7 +54,7 @@ Row Level Security: користувач читає лише свої рядки
 - `isPro()` у `js/app.js` перестає читати лише `mb_pro` і починає читати `/api/me` (з кешем у localStorage на випадок офлайну). Промокоди й `?pro=1` лишаються як тестові механізми.
 
 ### 2.4 Апки (Capacitor)
-- Один репозиторій. `npx cap add ios` / `npx cap add android` створюють папки `ios/` і `android/`, у які копіюється наш `index.html`, `css/`, `js/`, `assets/`. API-виклики йдуть на `https://moodbook-six.vercel.app/api/...` (потім moodbook.ink).
+- Один репозиторій. `npx cap add ios` / `npx cap add android` створюють папки `ios/` і `android/`, у які копіюється наш `index.html`, `css/`, `js/`, `assets/`. API-виклики йдуть на `https://moodbook.ink/api/...` (потім moodbook.ink).
 - Плагіни, які реально потрібні: In-App Purchases (див. 3), Browser/Share (поділитися книгою), Preferences (заміна localStorage), Keep Awake (не гасити екран під час читання).
 - Вхід у той самий Supabase-акаунт, що й на сайті.
 
