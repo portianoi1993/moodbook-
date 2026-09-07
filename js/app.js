@@ -1,13 +1,18 @@
 // Static imports carry the same cache-busting version as the <script> tag (browsers cache /js for an hour).
-import { mountAll, mountMagnetic, mountSpotlight } from './fx.js?v=20260905h16';
-import { t, initI18n, getLang, setLang, LANGS } from './i18n.js?v=20260905h16';
+import { mountAll, mountMagnetic, mountSpotlight } from './fx.js?v=20260907a1';
+import { t, initI18n, getLang, setLang, LANGS } from './i18n.js?v=20260907a1';
 /* MoodBook v2 — vanilla JS, no build step. */
 await initI18n(); // load the dictionary and translate static copy before anything measures or splits it
 
 // ═══════════════ config ═══════════════
-const FREE_TOTAL = 5; // five books to try, ever (not per day); then Pro. Books already on the shelf replay for free.
-const PROMO_CODES = ['MOODBOOK2024', 'BLOGGER2024', 'PROMOBOOK', 'READERPRO', 'MBREADER'];
-const PRICE = { monthly: '$9.99', annual: '$99.99' };
+const FREE_TOTAL = 3; // three full books to try, ever (not per day); then Pro. Books already on the shelf replay for free.
+const GIFT_AFTER_DAYS = 30; // a month after hitting the limit, one more book as a gift (soft win-back)
+// Prices approved 2026-09-07 (docs/PRICING.md). UAH shown for the Ukrainian locale (WayForPay bills in UAH).
+const PRICES = {
+  usd: { monthly: '$9.99', annual: '$59.99', perMonth: '$5', lifetime: '$79' },
+  uah: { monthly: '₴249', annual: '₴1 490', perMonth: '₴124', lifetime: '₴1 990' },
+};
+const PRICE = new Proxy({}, { get: (_, k) => (getLang() === 'uk' ? PRICES.uah : PRICES.usd)[k] });
 
 // ═══════════════ tiny helpers ═══════════════
 const $ = (s, r = document) => r.querySelector(s);
@@ -57,7 +62,10 @@ const timeAgo = (ts) => {
   const h = Math.round(m / 60); if (h < 24) return t('{h} h ago', { h });
   const d = Math.round(h / 24); return d === 1 ? t('yesterday') : t('{d} days ago', { d });
 };
-const isPro = () => ls.raw('mb_pro') === 'true';
+// Pro = flag + optional expiry (promo codes grant a fixed number of days; lifetime codes set no expiry).
+const proUntil = () => +(ls.raw('mb_pro_until') || 0);
+const isPro = () => ls.raw('mb_pro') === 'true' && (!proUntil() || Date.now() < proUntil());
+const fmtDate = (ts) => new Date(ts).toLocaleDateString(getLang() === 'en' ? 'en-GB' : getLang(), { day: 'numeric', month: 'long', year: 'numeric' });
 const totalSearches = () => +(ls.raw('mb_total_searches') || 0);
 const bumpSearches = () => {
   ls.set('mb_day_' + todayKey(), ls.get('mb_day_' + todayKey(), 0) + 1); // kept for stats
@@ -462,21 +470,43 @@ el.shareBtn.addEventListener('click', async () => {
 
 // ═══════════════ paywall + promo ═══════════════
 function showPaywall() {
+  // Soft win-back: a month after first hitting the limit, one more book as a gift (once).
+  const first = +(ls.raw('mb_limit_at') || 0);
+  if (!first) ls.put('mb_limit_at', String(Date.now()));
+  else if (!ls.raw('mb_gift_used') && Date.now() - first > GIFT_AFTER_DAYS * 24 * 3600 * 1000) {
+    ls.put('mb_gift_used', '1'); ls.put('mb_total_searches', String(Math.max(0, totalSearches() - 1)));
+    renderQuota(); toast(t('🎁 A gift: one more free book for you.'), { ms: 4500 });
+    return;
+  }
   el.hero.hidden = true; el.results.hidden = true; el.paywall.hidden = false;
   window.scrollTo({ top: 0, behavior: 'auto' });
 }
-function applyPromo(code) {
-  if (PROMO_CODES.includes(code.trim().toUpperCase())) {
-    ls.put('mb_pro', 'true'); renderQuota(); renderAccount();
-    toast(t('🎉 Pro activated. Unlimited books, enjoy.'), { ms: 4000 });
+$('#payShelf')?.addEventListener('click', () => { el.paywall.hidden = true; el.hero.hidden = false; showPage('library'); });
+
+// Promo codes are unique and burn on the server (api/promo.js). The browser only stores the result.
+async function applyPromo(raw, btn) {
+  const code = String(raw || '').trim();
+  if (!code) return false;
+  btn?.setAttribute('disabled', '');
+  try {
+    const r = await fetch('/api/promo', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code }) });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok || !d.ok) {
+      const msg = d.error === 'used' ? t('That code has already been used.') : d.error === 'unknown' || d.error === 'invalid' ? t('That code is not valid.') : r.status === 503 ? t('Promo codes are not available right now. Try again later.') : t("That code didn't work. Check the spelling and try again.");
+      toast(msg, { ms: 4200 }); return false;
+    }
+    ls.put('mb_pro', 'true');
+    const until = d.days >= 36500 ? 0 : Date.parse(d.expiresAt);
+    if (until) ls.put('mb_pro_until', String(until)); else ls.put('mb_pro_until', '');
+    renderQuota(); renderAccount();
+    toast(until ? t('🎉 Pro activated until {date}.', { date: fmtDate(until) }) : t('🎉 Pro activated for life.'), { ms: 5000 });
     if (!el.paywall.hidden) { el.paywall.hidden = true; el.hero.hidden = false; }
     return true;
-  }
-  toast(t("That code didn't work. Check the spelling and try again."));
-  return false;
+  } catch { toast(t('Promo codes are not available right now. Try again later.')); return false; }
+  finally { btn?.removeAttribute('disabled'); }
 }
-$('#promoForm').addEventListener('submit', (e) => { e.preventDefault(); applyPromo($('#promoInput').value); });
-$('#promoFormAcct').addEventListener('submit', (e) => { e.preventDefault(); if (applyPromo($('#promoInputAcct').value)) $('#promoInputAcct').value = ''; });
+$('#promoForm').addEventListener('submit', async (e) => { e.preventDefault(); if (await applyPromo($('#promoInput').value, e.submitter)) $('#promoInput').value = ''; });
+$('#promoFormAcct').addEventListener('submit', async (e) => { e.preventDefault(); if (await applyPromo($('#promoInputAcct').value, e.submitter)) $('#promoInputAcct').value = ''; });
 
 // ═══════════════ player (YouTube IFrame API) ═══════════════
 const dock = $('#dock');
@@ -726,22 +756,27 @@ $('#liked').addEventListener('click', (e) => {
 $('#liked').addEventListener('keydown', (e) => { if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('[data-l]')) { e.preventDefault(); playFrom(DB.liked, +e.target.dataset.l, 'liked'); } });
 
 // ═══════════════ account ═══════════════
-let billing = 'monthly';
+let billing = 'annual'; // annual is the default everywhere (docs/PRICING.md)
 function renderAccount() {
   const pro = isPro();
   const badge = $('#acctBadge'); badge.textContent = pro ? '✦ Pro' : 'Free'; badge.classList.toggle('is-pro', pro);
+  const untilEl = $('#proUntil'); if (untilEl) { untilEl.hidden = !(pro && proUntil()); untilEl.textContent = pro && proUntil() ? t('Pro until {date}', { date: fmtDate(proUntil()) }) : ''; }
   $('#statBooks').textContent = DB.books.length;
   $('#statLiked').textContent = DB.liked.length;
   $('#statSearches').textContent = ls.raw('mb_total_searches') || '0';
   $('#freeBtn').textContent = pro ? t('Included') : t('Current plan');
   const per = billing === 'monthly' ? t('/mo') : t('/yr');
-  $('#proPrice').innerHTML = `${billing === 'monthly' ? PRICE.monthly : PRICE.annual}<span>${per}</span>`;
+  const main = billing === 'monthly' ? PRICE.monthly : PRICE.annual;
+  const sub = billing === 'monthly' ? t('or {price}/year (save 50%)', { price: PRICE.annual }) : t('about {price} a month', { price: PRICE.perMonth });
+  $('#proPrice').innerHTML = `${main}<span>${per}</span>`;
+  $$('.price-sub').forEach((n) => (n.textContent = sub));
+  $$('.price-life').forEach((n) => (n.textContent = PRICE.lifetime));
   const cta = $('#proCta'); cta.textContent = pro ? t("You're on Pro ✦") : t('Payments open soon'); cta.classList.toggle('is-soon', !pro);
   $$('.bill').forEach((b) => { const on = b.dataset.bill === billing; b.classList.toggle('is-on', on); b.setAttribute('aria-checked', String(on)); });
-  const lp = $('#landingProPrice'); if (lp) lp.innerHTML = `${billing === 'monthly' ? PRICE.monthly : PRICE.annual}<span>${per}</span>`;
-  $('#payPrice').textContent = billing === 'monthly' ? PRICE.monthly : PRICE.annual;
+  const lp = $('#landingProPrice'); if (lp) lp.innerHTML = `${main}<span>${per}</span>`;
+  $('#payPrice').textContent = main;
   $('#payPer').textContent = billing === 'monthly' ? t('/month') : t('/year');
-  $('#payAlt').textContent = billing === 'monthly' ? t('or {price}/year (save 17%)', { price: PRICE.annual }) : t('or {price}/month', { price: PRICE.monthly });
+  $('#payAlt').textContent = billing === 'monthly' ? t('or {price}/year (save 50%)', { price: PRICE.annual }) : t('or {price}/month', { price: PRICE.monthly });
 }
 $$('.bill').forEach((b) => b.addEventListener('click', () => { billing = b.dataset.bill; renderAccount(); }));
 
@@ -761,8 +796,13 @@ $('#finalCta')?.addEventListener('click', (e) => {
   if (!DB.books.length && ls.raw('mb_books')) { try { DB.books = JSON.parse(ls.raw('mb_books')) || []; } catch {} }
   renderQuota(); renderAccount();
   const params = new URLSearchParams(location.search);
-  // Owner / tester switch: open the site once with ?pro=1 and this browser stays on Pro (no daily limit).
-  if (params.get('pro') === '1') { ls.put('mb_pro', 'true'); renderQuota(); renderAccount(); toast(t('Pro unlocked in this browser')); }
+  // Deep link with a promo code (e.g. sent to a blogger): redeem it once and clean the URL.
+  if (params.get('code')) {
+    const code = params.get('code');
+    history.replaceState(null, '', location.pathname);
+    applyPromo(code).then((ok) => { if (!ok) { showPage('account'); const inp = $('#promoInputAcct'); if (inp) inp.value = code; } });
+  }
+  if (ls.raw('mb_pro') === 'true' && proUntil() && Date.now() >= proUntil() && !ls.raw('mb_pro_expired_told')) { ls.put('mb_pro_expired_told', '1'); toast(t('Your Pro has expired'), { ms: 4500 }); }
   // theme: auto (system) by default; the header button toggles night/day and remembers it
   const themeBtn = $('#themeBtn');
   const applyTheme = () => {

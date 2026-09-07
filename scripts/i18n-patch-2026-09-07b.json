@@ -1,0 +1,8 @@
+{
+  "remove": ["Everything here lives in this browser until sync arrives with Pro."],
+  "add": {
+    "Everything here lives in this browser.": {
+      "uk": "Усе тут зберігається в цьому браузері.", "es": "Todo esto vive en este navegador.", "fr": "Tout ceci vit dans ce navigateur.", "de": "Alles hier lebt in diesem Browser.", "it": "Tutto questo vive in questo browser.", "pt": "Tudo aqui vive neste navegador.", "pl": "Wszystko tutaj żyje w tej przeglądarce.", "zh": "这里的一切都保存在本浏览器中。", "ja": "ここにあるものはすべてこのブラウザに保存されます。"
+    }
+  }
+}
