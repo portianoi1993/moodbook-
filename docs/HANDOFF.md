@@ -1,10 +1,10 @@
-# MoodBook — HANDOFF для нової сесії (станом на 6 вересня 2026, ранок)
+# MoodBook — HANDOFF для нової сесії (станом на 7 вересня 2026)
 
 Цей файл читати першим. Тут: що таке проєкт зараз, повна карта файлів, усі рішення власника і **весь відкладений беклог**. Джерела деталей: `CLAUDE.md` (правила), `docs/OPS.md` (квоти/кеш/моніторинг), `docs/ARCHITECTURE-APPS.md` (екосистема сайт+апки+оплата), `docs/TEAM-REVIEW-2026-09-05.md` (аудит командою), `docs/DESIGN.md` (візуальний контракт).
 
 ## 0. Стан на зараз
-- **Live: https://moodbook.ink** (домен у Namecheap на BasicDNS; `www` і стара `moodbook-six.vercel.app` роблять 308 на нього). Прод = гілка `main` на Vercel, останній коміт `bc34acd`.
-- Продукт: вводиш книгу → AI (Gemini, безкоштовний тариф із авто-фолбеком) складає 6 довгих YouTube-міксів + 5 сцен книги + 5 музичних стилів → грає у вбудованому плеєрі. Reading Card для шерингу. 10 мов інтерфейсу. Нічна тема. Free = 5 книг назавжди, далі Pro (оплати ще немає, промокоди працюють, власник має Pro через `?pro=1`).
+- **Live: https://moodbook.ink** (домен у Namecheap на BasicDNS; `www` і стара `moodbook-six.vercel.app` роблять 308 на нього). Прод = гілка `main` на Vercel, останній коміт `80eed67`.
+- Продукт: вводиш книгу → AI (Gemini, безкоштовний тариф із авто-фолбеком) складає 6 довгих YouTube-міксів + 5 сцен книги + 5 музичних стилів → грає у вбудованому плеєрі. Reading Card для шерингу. 10 мов інтерфейсу. Нічна тема. Free = 3 книги назавжди, далі Pro (оплати ще немає; унікальні одноразові промокоди через `api/promo.js`, потребують Upstash + `ADMIN_TOKEN`; `?pro=1` і спільні коди видалено).
 - Vanilla JS/HTML/CSS + Vercel serverless. Без фреймворків, без збірки, без бази даних (усе користувацьке в localStorage).
 
 ## 1. Карта файлів
@@ -15,7 +15,7 @@ css/app.css           Уся стилістика: токени «Lamp Light» (
 js/app.js             Логіка застосунку (ES-module, top-level await для i18n): пошук/підказки, AI-результати, плеєр (YouTube IFrame API), полиця/лайки/історія, paywall, Reading Card, тема, мови.
 js/fx.js              Motion-шар: mesh-canvas у героі, reveals, word split, magnetic-кнопки, spotlight, marquee, tilt.
 js/i18n.js            Мовний рушій: визначення мови, завантаження словника, переклад текстових вузлів, t().
-js/lang/{uk,es,fr,de,it,pt,pl,zh,ja}.js   Словники (216 ключів кожен; ключ = англійський рядок). Російської немає і не буде.
+js/lang/{uk,es,fr,de,it,pt,pl,zh,ja}.js   Словники (229 ключів кожен; ключ = англійський рядок). Російської немає і не буде.
 js/card.js            Reading Card: canvas 1080×1350 (обкладинка через /api/cover, назва, why, 6 треків).
 api/analyze.js        Один AI-виклик → {book, why, scenes[5], styles[5], tracks[6]}; identity rules; мова відповіді; кеш 7 днів (спільний) / degraded 3 хв.
 api/books.js          Підказки: Google Books + Open Library паралельно, запити за назвою/автором/змішані, ранжування, бюджет Google.
@@ -50,7 +50,8 @@ docs/                 DESIGN.md (v4→v5), SKILLS-AUDIT.md (232 скіли), AUD
 
 ## 4. Беклог (усе, що зафіксовано, але не зроблено)
 ### A. Потребує дій власника (я не маю доступу)
-1. **Upstash Redis** у Vercel Marketplace (Free) → спільний кеш і rate limit. Інструкція OPS.md §1. Перевірка: `/api/health?probe=1` → `"store": true`.
+1. **Upstash Redis** у Vercel Marketplace (Free) → спільний кеш, rate limit **і промокоди** (без нього `/api/promo` відповідає 503). Інструкція OPS.md §1. Перевірка: `/api/health?probe=1` → `"store": true`.
+1a. **`ADMIN_TOKEN`** у Vercel env (довгий випадковий рядок) → далі створювати одноразові промокоди для блогерів за OPS.md §4 (`/api/promo?admin=…&create=1&note=…&days=365`); довічний код для себе/друга `days=36500`.
 2. **Заявки на квоти**: YouTube Data API (зараз ~100 пошуків/день) і Google Books (1 000/день). Тексти для форм в OPS.md §2.
 3. **Vercel Web Analytics**: увімкнути в проєкті (скрипт уже в index.html).
 4. **UptimeRobot** на `https://moodbook.ink/api/health?probe=1`.
