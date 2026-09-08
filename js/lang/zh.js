@@ -242,4 +242,10 @@ export default {
   'What exactly am I paying for?': '我付费买的到底是什么？',
   'The AI that reads your book and composes the brief: its mood, its scenes and the musical styles that fit it. The music is free on YouTube and always will be. Pro buys unlimited composing, never the music.': '为读懂你的书并生成方案的 AI 付费：它的氛围、场景，以及与之相配的音乐风格。音乐在 YouTube 上是免费的，而且将一直免费。Pro 买的是无限次编排，绝不是音乐。',
   'Pro pays for unlimited AI composing, not for the music: every mix plays free on YouTube.': 'Pro 付费买的是无限次 AI 编排，而不是音乐：每一段混音都在 YouTube 上免费播放。',
+  'or $9.99 a month.': '或每月 $9.99。',
+  '14-day money-back guarantee. Books already on your shelf keep playing for free.': '14 天退款保证。已在书架上的书仍可免费播放。',
+  'Go Pro': '升级到 Pro',
+  'Become a Founding Reader': '成为 Founding Reader',
+  '🎉 Welcome to Pro. Enjoy the unlimited soundtrack.': '🎉 欢迎加入 Pro。尽情享受无限原声音乐。',
+  'Payments didn\'t load. Check your connection and try again.': '支付未能加载。请检查网络连接后重试。',
 };

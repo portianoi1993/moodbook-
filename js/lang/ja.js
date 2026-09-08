@@ -242,4 +242,10 @@ export default {
   'What exactly am I paying for?': '料金は具体的に何に対して払うのですか？',
   'The AI that reads your book and composes the brief: its mood, its scenes and the musical styles that fit it. The music is free on YouTube and always will be. Pro buys unlimited composing, never the music.': 'あなたの本を読み解き、雰囲気・場面・似合う音楽スタイルという構成をつくるAIに対してです。音楽はYouTubeで無料であり、これからも無料です。Proが買うのは無制限の選曲であって、音楽ではありません。',
   'Pro pays for unlimited AI composing, not for the music: every mix plays free on YouTube.': 'Proの料金は無制限のAI選曲に対するもので、音楽に対するものではありません。どのミックスもYouTubeで無料で再生されます。',
+  'or $9.99 a month.': 'または月額 $9.99。',
+  '14-day money-back guarantee. Books already on your shelf keep playing for free.': '14日間の返金保証。すでに本棚にある本は引き続き無料で再生されます。',
+  'Go Pro': 'Proにアップグレード',
+  'Become a Founding Reader': 'Founding Readerになる',
+  '🎉 Welcome to Pro. Enjoy the unlimited soundtrack.': '🎉 Proへようこそ。無制限のサウンドトラックをお楽しみください。',
+  'Payments didn\'t load. Check your connection and try again.': '決済の読み込みに失敗しました。接続を確認して再試行してください。',
 };

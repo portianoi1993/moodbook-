@@ -242,4 +242,10 @@ export default {
   'What exactly am I paying for?': 'Wofür bezahle ich genau?',
   'The AI that reads your book and composes the brief: its mood, its scenes and the musical styles that fit it. The music is free on YouTube and always will be. Pro buys unlimited composing, never the music.': 'Die KI, die dein Buch liest und das Briefing schreibt: seine Stimmung, seine Szenen und die passenden Musikstile. Die Musik ist auf YouTube kostenlos und bleibt es. Pro kauft unbegrenztes Komponieren, niemals die Musik.',
   'Pro pays for unlimited AI composing, not for the music: every mix plays free on YouTube.': 'Pro bezahlt unbegrenztes KI-Komponieren, nicht die Musik: Jeder Mix läuft kostenlos auf YouTube.',
+  'or $9.99 a month.': 'oder 9,99 $ im Monat.',
+  '14-day money-back guarantee. Books already on your shelf keep playing for free.': '14-tägige Geld-zurück-Garantie. Bücher, die bereits in deinem Regal stehen, spielen weiterhin kostenlos.',
+  'Go Pro': 'Zu Pro wechseln',
+  'Become a Founding Reader': 'Founding Reader werden',
+  '🎉 Welcome to Pro. Enjoy the unlimited soundtrack.': '🎉 Willkommen bei Pro. Genieße den unbegrenzten Soundtrack.',
+  'Payments didn\'t load. Check your connection and try again.': 'Zahlungen wurden nicht geladen. Überprüfe deine Verbindung und versuche es erneut.',
 };

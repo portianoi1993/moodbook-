@@ -24,6 +24,7 @@
 <link rel="preconnect" href="https://covers.openlibrary.org">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT@0,9..144,400..700,30;1,9..144,400..600,50&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/css/app.css?v=20260908a1">
+<script src="https://cdn.paddle.com/paddle/v2/paddle.js" defer></script>
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"WebApplication","name":"MoodBook","url":"https://moodbook.ink/","applicationCategory":"MusicApplication","operatingSystem":"Web","description":"AI-curated reading soundtracks matched to the book you are reading.","offers":[{"@type":"Offer","price":"0","priceCurrency":"USD","name":"Free"},{"@type":"Offer","price":"59.99","priceCurrency":"USD","name":"Pro yearly"},{"@type":"Offer","price":"9.99","priceCurrency":"USD","name":"Pro monthly"},{"@type":"Offer","price":"79","priceCurrency":"USD","name":"Founding Reader (lifetime)"}]}
 </script>
@@ -219,7 +220,7 @@
             <p class="price-sub">about $5 a month</p>
             <ul><li>Unlimited books</li><li>All scenes and styles, forever</li><li>Unlimited shelf and history</li><li>Reading Card without the watermark</li><li>14-day money-back guarantee</li></ul>
             <a class="btn grad" href="#account" data-nav="account" data-magnetic>See the Pro plan <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></a>
-            <p class="plan-note">or $9.99 a month. Card payments open with the public launch.</p>
+            <p class="plan-note">or $9.99 a month.</p>
           </div></article>
           <article class="shell-glass plan-col founder" data-spot data-reveal style="--d:160ms"><div class="core">
             <span class="mono accent">Founding Reader</span>
@@ -292,7 +293,7 @@
         <ul class="perks"><li>Unlimited books</li><li>All scenes and styles, forever</li><li>Unlimited shelf and history</li><li>Reading Card without the watermark</li></ul>
         <div class="pay-price"><b id="payPrice">$59.99</b><span id="payPer">/year</span><span class="pay-alt" id="payAlt">or $9.99/month</span></div>
         <div class="pay-actions">
-          <span class="btn grad is-soon" id="payCta" aria-disabled="true">Payments open soon <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="9"/></svg></span></span>
+          <button type="button" class="btn grad" id="payCta">Go Pro <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></button>
           <form class="promo" id="promoForm">
             <label class="sr-only" for="promoInput">Promo code</label>
             <input id="promoInput" name="promo" type="text" placeholder="Promo code…" autocomplete="off" autocapitalize="characters" spellcheck="false">
@@ -300,7 +301,7 @@
           </form>
         </div>
         <p class="dim small">Pro pays for unlimited AI composing, not for the music: every mix plays free on YouTube.</p>
-        <p class="dim small">14-day money-back guarantee. Books already on your shelf keep playing for free. Card payments open with the public launch; until then a promo code unlocks Pro.</p>
+        <p class="dim small">14-day money-back guarantee. Books already on your shelf keep playing for free.</p>
         <button type="button" class="btn-glass sm" id="payShelf">Continue with your shelf</button>
       </div></div>
     </div>
@@ -369,12 +370,12 @@
             <header><h2>Pro</h2><p class="price" id="proPrice">$59.99<span>/yr</span></p></header>
             <p class="price-sub">about $5 a month</p>
             <ul><li>Unlimited books</li><li>All scenes and styles, forever</li><li>Unlimited shelf and history</li><li>Reading Card without the watermark</li><li>14-day money-back guarantee</li></ul>
-            <span class="btn grad is-soon" id="proCta" aria-disabled="true">Payments open soon <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="9"/></svg></span></span>
+            <button type="button" class="btn grad" id="proCta">Go Pro <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></button>
           </article>
           <article class="card plan founder">
             <header><h2>Founding Reader</h2><p class="price"><span class="price-life">$79</span><span>one-time</span></p></header>
             <ul><li>Lifetime Pro for the first 100 readers</li><li>Your name on the founders page</li><li>Direct line to the maker</li></ul>
-            <p class="plan-note">Opens with card payments. 100 seats, then it is gone.</p>
+            <button type="button" class="btn-glass" id="founderCta">Become a Founding Reader</button>
           </article>
         </div>
         <form class="card promo-acct" id="promoFormAcct">

@@ -13,6 +13,40 @@ const PRICES = {
   uah: { monthly: '₴249', annual: '₴1 490', perMonth: '₴124', lifetime: '₴1 990' },
 };
 const PRICE = new Proxy({}, { get: (_, k) => (getLang() === 'uk' ? PRICES.uah : PRICES.usd)[k] });
+// Paddle (Merchant of Record — handles cards, Apple Pay, Google Pay and tax worldwide).
+// Client-side token is public by design (safe to ship). Product/price IDs from the live Paddle catalogue.
+const PADDLE_TOKEN = 'live_66eceee86cdb1e5492a46becc2e';
+const PADDLE_PRICE = { monthly: 'pri_01m20m1ehtsv50d1y6782kw8dv', annual: 'pri_01m20mg69ztn0s2b5wsenhfe6j', lifetime: 'pri_01m20mn4r67t468bkfk7z09k6k' };
+let paddleReady = false;
+function initPaddle() {
+  if (paddleReady || typeof Paddle === 'undefined') return;
+  paddleReady = true;
+  Paddle.Initialize({
+    token: PADDLE_TOKEN,
+    eventCallback(e) {
+      if (e.name !== 'checkout.completed') return;
+      const priceId = e.data?.items?.[0]?.price_id || e.data?.items?.[0]?.price?.id;
+      grantPro(priceId);
+    },
+  });
+}
+// Grant Pro locally right after a completed Paddle checkout — the same mechanism promo codes use
+// (see applyPromo below). MoodBook has no accounts yet, so there is no server-side subscription
+// truth to check on return visits; api/paddle-webhook.js only records the sale for the founder.
+function grantPro(priceId) {
+  ls.put('mb_pro', 'true');
+  if (priceId === PADDLE_PRICE.lifetime) ls.put('mb_pro_until', '');
+  else if (priceId === PADDLE_PRICE.monthly) ls.put('mb_pro_until', String(Date.now() + 35 * 24 * 3600 * 1000));
+  else ls.put('mb_pro_until', String(Date.now() + 370 * 24 * 3600 * 1000)); // annual (and unknown price ids fall back here)
+  renderQuota(); renderAccount();
+  toast(t('🎉 Welcome to Pro. Enjoy the unlimited soundtrack.'), { ms: 5000 });
+  if (!el.paywall.hidden) { el.paywall.hidden = true; el.hero.hidden = false; }
+}
+function openPaddleCheckout(priceId) {
+  initPaddle();
+  if (typeof Paddle === 'undefined') { toast(t("Payments didn't load. Check your connection and try again.")); return; }
+  Paddle.Checkout.open({ items: [{ priceId, quantity: 1 }] });
+}
 
 // ═══════════════ tiny helpers ═══════════════
 const $ = (s, r = document) => r.querySelector(s);
@@ -771,7 +805,8 @@ function renderAccount() {
   $('#proPrice').innerHTML = `${main}<span>${per}</span>`;
   $$('.price-sub').forEach((n) => (n.textContent = sub));
   $$('.price-life').forEach((n) => (n.textContent = PRICE.lifetime));
-  const cta = $('#proCta'); cta.textContent = pro ? t("You're on Pro ✦") : t('Payments open soon'); cta.classList.toggle('is-soon', !pro);
+  const cta = $('#proCta'); if (cta) { cta.disabled = pro; cta.innerHTML = pro ? t("You're on Pro ✦") : `${t('Go Pro')} <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>`; }
+  const fCta = $('#founderCta'); if (fCta) { fCta.disabled = pro; fCta.textContent = pro ? t("You're on Pro ✦") : t('Become a Founding Reader'); }
   $$('.bill').forEach((b) => { const on = b.dataset.bill === billing; b.classList.toggle('is-on', on); b.setAttribute('aria-checked', String(on)); });
   const lp = $('#landingProPrice'); if (lp) lp.innerHTML = `${main}<span>${per}</span>`;
   $('#payPrice').textContent = main;
@@ -779,6 +814,9 @@ function renderAccount() {
   $('#payAlt').textContent = billing === 'monthly' ? t('or {price}/year (save 50%)', { price: PRICE.annual }) : t('or {price}/month', { price: PRICE.monthly });
 }
 $$('.bill').forEach((b) => b.addEventListener('click', () => { billing = b.dataset.bill; renderAccount(); }));
+$('#proCta')?.addEventListener('click', () => openPaddleCheckout(billing === 'monthly' ? PADDLE_PRICE.monthly : PADDLE_PRICE.annual));
+$('#founderCta')?.addEventListener('click', () => openPaddleCheckout(PADDLE_PRICE.lifetime));
+$('#payCta')?.addEventListener('click', () => openPaddleCheckout(billing === 'monthly' ? PADDLE_PRICE.monthly : PADDLE_PRICE.annual));
 
 
 // ═══════════════ landing: motion layer + final CTA ═══════════════

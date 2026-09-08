@@ -1,0 +1,71 @@
+{
+  "remove": [],
+  "add": {
+    "or $9.99 a month.": {
+      "uk": "або $9.99 на місяць.",
+      "es": "o $9.99 al mes.",
+      "fr": "ou 9,99 $ par mois.",
+      "de": "oder 9,99 $ im Monat.",
+      "it": "oppure 9,99 $ al mese.",
+      "pt": "ou $9,99 por mês.",
+      "pl": "lub 9,99 $ miesięcznie.",
+      "zh": "或每月 $9.99。",
+      "ja": "または月額 $9.99。"
+    },
+    "14-day money-back guarantee. Books already on your shelf keep playing for free.": {
+      "uk": "14-денна гарантія повернення коштів. Книги, що вже на полиці, продовжують грати безкоштовно.",
+      "es": "Garantía de devolución de 14 días. Los libros que ya están en tu estante siguen reproduciéndose gratis.",
+      "fr": "Garantie de remboursement de 14 jours. Les livres déjà sur votre étagère continuent de jouer gratuitement.",
+      "de": "14-tägige Geld-zurück-Garantie. Bücher, die bereits in deinem Regal stehen, spielen weiterhin kostenlos.",
+      "it": "Garanzia di rimborso di 14 giorni. I libri già sullo scaffale continuano a suonare gratis.",
+      "pt": "Garantia de reembolso de 14 dias. Os livros já na tua estante continuam a tocar gratuitamente.",
+      "pl": "14-dniowa gwarancja zwrotu pieniędzy. Książki już na półce nadal grają za darmo.",
+      "zh": "14 天退款保证。已在书架上的书仍可免费播放。",
+      "ja": "14日間の返金保証。すでに本棚にある本は引き続き無料で再生されます。"
+    },
+    "Go Pro": {
+      "uk": "Перейти на Pro",
+      "es": "Hazte Pro",
+      "fr": "Passer à Pro",
+      "de": "Zu Pro wechseln",
+      "it": "Passa a Pro",
+      "pt": "Passar a Pro",
+      "pl": "Przejdź na Pro",
+      "zh": "升级到 Pro",
+      "ja": "Proにアップグレード"
+    },
+    "Become a Founding Reader": {
+      "uk": "Стати Founding Reader",
+      "es": "Conviértete en Founding Reader",
+      "fr": "Devenir Founding Reader",
+      "de": "Founding Reader werden",
+      "it": "Diventa Founding Reader",
+      "pt": "Tornar-se Founding Reader",
+      "pl": "Zostań Founding Reader",
+      "zh": "成为 Founding Reader",
+      "ja": "Founding Readerになる"
+    },
+    "🎉 Welcome to Pro. Enjoy the unlimited soundtrack.": {
+      "uk": "🎉 Ласкаво просимо до Pro. Насолоджуйся необмеженим саундтреком.",
+      "es": "🎉 Bienvenido a Pro. Disfruta de la banda sonora ilimitada.",
+      "fr": "🎉 Bienvenue dans Pro. Profitez de la bande-son illimitée.",
+      "de": "🎉 Willkommen bei Pro. Genieße den unbegrenzten Soundtrack.",
+      "it": "🎉 Benvenuto in Pro. Goditi la colonna sonora illimitata.",
+      "pt": "🎉 Bem-vindo ao Pro. Aproveita a banda sonora ilimitada.",
+      "pl": "🎉 Witamy w Pro. Ciesz się nieograniczoną ścieżką dźwiękową.",
+      "zh": "🎉 欢迎加入 Pro。尽情享受无限原声音乐。",
+      "ja": "🎉 Proへようこそ。無制限のサウンドトラックをお楽しみください。"
+    },
+    "Payments didn't load. Check your connection and try again.": {
+      "uk": "Оплата не завантажилась. Перевір з'єднання і спробуй ще раз.",
+      "es": "Los pagos no se cargaron. Comprueba tu conexión e inténtalo de nuevo.",
+      "fr": "Le paiement n'a pas pu se charger. Vérifiez votre connexion et réessayez.",
+      "de": "Zahlungen wurden nicht geladen. Überprüfe deine Verbindung und versuche es erneut.",
+      "it": "I pagamenti non si sono caricati. Controlla la connessione e riprova.",
+      "pt": "Os pagamentos não carregaram. Verifica a tua ligação e tenta novamente.",
+      "pl": "Płatności się nie załadowały. Sprawdź połączenie i spróbuj ponownie.",
+      "zh": "支付未能加载。请检查网络连接后重试。",
+      "ja": "決済の読み込みに失敗しました。接続を確認して再試行してください。"
+    }
+  }
+}

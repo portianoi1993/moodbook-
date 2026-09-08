@@ -242,4 +242,10 @@ export default {
   'What exactly am I paying for?': 'За що саме я плачу?',
   'The AI that reads your book and composes the brief: its mood, its scenes and the musical styles that fit it. The music is free on YouTube and always will be. Pro buys unlimited composing, never the music.': 'За AI, який читає твою книгу і складає завдання: її настрій, сцени і музичні стилі, що їй пасують. Музика на YouTube безкоштовна і такою залишиться. Pro купує необмежений підбір, а не музику.',
   'Pro pays for unlimited AI composing, not for the music: every mix plays free on YouTube.': 'Pro — це плата за необмежений AI-підбір, а не за музику: кожен мікс грає безкоштовно на YouTube.',
+  'or $9.99 a month.': 'або $9.99 на місяць.',
+  '14-day money-back guarantee. Books already on your shelf keep playing for free.': '14-денна гарантія повернення коштів. Книги, що вже на полиці, продовжують грати безкоштовно.',
+  'Go Pro': 'Перейти на Pro',
+  'Become a Founding Reader': 'Стати Founding Reader',
+  '🎉 Welcome to Pro. Enjoy the unlimited soundtrack.': '🎉 Ласкаво просимо до Pro. Насолоджуйся необмеженим саундтреком.',
+  'Payments didn\'t load. Check your connection and try again.': 'Оплата не завантажилась. Перевір з\'єднання і спробуй ще раз.',
 };
