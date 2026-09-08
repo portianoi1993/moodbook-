@@ -248,4 +248,13 @@ export default {
   'Become a Founding Reader': '成为 Founding Reader',
   '🎉 Welcome to Pro. Enjoy the unlimited soundtrack.': '🎉 欢迎加入 Pro。尽情享受无限原声音乐。',
   'Payments didn\'t load. Check your connection and try again.': '支付未能加载。请检查网络连接后重试。',
+  'Sound instead of music': '用环境音代替音乐',
+  'No melody at all — just the world of the book: rain, fire, waves, a crowded tavern.': '没有旋律，只有书中的世界：雨声、火声、海浪、喧闹的酒馆。',
+  'Ambient sounds': '环境音',
+  '{n} ambiences': '{n} 段环境音',
+  '100 seats, then it is gone.': '共 100 个名额，售完为止。',
+  '{n} of 100 seats left.': '100 个名额还剩 {n} 个。',
+  'Only {n} of 100 seats left.': '100 个名额仅剩 {n} 个。',
+  'All 100 seats are gone.': '100 个名额已全部售罄。',
+  'Sold out': '已售罄',
 };

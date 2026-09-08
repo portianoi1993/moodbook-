@@ -23,7 +23,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preconnect" href="https://covers.openlibrary.org">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT@0,9..144,400..700,30;1,9..144,400..600,50&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/css/app.css?v=20260908a1">
+<link rel="stylesheet" href="/css/app.css?v=20260908a2">
 <script src="https://cdn.paddle.com/paddle/v2/paddle.js" defer></script>
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"WebApplication","name":"MoodBook","url":"https://moodbook.ink/","applicationCategory":"MusicApplication","operatingSystem":"Web","description":"AI-curated reading soundtracks matched to the book you are reading.","offers":[{"@type":"Offer","price":"0","priceCurrency":"USD","name":"Free"},{"@type":"Offer","price":"59.99","priceCurrency":"USD","name":"Pro yearly"},{"@type":"Offer","price":"9.99","priceCurrency":"USD","name":"Pro monthly"},{"@type":"Offer","price":"79","priceCurrency":"USD","name":"Founding Reader (lifetime)"}]}
@@ -226,7 +226,7 @@
             <span class="mono accent">Founding Reader</span>
             <p class="plan-big"><span class="price-life">$79</span><span>one-time</span></p>
             <ul><li>Lifetime Pro for the first 100 readers</li><li>Your name on the founders page</li><li>Direct line to the maker</li></ul>
-            <p class="plan-note">Opens with card payments. 100 seats, then it is gone.</p>
+            <p class="plan-note" id="seatsLanding">100 seats, then it is gone.</p>
           </div></article>
         </div>
       </section>
@@ -281,6 +281,9 @@
           <h2 class="mono" id="styles-title" style="margin-top:20px">Music style</h2>
           <p class="muted small" style="margin-top:6px">Lofi, piano, orchestral… styles that suit this book. Combine with a scene.</p>
           <div class="mood-grid styles" id="styleGrid" role="group" aria-label="Music styles"></div>
+          <h2 class="mono" id="sounds-title" style="margin-top:20px">Sound instead of music</h2>
+          <p class="muted small" style="margin-top:6px">No melody at all — just the world of the book: rain, fire, waves, a crowded tavern.</p>
+          <div class="mood-grid sounds" id="soundGrid" role="group" aria-label="Ambient sounds"></div>
         </div></section>
       </div>
     </div>
@@ -375,6 +378,7 @@
           <article class="card plan founder">
             <header><h2>Founding Reader</h2><p class="price"><span class="price-life">$79</span><span>one-time</span></p></header>
             <ul><li>Lifetime Pro for the first 100 readers</li><li>Your name on the founders page</li><li>Direct line to the maker</li></ul>
+            <p class="plan-note" id="seatsAcct">100 seats, then it is gone.</p>
             <button type="button" class="btn-glass" id="founderCta">Become a Founding Reader</button>
           </article>
         </div>
@@ -450,7 +454,7 @@
 </div>
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
-<script type="module" src="/js/app.js?v=20260908a1"></script>
+<script type="module" src="/js/app.js?v=20260908a2"></script>
 <script defer src="/_vercel/insights/script.js"></script>
 </body>
 </html>

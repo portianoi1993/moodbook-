@@ -4,16 +4,25 @@ import http from 'node:http';
 const PORT = +(process.env.MOCK_PORT || 3940);
 http.createServer(async (req, res) => {
   let raw = ''; for await (const c of req) raw += c;
-  let title = 'Unknown', mood = '';
-  try { const b = JSON.parse(raw); const u = b.messages?.at(-1)?.content || ''; title = /Book: "([^"]+)"/.exec(u)?.[1] || title; mood = /Scene mood requested by the reader: "([^"]+)"/.exec(u)?.[1] || ''; } catch {}
+  let title = 'Unknown', mood = '', sound = '';
+  try { const b = JSON.parse(raw); const u = b.messages?.at(-1)?.content || ''; title = /Book: "([^"]+)"/.exec(u)?.[1] || title; mood = /Scene mood requested by the reader: "([^"]+)"/.exec(u)?.[1] || ''; sound = /Soundscape requested by the reader: "([^"]+)"/.exec(u)?.[1] || ''; } catch {}
   const t = (n, v, q) => ({ name: n, vibe: v, query: `${q} 1 hour instrumental no lyrics`, duration: '~1 hr' });
+  const a = (n, v, q) => ({ name: n, vibe: v, query: `${q} 1 hour no music`, duration: '~1 hr' });
   const tag = mood ? ` (${mood})` : '';
   const out = {
     book: (() => { const k = title.toLowerCase(); const known = k.includes('dune') ? ['Dune', 'Frank Herbert'] : k.includes('hail mary') ? ['Project Hail Mary', 'Andy Weir'] : k.includes('women') ? ['The Women', 'Kristin Hannah'] : null; return known ? { title: known[0], author: known[1], genre: 'Epic sci-fi', setting: 'Desert planet, far future', tone: 'vast, tense, mystical', known: true } : { title, author: '', genre: 'Fiction', setting: '', tone: 'unknown', known: false }; })(),
     why: `A slow-burning desert epic asks for wide, wind-swept textures with a pulse underneath${tag}.`,
     scenes: ['Desert Dawn Drift', 'Spice Vision Trance', 'Sietch Night Calm', 'Sandworm Surge', 'Court Intrigue Tension'],
     styles: ['Lofi Beats', 'Space Ambient', 'Piano', 'Epic Orchestral', 'Dark Synth'],
-    tracks: [
+    sounds: ['Desert Wind at Dusk', 'Sietch Water Drip', 'Sandstorm Wall', 'Ornithopter Hum', 'Spice Harvester Rumble'],
+    tracks: sound ? [
+      a('Desert Wind at Dusk' + tag, 'wind · grit', 'desert wind ambience'),
+      a('Sietch Water Drip', 'water · echo', 'cave water drip ambience'),
+      a('Sandstorm Wall', 'roar · dense', 'sandstorm howling wind ambience'),
+      a('Night Camp Fire', 'fire · crackle', 'campfire crackling desert night ambience'),
+      a('Distant Market', 'crowd · murmur', 'middle eastern market crowd ambience'),
+      a('Stone Corridor', 'room · still', 'stone corridor room tone ambience'),
+    ] : [
       t('Arrakeen Sunrise' + tag, 'vast · warm', 'arrakis desert ambient music'),
       t('The Spice Must Flow', 'hypnotic · pulsing', 'dune inspired dark ambient'),
       t('Sietch Tabr Nights', 'calm · intimate', 'desert night ambient duduk'),

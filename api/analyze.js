@@ -19,6 +19,7 @@ Return ONLY a JSON object with this exact shape:
   "why": "one sentence (max 22 words) explaining the sonic direction for this book",
   "scenes": ["5 scene-mood labels"],
   "styles": ["5 music-style labels"],
+  "sounds": ["5 ambient-soundscape labels"],
   "tracks": [{"name": "track name", "vibe": "2-3 words", "query": "youtube search query", "duration": "~1 hr"}]
 }
 
@@ -29,6 +30,7 @@ IDENTITY RULES:
 
 RULES FOR TRACKS (exactly 6):
 - Instrumental only. Every query MUST end with "instrumental no lyrics" and should target long mixes (1 hour+), e.g. "arrakis desert ambient music 1 hour instrumental no lyrics".
+- EXCEPTION — sound mode: if the reader requested a soundscape (see SOUND MODE below), these rules are replaced by the SOUND MODE rules.
 - Match the book's real genre and setting. Never contradict it:
   self-help / non-fiction → lofi study beats, focus piano, calm concentration
   epic fantasy → cinematic orchestral, celtic, medieval tavern, battle drums
@@ -46,18 +48,27 @@ RULES FOR SCENES (exactly 5): scene moods that exist IN THIS BOOK, 2-4 words, Ti
 
 RULES FOR STYLES (exactly 5): music styles that suit THIS book, 1-3 words, Title Case, always including "Lofi Beats" and at least one of "Ambient", "Piano" — the rest chosen for the book (e.g. "Epic Orchestral", "Celtic Folk", "Dark Synth", "Noir Jazz", "Acoustic Guitar", "Choral", "Space Ambient", "Guzheng & Koto").
 
-If the reader supplies a scene mood and/or a music style, ALL 6 tracks must serve that scene in that style while staying inside the book's world.`;
+RULES FOR SOUNDS (exactly 5): ambient soundscapes that exist IN THIS BOOK's world — pure atmosphere, no music and no instruments. Think of what a reader would actually hear standing inside a scene: rain, wind, ocean waves, a crackling fire, a crowded tavern, a market, a forest at night, a creaking ship, a moving train, whispers in a library, a thunderstorm, snow, cicadas, a busy café. 2-4 words, Title Case, named after the book's own places and moments — "Desert Wind at Dusk", "Tavern Fire and Chatter", "Rain on the Moors", "Ship Creaks and Waves", "Sietch Water Drip". Never name a musical style here.
+
+SOUND MODE — when the reader requests a soundscape, the 6 tracks stop being music entirely:
+- Every query targets a long ambience/soundscape recording (1 hour+) and MUST end with "ambience 1 hour no music", e.g. "medieval tavern fireplace crowd ambience 1 hour no music", "heavy rain on window ambience 1 hour no music".
+- No melody, no instruments, no soundtrack, no lofi. If the atmosphere would normally be scored, pick the raw sound instead (a battle becomes distant drums and wind, not battle music).
+- Spread the 6 across the book's world: 2 different weather/nature ambiences, 1 interior (room, tavern, library, ship), 1 crowd or human murmur, 1 fire/water/hearth, 1 signature sound of this book's setting.
+- Track names stay evocative and specific to the book ("Arrakeen Sandstorm", "The Prancing Pony at Night"), and "vibe" describes the sound ("wind · grit", "fire · voices").
+
+If the reader supplies a scene mood and/or a music style, ALL 6 tracks must serve that scene in that style while staying inside the book's world. A scene mood combines with sound mode too (the same atmosphere, tuned to that moment).`;
 
 const LANG_NAMES = { uk: 'Ukrainian', en: 'English', pl: 'Polish', de: 'German', es: 'Spanish', fr: 'French', it: 'Italian', pt: 'Portuguese', tr: 'Turkish', ja: 'Japanese', ko: 'Korean', zh: 'Simplified Chinese' };
 
-function buildUser({ title, author, genre, desc, mood, style, lang }) {
+function buildUser({ title, author, genre, desc, mood, style, sound, lang }) {
   const lines = [`Book: "${title}"${author ? ` by ${author}` : ''}`];
   if (author || desc) lines.push('This identity is confirmed by the reader. Do not substitute another book.');
-  if (lang && lang !== 'en' && LANG_NAMES[lang]) lines.push(`Write "why", scene labels, style labels, track names and vibes in ${LANG_NAMES[lang]}. Keep the book title as given and keep every "query" in English.`);
+  if (lang && lang !== 'en' && LANG_NAMES[lang]) lines.push(`Write "why", scene labels, style labels, sound labels, track names and vibes in ${LANG_NAMES[lang]}. Keep the book title as given and keep every "query" in English.`);
   if (genre) lines.push(`Catalogue genre: ${genre}`);
   if (desc) lines.push(`Catalogue description: ${desc}`);
   if (mood) lines.push(`Scene mood requested by the reader: "${mood}". Curate all 6 tracks for this scene.`);
   if (style) lines.push(`Music style requested by the reader: "${style}". Every track must be in this style.`);
+  if (sound) lines.push(`SOUND MODE. Soundscape requested by the reader: "${sound}". All 6 tracks must be pure ambience recordings for this atmosphere — no music, no instruments — following the SOUND MODE rules.`);
   lines.push('Respond with the JSON object only.');
   return lines.join('\n');
 }
@@ -98,6 +109,7 @@ function normalise(raw, fallbackTitle) {
   const list = (v, n) => (Array.isArray(v) ? v : []).map((m) => str(m, 40)).filter(Boolean).slice(0, n);
   const scenes = list(raw.scenes || raw.moods, 5);
   const styles = list(raw.styles, 5);
+  const sounds = list(raw.sounds, 5);
   if (tracks.length < 3) throw new Error('AI returned too few tracks');
   return {
     book: {
@@ -111,6 +123,7 @@ function normalise(raw, fallbackTitle) {
     why: str(raw.why, 200),
     scenes,
     styles,
+    sounds,
     moods: scenes, // backwards compatibility
     tracks,
   };
@@ -128,6 +141,7 @@ export default async function handler(req, res) {
     desc: str(q.desc || q.description, 600),
     mood: str(q.mood, 60),
     style: str(q.style, 40),
+    sound: str(q.sound, 60),
     lang: /^[a-z]{2}$/.test(String(q.lang || '')) ? String(q.lang) : 'en',
   };
   if (!input.title) {
@@ -137,7 +151,7 @@ export default async function handler(req, res) {
 
   const configured = getProviders().length > 0;
 
-  const cacheKey = [input.title, input.author, input.mood, input.style, input.lang].join('|').toLowerCase();
+  const cacheKey = [input.title, input.author, input.mood, input.style, input.sound, input.lang].join('|').toLowerCase();
   // `fresh=1` = the reader pressed "try again" after a degraded answer → skip the short-lived memory cache.
   const hit = q.fresh === '1' ? null : await cache.get(cacheKey);
   if (hit) {
@@ -167,7 +181,7 @@ export default async function handler(req, res) {
       // Catalogue hints (wrong author / knock-off edition) can confuse the model → retry with the title alone.
       if (!input.author && !input.genre && !input.desc) throw ne;
       console.warn('[analyze] weak answer with hints, retrying title-only:', ne.message);
-      const bare = [messages[0], { role: 'user', content: buildUser({ title: input.title, mood: input.mood, style: input.style, lang: input.lang }) }];
+      const bare = [messages[0], { role: 'user', content: buildUser({ title: input.title, mood: input.mood, style: input.style, sound: input.sound, lang: input.lang }) }];
       ({ content, provider, model } = await chat(bare, { json: true, maxTokens: 2200, temperature: 0.5, timeoutMs: 25000 }));
       result = normalise(extractJson(content), input.title);
     }

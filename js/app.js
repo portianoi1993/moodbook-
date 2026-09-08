@@ -1,6 +1,6 @@
 // Static imports carry the same cache-busting version as the <script> tag (browsers cache /js for an hour).
-import { mountAll, mountMagnetic, mountSpotlight } from './fx.js?v=20260908a1';
-import { t, initI18n, getLang, setLang, LANGS } from './i18n.js?v=20260908a1';
+import { mountAll, mountMagnetic, mountSpotlight } from './fx.js?v=20260908a2';
+import { t, initI18n, getLang, setLang, LANGS } from './i18n.js?v=20260908a2';
 /* MoodBook v2 — vanilla JS, no build step. */
 await initI18n(); // load the dictionary and translate static copy before anything measures or splits it
 
@@ -77,8 +77,10 @@ async function api(path, params = {}) {
 // ═══════════════ state ═══════════════
 const S = {
   book: null,          // {title, author, cover, genre, desc, ...}
-  ai: null,            // {book, why, moods, tracks}
-  mood: '',
+  ai: null,            // {book, why, scenes, styles, sounds, tracks}
+  mood: '',            // scene from the book
+  style: '',           // music style
+  sound: '',           // ambient soundscape — replaces the music entirely
   tracks: [],
   playingIdx: -1,
   queue: [],           // tracks currently loaded into the player context
@@ -275,7 +277,7 @@ async function startSearch(raw, picked = null, { free = false } = {}) {
   if (!isPro() && !onShelf && freeLeft() <= 0) { showPaywall(); return; }
 
   // reset view
-  S.book = null; S.ai = null; S.mood = ''; S.style = ''; S.tracks = [];
+  S.book = null; S.ai = null; S.mood = ''; S.style = ''; S.sound = ''; S.tracks = [];
   el.hero.hidden = true; el.paywall.hidden = true; el.results.hidden = false;
   el.saveBtn.classList.remove('is-done'); el.saveBtn.textContent = t('+ Save to shelf');
   skeletonBook(picked?.title || q); skeletonMoods(); skeletonTracks(); el.tracksMeta.textContent = '';
@@ -322,14 +324,16 @@ async function reconcileIdentity(aiBook) {
   Object.assign(b, { title: aiBook.title || b.title, author: aiBook.author, genre: b.genre || aiBook.genre, trusted: true });
 }
 
-async function loadSoundtrack(mood = S.mood || '', style = S.style || '', { fresh = false } = {}) {
-  S.mood = mood; S.style = style;
-  const what = [mood, style].filter(Boolean).join(' · ');
+async function loadSoundtrack(mood = S.mood || '', style = S.style || '', sound = S.sound || '', { fresh = false } = {}) {
+  // Music style and sound mode are mutually exclusive: one asks for a melody, the other for none.
+  if (sound) style = '';
+  S.mood = mood; S.style = style; S.sound = sound;
+  const what = [mood, style, sound].filter(Boolean).join(' · ');
   setStatus(what ? t('Re-tuning for “{what}”…', { what }) : t('Composing the soundtrack…'));
   skeletonTracks();
   const b = S.book;
   try {
-    const d = await api('/api/analyze', { title: b.title, author: b.author, genre: b.genre, desc: (b.desc || '').slice(0, 600), mood, style, lang: getLang(), fresh: fresh ? '1' : '', r: fresh ? Date.now() : '' });
+    const d = await api('/api/analyze', { title: b.title, author: b.author, genre: b.genre, desc: (b.desc || '').slice(0, 600), mood, style, sound, lang: getLang(), fresh: fresh ? '1' : '', r: fresh ? Date.now() : '' });
     if (!what || !S.ai) { S.ai = d; renderMoods(); }
     else { S.ai = { ...S.ai, tracks: d.tracks, why: d.why || S.ai.why }; }
     S.tracks = d.tracks || [];
@@ -339,16 +343,16 @@ async function loadSoundtrack(mood = S.mood || '', style = S.style || '', { fres
     if (d.degraded) {
       el.status.classList.add('is-on');
       el.status.innerHTML = `<span aria-hidden="true">⚡</span><span>${t('Our AI is busy right now, so this soundtrack was matched by genre, not by this exact book.')}</span><button type="button" class="ghost" id="retryAi">${t('Try again')}</button>`;
-      $('#retryAi').onclick = () => loadSoundtrack(mood, style, { fresh: true });
+      $('#retryAi').onclick = () => loadSoundtrack(mood, style, sound, { fresh: true });
     }
-    el.tracksMeta.textContent = t('{n} long mixes', { n: S.tracks.length }) + (mood ? ' · ' + mood : '');
+    el.tracksMeta.textContent = (sound ? t('{n} ambiences', { n: S.tracks.length }) : t('{n} long mixes', { n: S.tracks.length })) + (mood ? ' · ' + mood : '');
     document.title = `${b.title} — MoodBook`;
     // warm the first search so the first play is instant (each YouTube search costs quota, so only one)
     S.tracks.slice(0, 1).forEach((tr) => api('/api/search', { q: tr.query }).catch(() => {}));
   } catch (e) {
     setStatus('');
     el.tracks.innerHTML = `<li class="error"><b>${t("Couldn't compose the soundtrack.")}</b>${esc(e.message)}${e.detail ? `<small>${esc(e.detail)}</small>` : ''}<button type="button" class="ghost" id="retryBtn">${t('Try again')}</button></li>`;
-    $('#retryBtn').onclick = () => loadSoundtrack(mood, style);
+    $('#retryBtn').onclick = () => loadSoundtrack(mood, style, sound);
     if (!S.ai) el.moodGrid.innerHTML = `<p class="muted small">${t('Scenes will appear once the soundtrack loads.')}</p>`;
   }
 }
@@ -372,18 +376,24 @@ function renderBookCard() {
 function renderMoods() {
   const scenes = S.ai?.scenes || S.ai?.moods || [];
   const styles = S.ai?.styles || [];
+  const sounds = S.ai?.sounds || [];
   const pills = (list, cur) => list.map((m) => `<button type="button" class="mood" aria-pressed="${m === cur}">${esc(m)}</button>`).join('');
   el.moodGrid.innerHTML = pills(scenes, S.mood);
   const sg = $('#styleGrid'); if (sg) sg.innerHTML = pills(styles, S.style);
+  const dg = $('#soundGrid'); if (dg) dg.innerHTML = pills(sounds, S.sound);
   const wire = (grid, key) => grid && $$('.mood', grid).forEach((btn) => btn.addEventListener('click', () => {
     const m = btn.textContent;
     const off = btn.getAttribute('aria-pressed') === 'true';
     $$('.mood', grid).forEach((x) => x.setAttribute('aria-pressed', 'false'));
     if (!off) btn.setAttribute('aria-pressed', 'true');
-    if (key === 'mood') loadSoundtrack(off ? '' : m, S.style); else loadSoundtrack(S.mood, off ? '' : m);
+    const pick = off ? '' : m;
+    // Style and sound are alternatives: choosing one visually releases the other.
+    if (key === 'mood') loadSoundtrack(pick, S.style, S.sound);
+    else if (key === 'style') { if (pick && dg) $$('.mood', dg).forEach((x) => x.setAttribute('aria-pressed', 'false')); loadSoundtrack(S.mood, pick, ''); }
+    else { if (pick && sg) $$('.mood', sg).forEach((x) => x.setAttribute('aria-pressed', 'false')); loadSoundtrack(S.mood, '', pick); }
     if (window.innerWidth < 1000) $('#tracks-title').scrollIntoView({ behavior: 'smooth', block: 'start' });
   }));
-  wire(el.moodGrid, 'mood'); wire(sg, 'style');
+  wire(el.moodGrid, 'mood'); wire(sg, 'style'); wire(dg, 'sound');
 }
 
 const isLiked = (t) => DB.liked.some((x) => x.query === t.query);
@@ -489,7 +499,7 @@ el.shareBtn.addEventListener('click', async () => {
     const { renderReadingCard } = await import('./card.js' + new URL(import.meta.url).search);
     cardBlob = await renderReadingCard({
       book: { title: S.book.title, author: S.book.author || S.ai?.book?.author || '', cover: S.book.cover, genre: (S.ai?.book?.genre || S.book.genre || '').split(/[,/·]/)[0].trim() },
-      why: S.ai?.why || '', tracks: S.tracks, scene: S.mood, style: S.style, url: shareUrl(), host: location.host,
+      why: S.ai?.why || '', tracks: S.tracks, scene: S.mood, style: S.style || S.sound, url: shareUrl(), host: location.host,
     });
     if (cardObjUrl) URL.revokeObjectURL(cardObjUrl);
     cardObjUrl = URL.createObjectURL(cardBlob);
@@ -814,6 +824,19 @@ function renderAccount() {
   $('#payAlt').textContent = billing === 'monthly' ? t('or {price}/year (save 50%)', { price: PRICE.annual }) : t('or {price}/month', { price: PRICE.monthly });
 }
 $$('.bill').forEach((b) => b.addEventListener('click', () => { billing = b.dataset.bill; renderAccount(); }));
+// Founding Reader is capped at 100 lifetime seats; the count comes from completed Paddle sales.
+async function renderSeats() {
+  let d;
+  try { d = await api('/api/seats'); } catch { return; } // store or network down → keep the static copy
+  if (!d || typeof d.left !== 'number') return;
+  const copy = d.left <= 0
+    ? t('All 100 seats are gone.')
+    : d.left <= 25
+      ? t('Only {n} of 100 seats left.', { n: d.left })
+      : t('{n} of 100 seats left.', { n: d.left });
+  ['#seatsLanding', '#seatsAcct'].forEach((sel) => { const n = $(sel); if (n) n.textContent = copy; });
+  if (d.left <= 0) { const b = $('#founderCta'); if (b) { b.disabled = true; b.textContent = t('Sold out'); } }
+}
 $('#proCta')?.addEventListener('click', () => openPaddleCheckout(billing === 'monthly' ? PADDLE_PRICE.monthly : PADDLE_PRICE.annual));
 $('#founderCta')?.addEventListener('click', () => openPaddleCheckout(PADDLE_PRICE.lifetime));
 $('#payCta')?.addEventListener('click', () => openPaddleCheckout(billing === 'monthly' ? PADDLE_PRICE.monthly : PADDLE_PRICE.annual));
@@ -832,7 +855,7 @@ $('#finalCta')?.addEventListener('click', (e) => {
 (function boot() {
   // one-time migration from v1 keys
   if (!DB.books.length && ls.raw('mb_books')) { try { DB.books = JSON.parse(ls.raw('mb_books')) || []; } catch {} }
-  renderQuota(); renderAccount();
+  renderQuota(); renderAccount(); renderSeats();
   const params = new URLSearchParams(location.search);
   // Deep link with a promo code (e.g. sent to a blogger): redeem it once and clean the URL.
   if (params.get('code')) {

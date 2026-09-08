@@ -58,6 +58,7 @@ function drawLogo(ctx, x, y, s) {
 
 /**
  * @param {{book:{title,author,cover,genre}, why:string, tracks:Array<{name,vibe}>, scene?:string, style?:string, url:string, host:string}} data
+ * `style` carries the music style, or the ambient soundscape when the reader chose sound over music.
  * @returns {Promise<Blob>} PNG
  */
 export async function renderReadingCard(data) {

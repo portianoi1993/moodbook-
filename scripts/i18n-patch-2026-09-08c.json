@@ -1,0 +1,104 @@
+{
+  "remove": [],
+  "add": {
+    "Sound instead of music": {
+      "uk": "Звуки замість музики",
+      "es": "Sonido en vez de música",
+      "fr": "Le son plutôt que la musique",
+      "de": "Klang statt Musik",
+      "it": "Suono invece di musica",
+      "pt": "Som em vez de música",
+      "pl": "Dźwięki zamiast muzyki",
+      "zh": "用环境音代替音乐",
+      "ja": "音楽ではなく音"
+    },
+    "No melody at all — just the world of the book: rain, fire, waves, a crowded tavern.": {
+      "uk": "Жодної мелодії — тільки світ книги: дощ, вогонь, хвилі, гомін таверни.",
+      "es": "Sin melodía alguna: solo el mundo del libro — lluvia, fuego, olas, una taberna llena.",
+      "fr": "Aucune mélodie : seulement le monde du livre — pluie, feu, vagues, une taverne bondée.",
+      "de": "Keine Melodie — nur die Welt des Buches: Regen, Feuer, Wellen, eine volle Taverne.",
+      "it": "Nessuna melodia: solo il mondo del libro — pioggia, fuoco, onde, una taverna affollata.",
+      "pt": "Sem melodia nenhuma — apenas o mundo do livro: chuva, fogo, ondas, uma taberna cheia.",
+      "pl": "Żadnej melodii — tylko świat książki: deszcz, ogień, fale, gwarna tawerna.",
+      "zh": "没有旋律，只有书中的世界：雨声、火声、海浪、喧闹的酒馆。",
+      "ja": "旋律は一切なし。あるのは本の世界だけ——雨、炎、波、賑わう酒場。"
+    },
+    "Ambient sounds": {
+      "uk": "Звуки атмосфери",
+      "es": "Sonidos ambientales",
+      "fr": "Sons d'ambiance",
+      "de": "Umgebungsgeräusche",
+      "it": "Suoni d'ambiente",
+      "pt": "Sons ambientes",
+      "pl": "Dźwięki otoczenia",
+      "zh": "环境音",
+      "ja": "環境音"
+    },
+    "{n} ambiences": {
+      "uk": "{n} атмосфер",
+      "es": "{n} ambientes",
+      "fr": "{n} ambiances",
+      "de": "{n} Klangkulissen",
+      "it": "{n} ambienti",
+      "pt": "{n} ambientes",
+      "pl": "{n} tł dźwiękowych",
+      "zh": "{n} 段环境音",
+      "ja": "{n}件の環境音"
+    },
+    "100 seats, then it is gone.": {
+      "uk": "100 місць, і на цьому все.",
+      "es": "100 plazas y se acaba.",
+      "fr": "100 places, et c'est fini.",
+      "de": "100 Plätze, dann ist Schluss.",
+      "it": "100 posti, poi finisce.",
+      "pt": "100 lugares e acaba.",
+      "pl": "100 miejsc i koniec.",
+      "zh": "共 100 个名额，售完为止。",
+      "ja": "枠は100席、なくなり次第終了です。"
+    },
+    "{n} of 100 seats left.": {
+      "uk": "Лишилось {n} зі 100 місць.",
+      "es": "Quedan {n} de 100 plazas.",
+      "fr": "Il reste {n} places sur 100.",
+      "de": "Noch {n} von 100 Plätzen frei.",
+      "it": "Restano {n} posti su 100.",
+      "pt": "Restam {n} de 100 lugares.",
+      "pl": "Zostało {n} ze 100 miejsc.",
+      "zh": "100 个名额还剩 {n} 个。",
+      "ja": "100席のうち残り{n}席です。"
+    },
+    "Only {n} of 100 seats left.": {
+      "uk": "Лишилось усього {n} зі 100 місць.",
+      "es": "Solo quedan {n} de 100 plazas.",
+      "fr": "Plus que {n} places sur 100.",
+      "de": "Nur noch {n} von 100 Plätzen frei.",
+      "it": "Solo {n} posti su 100 rimasti.",
+      "pt": "Só restam {n} de 100 lugares.",
+      "pl": "Zostało tylko {n} ze 100 miejsc.",
+      "zh": "100 个名额仅剩 {n} 个。",
+      "ja": "100席のうち残りわずか{n}席です。"
+    },
+    "All 100 seats are gone.": {
+      "uk": "Усі 100 місць розібрані.",
+      "es": "Las 100 plazas están agotadas.",
+      "fr": "Les 100 places sont prises.",
+      "de": "Alle 100 Plätze sind vergeben.",
+      "it": "Tutti i 100 posti sono esauriti.",
+      "pt": "Os 100 lugares esgotaram.",
+      "pl": "Wszystkie 100 miejsc zajęte.",
+      "zh": "100 个名额已全部售罄。",
+      "ja": "100席すべて埋まりました。"
+    },
+    "Sold out": {
+      "uk": "Місць немає",
+      "es": "Agotado",
+      "fr": "Complet",
+      "de": "Ausverkauft",
+      "it": "Esaurito",
+      "pt": "Esgotado",
+      "pl": "Wyprzedane",
+      "zh": "已售罄",
+      "ja": "完売"
+    }
+  }
+}

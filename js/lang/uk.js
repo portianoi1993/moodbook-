@@ -248,4 +248,13 @@ export default {
   'Become a Founding Reader': 'Стати Founding Reader',
   '🎉 Welcome to Pro. Enjoy the unlimited soundtrack.': '🎉 Ласкаво просимо до Pro. Насолоджуйся необмеженим саундтреком.',
   'Payments didn\'t load. Check your connection and try again.': 'Оплата не завантажилась. Перевір з\'єднання і спробуй ще раз.',
+  'Sound instead of music': 'Звуки замість музики',
+  'No melody at all — just the world of the book: rain, fire, waves, a crowded tavern.': 'Жодної мелодії — тільки світ книги: дощ, вогонь, хвилі, гомін таверни.',
+  'Ambient sounds': 'Звуки атмосфери',
+  '{n} ambiences': '{n} атмосфер',
+  '100 seats, then it is gone.': '100 місць, і на цьому все.',
+  '{n} of 100 seats left.': 'Лишилось {n} зі 100 місць.',
+  'Only {n} of 100 seats left.': 'Лишилось усього {n} зі 100 місць.',
+  'All 100 seats are gone.': 'Усі 100 місць розібрані.',
+  'Sold out': 'Місць немає',
 };

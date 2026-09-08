@@ -248,4 +248,13 @@ export default {
   'Become a Founding Reader': 'Diventa Founding Reader',
   '🎉 Welcome to Pro. Enjoy the unlimited soundtrack.': '🎉 Benvenuto in Pro. Goditi la colonna sonora illimitata.',
   'Payments didn\'t load. Check your connection and try again.': 'I pagamenti non si sono caricati. Controlla la connessione e riprova.',
+  'Sound instead of music': 'Suono invece di musica',
+  'No melody at all — just the world of the book: rain, fire, waves, a crowded tavern.': 'Nessuna melodia: solo il mondo del libro — pioggia, fuoco, onde, una taverna affollata.',
+  'Ambient sounds': 'Suoni d\'ambiente',
+  '{n} ambiences': '{n} ambienti',
+  '100 seats, then it is gone.': '100 posti, poi finisce.',
+  '{n} of 100 seats left.': 'Restano {n} posti su 100.',
+  'Only {n} of 100 seats left.': 'Solo {n} posti su 100 rimasti.',
+  'All 100 seats are gone.': 'Tutti i 100 posti sono esauriti.',
+  'Sold out': 'Esaurito',
 };

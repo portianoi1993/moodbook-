@@ -248,4 +248,13 @@ export default {
   'Become a Founding Reader': 'Founding Readerになる',
   '🎉 Welcome to Pro. Enjoy the unlimited soundtrack.': '🎉 Proへようこそ。無制限のサウンドトラックをお楽しみください。',
   'Payments didn\'t load. Check your connection and try again.': '決済の読み込みに失敗しました。接続を確認して再試行してください。',
+  'Sound instead of music': '音楽ではなく音',
+  'No melody at all — just the world of the book: rain, fire, waves, a crowded tavern.': '旋律は一切なし。あるのは本の世界だけ——雨、炎、波、賑わう酒場。',
+  'Ambient sounds': '環境音',
+  '{n} ambiences': '{n}件の環境音',
+  '100 seats, then it is gone.': '枠は100席、なくなり次第終了です。',
+  '{n} of 100 seats left.': '100席のうち残り{n}席です。',
+  'Only {n} of 100 seats left.': '100席のうち残りわずか{n}席です。',
+  'All 100 seats are gone.': '100席すべて埋まりました。',
+  'Sold out': '完売',
 };
