@@ -1,0 +1,159 @@
+{
+  "remove": [],
+  "add": {
+    "The music": {
+      "uk": "Музика",
+      "es": "La música",
+      "fr": "La musique",
+      "de": "Die Musik",
+      "it": "La musica",
+      "pt": "A música",
+      "pl": "Muzyka",
+      "zh": "音乐",
+      "ja": "音楽"
+    },
+    "MoodBook writes the brief. YouTube plays the music.": {
+      "uk": "MoodBook складає завдання. Музику вмикає YouTube.",
+      "es": "MoodBook escribe el brief. YouTube pone la música.",
+      "fr": "MoodBook rédige le brief. YouTube diffuse la musique.",
+      "de": "MoodBook schreibt das Briefing. YouTube spielt die Musik.",
+      "it": "MoodBook scrive il brief. YouTube mette la musica.",
+      "pt": "A MoodBook escreve o briefing. O YouTube toca a música.",
+      "pl": "MoodBook pisze brief. Muzykę odtwarza YouTube.",
+      "zh": "MoodBook 负责构思，音乐由 YouTube 播放。",
+      "ja": "構成はMoodBook、再生はYouTube。"
+    },
+    "We never host or sell music.": {
+      "uk": "Ми не зберігаємо і не продаємо музику.",
+      "es": "Nunca alojamos ni vendemos música.",
+      "fr": "Nous n'hébergeons ni ne vendons de musique.",
+      "de": "Wir hosten und verkaufen keine Musik.",
+      "it": "Non ospitiamo né vendiamo musica.",
+      "pt": "Nunca alojamos nem vendemos música.",
+      "pl": "Nie hostujemy ani nie sprzedajemy muzyki.",
+      "zh": "我们从不存储或出售音乐。",
+      "ja": "音楽の保存も販売も行いません。"
+    },
+    "Nothing is uploaded, downloaded, re-hosted or resold. MoodBook keeps no audio files at all.": {
+      "uk": "Нічого не завантажується, не перезаливається і не перепродається. MoodBook не зберігає жодних аудіофайлів.",
+      "es": "Nada se sube, se descarga, se realoja ni se revende. MoodBook no guarda ningún archivo de audio.",
+      "fr": "Rien n'est téléversé, téléchargé, réhébergé ni revendu. MoodBook ne conserve aucun fichier audio.",
+      "de": "Nichts wird hochgeladen, heruntergeladen, neu gehostet oder weiterverkauft. MoodBook speichert keinerlei Audiodateien.",
+      "it": "Nulla viene caricato, scaricato, riospitato o rivenduto. MoodBook non conserva alcun file audio.",
+      "pt": "Nada é carregado, descarregado, realojado ou revendido. A MoodBook não guarda quaisquer ficheiros de áudio.",
+      "pl": "Nic nie jest przesyłane, pobierane, ponownie hostowane ani odsprzedawane. MoodBook nie przechowuje żadnych plików audio.",
+      "zh": "不上传、不下载、不转存、不转售。MoodBook 不保存任何音频文件。",
+      "ja": "アップロードもダウンロードも再配信も転売もしません。MoodBookは音声ファイルを一切保持しません。"
+    },
+    "Every mix plays on YouTube.": {
+      "uk": "Кожен мікс грає на YouTube.",
+      "es": "Cada mezcla suena en YouTube.",
+      "fr": "Chaque mix est lu sur YouTube.",
+      "de": "Jeder Mix läuft auf YouTube.",
+      "it": "Ogni mix viene riprodotto su YouTube.",
+      "pt": "Cada mistura toca no YouTube.",
+      "pl": "Każdy miks odtwarza się na YouTube.",
+      "zh": "每一段混音都在 YouTube 上播放。",
+      "ja": "すべてのミックスはYouTubeで再生されます。"
+    },
+    "Tracks run inside YouTube's official embedded player, under YouTube's own licences, with its branding and controls intact. Every play counts for the channel that made it.": {
+      "uk": "Треки відтворюються в офіційному вбудованому плеєрі YouTube, за ліцензіями самого YouTube, зі збереженим брендингом і керуванням. Кожне прослуховування зараховується каналу, який його створив.",
+      "es": "Las pistas se reproducen en el reproductor incrustado oficial de YouTube, bajo las licencias del propio YouTube, con su marca y sus controles intactos. Cada reproducción cuenta para el canal que la creó.",
+      "fr": "Les morceaux sont lus dans le lecteur intégré officiel de YouTube, sous les licences de YouTube, avec sa marque et ses commandes intactes. Chaque écoute est comptée pour la chaîne qui l'a créée.",
+      "de": "Die Titel laufen im offiziellen eingebetteten YouTube-Player, unter den Lizenzen von YouTube selbst, mit unverändertem Branding und unveränderten Bedienelementen. Jeder Abruf zählt für den Kanal, der ihn erstellt hat.",
+      "it": "I brani vengono riprodotti nel player incorporato ufficiale di YouTube, con le licenze di YouTube stesso e con marchio e controlli intatti. Ogni riproduzione viene conteggiata al canale che l'ha creata.",
+      "pt": "As faixas são reproduzidas no leitor incorporado oficial do YouTube, ao abrigo das licenças do próprio YouTube, com a marca e os controlos intactos. Cada reprodução conta para o canal que a criou.",
+      "pl": "Utwory odtwarzane są w oficjalnym osadzonym odtwarzaczu YouTube, na licencjach samego YouTube, z zachowanym brandingiem i sterowaniem. Każde odtworzenie liczy się dla kanału, który je stworzył.",
+      "zh": "曲目在 YouTube 官方嵌入式播放器中播放，遵循 YouTube 自身的授权，保留其品牌标识与控件。每一次播放都计入创作该内容的频道。",
+      "ja": "楽曲はYouTube公式の埋め込みプレーヤーで、YouTube自身のライセンスのもと、ブランド表示と操作機能をそのままに再生されます。再生数は制作したチャンネルに反映されます。"
+    },
+    "Pro pays for the AI, not for the music.": {
+      "uk": "Pro — це плата за AI, а не за музику.",
+      "es": "Pro paga la IA, no la música.",
+      "fr": "Pro paie l'IA, pas la musique.",
+      "de": "Pro bezahlt die KI, nicht die Musik.",
+      "it": "Pro paga l'IA, non la musica.",
+      "pt": "O Pro paga a IA, não a música.",
+      "pl": "Pro płaci za AI, nie za muzykę.",
+      "zh": "Pro 付费购买的是 AI，而不是音乐。",
+      "ja": "Proが対価を払うのはAIであって、音楽ではありません。"
+    },
+    "The subscription covers reading the book and composing the brief. The mixes themselves are free to anyone on YouTube.": {
+      "uk": "Підписка покриває читання книги і складання завдання. Самі мікси безкоштовні для всіх на YouTube.",
+      "es": "La suscripción cubre la lectura del libro y la creación del brief. Las mezclas en sí son gratuitas para cualquiera en YouTube.",
+      "fr": "L'abonnement couvre la lecture du livre et la rédaction du brief. Les mix eux-mêmes sont gratuits pour tous sur YouTube.",
+      "de": "Das Abo deckt das Lesen des Buchs und das Erstellen des Briefings ab. Die Mixe selbst sind für alle auf YouTube kostenlos.",
+      "it": "L'abbonamento copre la lettura del libro e la creazione del brief. I mix in sé sono gratuiti per chiunque su YouTube.",
+      "pt": "A subscrição cobre a leitura do livro e a criação do briefing. As misturas em si são gratuitas para qualquer pessoa no YouTube.",
+      "pl": "Subskrypcja obejmuje przeczytanie książki i przygotowanie briefu. Same miksy są darmowe dla każdego na YouTube.",
+      "zh": "订阅费用覆盖的是解读书籍与生成方案。混音本身在 YouTube 上对所有人免费。",
+      "ja": "サブスクリプションの対象は、本を読み解き構成をつくる工程です。ミックス自体はYouTube上で誰でも無料で聴けます。"
+    },
+    "Open any mix on YouTube.": {
+      "uk": "Будь-який мікс можна відкрити на YouTube.",
+      "es": "Abre cualquier mezcla en YouTube.",
+      "fr": "Ouvrez n'importe quel mix sur YouTube.",
+      "de": "Jeden Mix auf YouTube öffnen.",
+      "it": "Apri qualsiasi mix su YouTube.",
+      "pt": "Abre qualquer mistura no YouTube.",
+      "pl": "Otwórz dowolny miks na YouTube.",
+      "zh": "任何混音都可在 YouTube 上打开。",
+      "ja": "どのミックスもYouTubeで開けます。"
+    },
+    "The player keeps YouTube's own controls, so a mix opens on YouTube in one click, free, on Free and on Pro alike.": {
+      "uk": "Плеєр зберігає рідні кнопки YouTube, тож мікс відкривається на YouTube в один клік — безкоштовно, і на Free, і на Pro.",
+      "es": "El reproductor conserva los controles propios de YouTube, así que una mezcla se abre en YouTube con un clic, gratis, tanto en Free como en Pro.",
+      "fr": "Le lecteur conserve les commandes propres de YouTube : un mix s'ouvre sur YouTube en un clic, gratuitement, aussi bien en Free qu'en Pro.",
+      "de": "Der Player behält die eigenen Bedienelemente von YouTube, sodass ein Mix mit einem Klick auf YouTube geöffnet wird — kostenlos, mit Free wie mit Pro.",
+      "it": "Il player mantiene i controlli originali di YouTube, così un mix si apre su YouTube con un clic, gratis, sia con Free sia con Pro.",
+      "pt": "O leitor mantém os controlos do próprio YouTube, por isso uma mistura abre no YouTube com um clique, grátis, tanto no Free como no Pro.",
+      "pl": "Odtwarzacz zachowuje własne sterowanie YouTube, więc miks otwiera się na YouTube jednym kliknięciem — za darmo, zarówno w Free, jak i w Pro.",
+      "zh": "播放器保留 YouTube 自带的控件，任何混音一键即可在 YouTube 上打开，免费，Free 与 Pro 用户皆然。",
+      "ja": "プレーヤーはYouTube本来の操作ボタンをそのまま備えているため、ミックスはワンクリックでYouTubeで開けます。無料で、FreeでもProでも同じです。"
+    },
+    "Pro unlocks unlimited AI composing. The music itself always plays free on YouTube.": {
+      "uk": "Pro відкриває необмежений AI-підбір. Сама музика завжди грає безкоштовно на YouTube.",
+      "es": "Pro desbloquea composiciones con IA sin límite. La música en sí siempre suena gratis en YouTube.",
+      "fr": "Pro débloque des compositions IA illimitées. La musique elle-même est toujours diffusée gratuitement sur YouTube.",
+      "de": "Pro schaltet unbegrenztes KI-Komponieren frei. Die Musik selbst läuft immer kostenlos auf YouTube.",
+      "it": "Pro sblocca composizioni con IA illimitate. La musica in sé viene sempre riprodotta gratis su YouTube.",
+      "pt": "O Pro desbloqueia composições com IA sem limite. A música em si toca sempre gratuitamente no YouTube.",
+      "pl": "Pro odblokowuje nieograniczone komponowanie z AI. Sama muzyka zawsze odtwarza się za darmo na YouTube.",
+      "zh": "Pro 解锁无限次 AI 编排。音乐本身始终在 YouTube 上免费播放。",
+      "ja": "ProはAIによる無制限の選曲を解放します。音楽そのものは常にYouTubeで無料で再生されます。"
+    },
+    "What exactly am I paying for?": {
+      "uk": "За що саме я плачу?",
+      "es": "¿Por qué estoy pagando exactamente?",
+      "fr": "Pour quoi est-ce que je paie exactement ?",
+      "de": "Wofür bezahle ich genau?",
+      "it": "Per cosa sto pagando esattamente?",
+      "pt": "Pelo que estou exatamente a pagar?",
+      "pl": "Za co dokładnie płacę?",
+      "zh": "我付费买的到底是什么？",
+      "ja": "料金は具体的に何に対して払うのですか？"
+    },
+    "The AI that reads your book and composes the brief: its mood, its scenes and the musical styles that fit it. The music is free on YouTube and always will be. Pro buys unlimited composing, never the music.": {
+      "uk": "За AI, який читає твою книгу і складає завдання: її настрій, сцени і музичні стилі, що їй пасують. Музика на YouTube безкоштовна і такою залишиться. Pro купує необмежений підбір, а не музику.",
+      "es": "La IA que lee tu libro y crea el brief: su ambiente, sus escenas y los estilos musicales que le encajan. La música es gratis en YouTube y siempre lo será. Pro compra composiciones ilimitadas, nunca la música.",
+      "fr": "L'IA qui lit votre livre et rédige le brief : son atmosphère, ses scènes et les styles musicaux qui lui vont. La musique est gratuite sur YouTube et le restera. Pro achète des compositions illimitées, jamais la musique.",
+      "de": "Die KI, die dein Buch liest und das Briefing schreibt: seine Stimmung, seine Szenen und die passenden Musikstile. Die Musik ist auf YouTube kostenlos und bleibt es. Pro kauft unbegrenztes Komponieren, niemals die Musik.",
+      "it": "L'IA che legge il tuo libro e crea il brief: la sua atmosfera, le sue scene e gli stili musicali che le si addicono. La musica è gratuita su YouTube e lo resterà sempre. Pro acquista composizioni illimitate, mai la musica.",
+      "pt": "A IA que lê o teu livro e cria o briefing: o seu ambiente, as suas cenas e os estilos musicais que lhe assentam. A música é gratuita no YouTube e sempre será. O Pro compra composições ilimitadas, nunca a música.",
+      "pl": "AI, która czyta twoją książkę i tworzy brief: jej nastrój, sceny i pasujące style muzyczne. Muzyka na YouTube jest darmowa i taka pozostanie. Pro kupuje nieograniczone komponowanie, nigdy muzykę.",
+      "zh": "为读懂你的书并生成方案的 AI 付费：它的氛围、场景，以及与之相配的音乐风格。音乐在 YouTube 上是免费的，而且将一直免费。Pro 买的是无限次编排，绝不是音乐。",
+      "ja": "あなたの本を読み解き、雰囲気・場面・似合う音楽スタイルという構成をつくるAIに対してです。音楽はYouTubeで無料であり、これからも無料です。Proが買うのは無制限の選曲であって、音楽ではありません。"
+    },
+    "Pro pays for unlimited AI composing, not for the music: every mix plays free on YouTube.": {
+      "uk": "Pro — це плата за необмежений AI-підбір, а не за музику: кожен мікс грає безкоштовно на YouTube.",
+      "es": "Pro paga composiciones con IA sin límite, no la música: cada mezcla suena gratis en YouTube.",
+      "fr": "Pro paie des compositions IA illimitées, pas la musique : chaque mix est diffusé gratuitement sur YouTube.",
+      "de": "Pro bezahlt unbegrenztes KI-Komponieren, nicht die Musik: Jeder Mix läuft kostenlos auf YouTube.",
+      "it": "Pro paga composizioni con IA illimitate, non la musica: ogni mix viene riprodotto gratis su YouTube.",
+      "pt": "O Pro paga composições com IA sem limite, não a música: cada mistura toca gratuitamente no YouTube.",
+      "pl": "Pro płaci za nieograniczone komponowanie z AI, nie za muzykę: każdy miks odtwarza się za darmo na YouTube.",
+      "zh": "Pro 付费买的是无限次 AI 编排，而不是音乐：每一段混音都在 YouTube 上免费播放。",
+      "ja": "Proの料金は無制限のAI選曲に対するもので、音楽に対するものではありません。どのミックスもYouTubeで無料で再生されます。"
+    }
+  }
+}
