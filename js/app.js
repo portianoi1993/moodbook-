@@ -815,7 +815,7 @@ function renderAccount() {
   $('#proPrice').innerHTML = `${main}<span>${per}</span>`;
   $$('.price-sub').forEach((n) => (n.textContent = sub));
   $$('.price-life').forEach((n) => (n.textContent = PRICE.lifetime));
-  const cta = $('#proCta'); if (cta) { cta.disabled = pro; cta.innerHTML = pro ? t("You're on Pro ✦") : `${t('Go Pro')} <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>`; }
+  const cta = $('#proCta'); if (cta) { cta.disabled = pro; cta.textContent = pro ? t("You're on Pro ✦") : t('Go Pro'); }
   const fCta = $('#founderCta'); if (fCta) { fCta.disabled = pro; fCta.textContent = pro ? t("You're on Pro ✦") : t('Become a Founding Reader'); }
   $$('.bill').forEach((b) => { const on = b.dataset.bill === billing; b.classList.toggle('is-on', on); b.setAttribute('aria-checked', String(on)); });
   const lp = $('#landingProPrice'); if (lp) lp.innerHTML = `${main}<span>${per}</span>`;
