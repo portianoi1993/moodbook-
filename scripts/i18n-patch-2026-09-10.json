@@ -1,0 +1,16 @@
+{
+  "remove": [],
+  "add": {
+    "Refunds": {
+      "uk": "Повернення коштів",
+      "es": "Reembolsos",
+      "fr": "Remboursements",
+      "de": "Rückerstattungen",
+      "it": "Rimborsi",
+      "pt": "Reembolsos",
+      "pl": "Zwroty",
+      "zh": "退款",
+      "ja": "返金"
+    }
+  }
+}

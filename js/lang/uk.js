@@ -257,4 +257,5 @@ export default {
   'Only {n} of 100 seats left.': 'Лишилось усього {n} зі 100 місць.',
   'All 100 seats are gone.': 'Усі 100 місць розібрані.',
   'Sold out': 'Місць немає',
+  'Refunds': 'Повернення коштів',
 };

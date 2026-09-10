@@ -257,4 +257,5 @@ export default {
   'Only {n} of 100 seats left.': '100席のうち残りわずか{n}席です。',
   'All 100 seats are gone.': '100席すべて埋まりました。',
   'Sold out': '完売',
+  'Refunds': '返金',
 };

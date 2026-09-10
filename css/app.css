@@ -384,22 +384,46 @@ h1,h2,h3{font-family:var(--display);font-weight:600;letter-spacing:-.02em;line-h
 .add .suggest{left:0;right:0}
 .section-label{margin:34px 0 14px;display:flex;align-items:center;gap:12px}
 .section-label::after{content:"";flex:1;height:1px;background:var(--line-2)}
-.shelf{display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:22px 16px;padding:6px 0 10px}
-.book{position:relative;text-align:left}
-.cvbtn{all:unset;display:block;cursor:pointer;width:100%}
-.book .cv{aspect-ratio:2/3;border-radius:8px;overflow:hidden;background:var(--grad-soft);border:2px solid #fff;box-shadow:0 14px 30px -14px rgba(36,31,46,.5);transition:transform .4s var(--spring),box-shadow .35s;display:grid;place-items:center;color:#fff;font-size:1.4rem;position:relative}
+/* ── Library shelf · DESIGN.md §5 «Lamp Light»: books standing on wooden planks ─────────────────
+   The plank under each book has negative side margins that exactly close the grid gap, so a row
+   reads as one continuous shelf. Every book leans a little differently (rule of six) and stands up
+   straight when you reach for it. Books without a catalogue cover get a typographic cover in the
+   pastel of their slot — never an emoji. */
+.shelf{display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:34px 18px;padding:12px 9px 6px;margin:0 -9px}
+.book{position:relative;text-align:left;display:flex;flex-direction:column}
+.book .cvbtn{all:unset;display:block;cursor:pointer;width:100%;padding:0 7px;box-sizing:border-box}
+.book .cv{display:grid;place-items:center;position:relative;aspect-ratio:2/3;border-radius:3px 8px 8px 3px;overflow:hidden;background:var(--grad-soft);border:2px solid #fff;color:#fff;box-shadow:0 14px 26px -14px rgba(36,31,46,.55),inset 3px 0 0 rgba(255,255,255,.35);transform:rotate(var(--tilt,0deg));transform-origin:50% 100%;transition:transform .45s var(--spring),box-shadow .35s}
+.book:nth-child(6n+1) .cv{--tilt:-1.6deg}.book:nth-child(6n+2) .cv{--tilt:1.2deg}.book:nth-child(6n+3) .cv{--tilt:-.6deg}
+.book:nth-child(6n+4) .cv{--tilt:1.8deg}.book:nth-child(6n+5) .cv{--tilt:-1.2deg}.book:nth-child(6n+6) .cv{--tilt:.8deg}
+.book:hover .cv,.book:focus-within .cv{transform:rotate(0deg) translateY(-9px);box-shadow:0 28px 44px -16px rgba(36,31,46,.5),inset 3px 0 0 rgba(255,255,255,.35)}
 .book .cv img{width:100%;height:100%;object-fit:cover}
-.book:hover .cv{transform:translateY(-6px) rotate(-2deg);box-shadow:0 26px 44px -16px rgba(36,31,46,.5)}
+.book .cv.ph{padding:12px 9px;text-align:center;font-family:var(--serif);font-weight:600;font-size:.74rem;line-height:1.22;color:var(--ink);font-variation-settings:'opsz' 24,'SOFT' 30;text-wrap:balance;overflow-wrap:anywhere}
+.book:nth-child(6n+1) .cv.ph{background:linear-gradient(160deg,var(--lav),var(--sky))}
+.book:nth-child(6n+2) .cv.ph{background:linear-gradient(160deg,var(--peach),var(--rose))}
+.book:nth-child(6n+3) .cv.ph{background:linear-gradient(160deg,var(--mint),var(--butter))}
+.book:nth-child(6n+4) .cv.ph{background:linear-gradient(160deg,var(--butter),var(--peach))}
+.book:nth-child(6n+5) .cv.ph{background:linear-gradient(160deg,var(--sky),var(--lav))}
+.book:nth-child(6n+6) .cv.ph{background:linear-gradient(160deg,var(--rose),var(--mint))}
 .book .cv .playo{position:absolute;inset:0;display:grid;place-items:center;background:rgba(36,31,46,.4);opacity:0;transition:opacity .2s}
 .book .cv .playo svg{width:34px;height:34px;fill:#fff}
 .book:hover .cv .playo,.book:focus-within .cv .playo{opacity:1}
-.book .t{font-weight:600;font-size:.95rem;margin-top:10px;line-height:1.25;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-.book .a{font-size:.78rem;color:var(--ink-3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.book .rm{position:absolute;top:6px;right:6px;width:26px;height:26px;border-radius:50%;background:rgba(36,31,46,.75);color:#fff;font-size:.8rem;display:grid;place-items:center;opacity:0;transition:opacity .15s}
+.book .plank{display:block;height:10px;margin:-3px -9px 0;border-radius:3px;position:relative;z-index:1;background:linear-gradient(180deg,#D9B98F,#B8935F);box-shadow:0 10px 18px -8px rgba(90,60,30,.45),inset 0 1px 0 rgba(255,255,255,.35)}
+.book .t{font-weight:600;font-size:.95rem;margin-top:14px;padding:0 2px;line-height:1.25;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.book .a{font-size:.78rem;color:var(--ink-3);margin-top:2px;padding:0 2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.book .rm{position:absolute;top:6px;right:12px;width:26px;height:26px;border-radius:50%;background:rgba(36,31,46,.75);color:#fff;font-size:.8rem;display:grid;place-items:center;opacity:0;transition:opacity .15s;z-index:2}
 .book:hover .rm,.book:focus-within .rm,.book .rm:focus-visible{opacity:1}
 @media(hover:none){.book .rm{opacity:1}}
 .empty{text-align:center;padding:34px 16px;border:1.5px dashed var(--line-2);border-radius:var(--r-m);color:var(--ink-3);font-size:.94rem;grid-column:1/-1;list-style:none;background:rgba(255,255,255,.5)}
-.empty b{display:block;font-size:1.5rem;margin-bottom:6px;opacity:.6}
+.empty .ico-e{display:grid;place-items:center;margin:0 auto 10px;width:36px;height:36px;color:var(--ink-3);opacity:.6}
+.empty .ico-e svg{width:28px;height:28px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+/* empty shelf: three ghost spines resting on a plank, in the same pastels the real books will use */
+.empty.shelf-empty{padding-top:26px}
+.empty .ghosts{display:flex;justify-content:center;align-items:flex-end;gap:8px;height:64px;margin:0 auto 0}
+.empty .ghosts i{display:block;width:34px;height:52px;border-radius:2px 5px 5px 2px;border:2px solid rgba(255,255,255,.9);opacity:.75;box-shadow:inset 3px 0 0 rgba(255,255,255,.4),0 8px 16px -10px rgba(36,31,46,.35)}
+.empty .ghosts i:nth-child(1){background:linear-gradient(160deg,var(--lav),var(--sky));transform:rotate(-4deg)}
+.empty .ghosts i:nth-child(2){background:linear-gradient(160deg,var(--peach),var(--rose));height:58px}
+.empty .ghosts i:nth-child(3){background:linear-gradient(160deg,var(--mint),var(--butter));transform:rotate(4deg)}
+.empty .ghost-plank{display:block;width:150px;height:8px;margin:-2px auto 16px;border-radius:3px;background:linear-gradient(180deg,#D9B98F,#B8935F);box-shadow:0 8px 14px -8px rgba(90,60,30,.45)}
 .liked{list-style:none;display:grid;gap:4px;padding-bottom:8px}
 .liked .track{grid-template-columns:1fr auto;background:#fff;border-color:var(--line)}
 
@@ -615,6 +639,12 @@ body.modal-open{overflow:hidden}
 [data-theme="dark"] .faq details[open],[data-theme="dark"] .btn-glass:hover,[data-theme="dark"] .search-input:focus{background:var(--paper)}
 [data-theme="dark"] .btn-glass.is-done{background:rgba(46,125,99,.28)}
 [data-theme="dark"] .empty{background:rgba(255,255,255,.03)}
+[data-theme="dark"] .book .plank,[data-theme="dark"] .empty .ghost-plank{background:linear-gradient(180deg,#8A6A45,#5E4630);box-shadow:0 10px 18px -8px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.12)}
+[data-theme="dark"] .book .cv.ph{color:#F3EDE6}
+[data-theme="dark"] .book:nth-child(6n+1) .cv.ph,[data-theme="dark"] .book:nth-child(6n+4) .cv.ph{background:linear-gradient(160deg,var(--t-lav),var(--t-mint))}
+[data-theme="dark"] .book:nth-child(6n+2) .cv.ph,[data-theme="dark"] .book:nth-child(6n+5) .cv.ph{background:linear-gradient(160deg,var(--t-peach),var(--t-lav))}
+[data-theme="dark"] .book:nth-child(6n+3) .cv.ph,[data-theme="dark"] .book:nth-child(6n+6) .cv.ph{background:linear-gradient(160deg,var(--t-mint),var(--t-peach))}
+[data-theme="dark"] .empty .ghosts i{border-color:rgba(255,255,255,.14)}
 [data-theme="dark"] .pay-card .core{background:linear-gradient(160deg,var(--t-lav),var(--t-butter) 60%,var(--t-mint))}
 [data-theme="dark"] .error{background:#3A2E24;border-color:#5C4630}
 [data-theme="dark"] .track.is-playing{background:linear-gradient(90deg,var(--t-lav),var(--t-butter) 70%,var(--t-mint));border-color:rgba(205,191,245,.35)}

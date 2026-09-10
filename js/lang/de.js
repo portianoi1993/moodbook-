@@ -257,4 +257,5 @@ export default {
   'Only {n} of 100 seats left.': 'Nur noch {n} von 100 Plätzen frei.',
   'All 100 seats are gone.': 'Alle 100 Plätze sind vergeben.',
   'Sold out': 'Ausverkauft',
+  'Refunds': 'Rückerstattungen',
 };

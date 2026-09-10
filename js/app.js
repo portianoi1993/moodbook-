@@ -1,6 +1,6 @@
 // Static imports carry the same cache-busting version as the <script> tag (browsers cache /js for an hour).
-import { mountAll, mountMagnetic, mountSpotlight } from './fx.js?v=20260908a2';
-import { t, initI18n, getLang, setLang, LANGS } from './i18n.js?v=20260908a2';
+import { mountAll, mountMagnetic, mountSpotlight } from './fx.js?v=20260909a1';
+import { t, initI18n, getLang, setLang, LANGS } from './i18n.js?v=20260909a1';
 /* MoodBook v2 — vanilla JS, no build step. */
 await initI18n(); // load the dictionary and translate static copy before anything measures or splits it
 
@@ -245,7 +245,9 @@ function skeletonBook(title) {
   el.bookCard.innerHTML = `<div class="cover ph sk"></div><div><h2>${esc(title)}</h2><p class="by sk" style="width:60%">.</p><div class="tags"><span class="tag sk" style="width:70px">.</span><span class="tag sk" style="width:90px">.</span></div><p class="why sk" style="width:95%;height:38px">.</p></div>`;
 }
 
-const normT = (s) => String(s || '').toLowerCase().normalize('NFKD').replace(/[̀-ͯ]/g, '').replace(/[^\p{L}\p{N}\s]/gu, ' ').replace(/\s+/g, ' ').trim();
+// Apostrophes are joined, not split: the catalogue returns Ukrainian titles with ʼ (U+02BC, a letter for \p{L})
+// while readers type ' — сім'я, сімʼя and сім’я must be the same word or the cover match fails.
+const normT = (s) => String(s || '').toLowerCase().replace(/['ʼ’‘`´′]/g, '').normalize('NFKD').replace(/[̀-ͯ]/g, '').replace(/[^\p{L}\p{N}\s]/gu, ' ').replace(/\s+/g, ' ').trim();
 // Does the catalogue candidate plausibly *be* what the user typed? (guards against "Dune" → "The Science of Dune")
 const STOP = new Set(['the', 'a', 'an', 'of', 'and', 'in', 'on', 'to', 'by', 'книга', 'роман']);
 function candidateMatches(cand, q) {
@@ -709,12 +711,13 @@ function addBook(b) {
 }
 function renderShelf() {
   const g = $('#shelf');
-  if (!DB.books.length) { g.innerHTML = `<div class="empty"><b>📚</b>${t('Your shelf is empty. Add a book above, or save one from a search.')}</div>`; return; }
+  if (!DB.books.length) { g.innerHTML = `<div class="empty shelf-empty"><span class="ghosts" aria-hidden="true"><i></i><i></i><i></i></span><span class="ghost-plank" aria-hidden="true"></span>${t('Your shelf is empty. Add a book above, or save one from a search.')}</div>`; return; }
   g.innerHTML = DB.books.map((b, i) => `
     <div class="book">
-      <button type="button" class="cvbtn" data-play="${i}" aria-label="${esc(t('Play soundtrack for {title}', { title: b.title }))}" style="all:unset;display:block;cursor:pointer;width:100%">
-        <span class="cv">${b.cover ? `<img src="${esc(b.cover)}" alt="" loading="lazy" width="120" height="180">` : '📖'}<span class="playo"><svg viewBox="0 0 24 24"><path d="M7 4v16l14-8z"/></svg></span></span>
+      <button type="button" class="cvbtn" data-play="${i}" aria-label="${esc(t('Play soundtrack for {title}', { title: b.title }))}">
+        <span class="cv${b.cover ? '' : ' ph'}">${b.cover ? `<img src="${esc(b.cover)}" alt="" loading="lazy" width="120" height="180">` : esc(b.title)}<span class="playo"><svg viewBox="0 0 24 24"><path d="M7 4v16l14-8z"/></svg></span></span>
       </button>
+      <span class="plank" aria-hidden="true"></span>
       <div class="t">${esc(b.title)}</div>
       <div class="a">${esc(b.author || '')}</div>
       <button type="button" class="rm" data-rm="${i}" aria-label="${esc(t('Remove {title} from shelf', { title: b.title }))}">✕</button>
@@ -734,10 +737,10 @@ function renderLiked() {
   const o = $('#liked');
   $('#statLiked').textContent = DB.liked.length;
   const tools = $('#likedTools'); if (tools) tools.hidden = DB.liked.length < 6;
-  if (!DB.liked.length) { o.innerHTML = `<li class="empty"><b>♡</b>${t('No liked tracks yet. Tap the heart on any track while listening.')}</li>`; return; }
+  if (!DB.liked.length) { o.innerHTML = `<li class="empty"><span class="ico-e" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 21s-7-4.6-9.3-9A5.2 5.2 0 0 1 12 6.6 5.2 5.2 0 0 1 21.3 12C19 16.4 12 21 12 21z"/></svg></span>${t('No liked tracks yet. Tap the heart on any track while listening.')}</li>`; return; }
   const q = normT(likedQuery);
   const rows = DB.liked.map((tr, i) => ({ tr, i })).filter(({ tr }) => !q || normT(`${tr.name} ${tr.book} ${tr.vibe}`).includes(q));
-  if (!rows.length) { o.innerHTML = `<li class="empty"><b>🔍</b>${t('Nothing matches “{q}”.', { q: esc(likedQuery) })}</li>`; return; }
+  if (!rows.length) { o.innerHTML = `<li class="empty"><span class="ico-e" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></span>${t('Nothing matches “{q}”.', { q: esc(likedQuery) })}</li>`; return; }
   o.innerHTML = rows.map(({ tr, i }) => `
     <li class="track${S.playingFrom === 'liked' && S.playingIdx === i ? ' is-playing' : ''}" data-l="${i}" tabindex="0" role="button" aria-label="${esc(t('Play {name}', { name: tr.name }))}">
       <span class="info">
@@ -754,7 +757,7 @@ $('#likedFilter')?.addEventListener('input', (e) => { likedQuery = e.target.valu
 
 function renderHistory() {
   const o = $('#history'); if (!o) return;
-  if (!DB.history.length) { o.innerHTML = `<li class="empty"><b>🕰</b>${t('Nothing played yet. Your last 30 mixes will appear here.')}</li>`; return; }
+  if (!DB.history.length) { o.innerHTML = `<li class="empty"><span class="ico-e" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span>${t('Nothing played yet. Your last 30 mixes will appear here.')}</li>`; return; }
   o.innerHTML = DB.history.map((tr, i) => `
     <li class="track${S.playingFrom === 'history' && S.playingIdx === i ? ' is-playing' : ''}" data-h="${i}" tabindex="0" role="button" aria-label="${esc(t('Play {name}', { name: tr.name }))}">
       ${tr.cover ? `<img class="hcv" src="${esc(tr.cover)}" alt="" width="30" height="44" loading="lazy">` : '<span class="hcv ph"></span>'}

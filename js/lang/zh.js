@@ -257,4 +257,5 @@ export default {
   'Only {n} of 100 seats left.': '100 个名额仅剩 {n} 个。',
   'All 100 seats are gone.': '100 个名额已全部售罄。',
   'Sold out': '已售罄',
+  'Refunds': '退款',
 };

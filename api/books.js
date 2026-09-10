@@ -9,7 +9,8 @@ const cache = layeredCache('books', { limit: 1500 });
 let googleDownUntil = 0; // Google Books quota (1 000/day free) exhausted → Open Library only for a while
 const ACADEMIC = /methodolog|методичк|методичн|підручник|посібник|workbook|curriculum|syllabus|lecture notes|study guide|teacher'?s (guide|manual)|instructor'?s manual|dissertation|\bthesis\b|proceedings|conference paper|summary of|summary & analysis|sparknotes|cliffsnotes|analysis of|companion to|trivia|quiz book|coloring book|activity book|journal|notebook|planner|summary|summarized|key takeaways|book club questions|discussion guide|conversation starters/i;
 
-const norm = (s) => String(s || '').toLowerCase().normalize('NFKD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9а-яіїєґ\s]/gi, ' ').replace(/\s+/g, ' ').trim();
+// Apostrophe variants (' ʼ ’) are joined, not split — сім'я and сімʼя are one word (mirrors normT in js/app.js).
+const norm = (s) => String(s || '').toLowerCase().replace(/['ʼ’‘`´′]/g, '').normalize('NFKD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9а-яіїєґ\s]/gi, ' ').replace(/\s+/g, ' ').trim();
 
 const cleanTitle = (t) => {
   let s = str(t, 200);
@@ -79,7 +80,8 @@ function score(b, q, index) {
   if (b.desc.length > 200) s += 5;
   if (b.pages >= 150) s += 4;
   const cyr = /[а-яіїєґ]/i.test(q);
-  if (b.lang) s += (cyr ? /^(uk|ru)$/.test(b.lang) : b.lang === 'en') ? 6 : -10;
+  const ukr = /[іїєґ]/i.test(q); // і/ї/є/ґ exist only in Ukrainian → prefer Ukrainian editions over Russian ones
+  if (b.lang) s += cyr ? (b.lang === 'uk' ? (ukr ? 8 : 6) : b.lang === 'ru' ? (ukr ? 1 : 6) : -10) : (b.lang === 'en' ? 6 : -10);
   if (/[\(\[]/.test(b.title)) s -= 4;
   // Readers type "dune", "frank herbert", "herbert dune" or "dune frank herbert": every token may land in the
   // title or in any author name, and the last token may still be half-typed ("stephen ki").
