@@ -264,4 +264,5 @@ export default {
   'Payments are not open yet. Try again later.': 'Оплата ще не відкрита. Спробуй трохи пізніше.',
   'Checking your payment…': 'Перевіряємо оплату…',
   'Payment is still being confirmed. Your restore code will appear in Account within a few minutes.': 'Оплата ще підтверджується. Код відновлення з\'явиться в Акаунті за кілька хвилин.',
+  'Now playing on YouTube': 'Зараз грає на YouTube',
 };

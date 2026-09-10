@@ -264,4 +264,5 @@ export default {
   'Payments are not open yet. Try again later.': 'Płatności nie są jeszcze otwarte. Spróbuj później.',
   'Checking your payment…': 'Sprawdzamy płatność…',
   'Payment is still being confirmed. Your restore code will appear in Account within a few minutes.': 'Płatność jest jeszcze potwierdzana. Kod przywracania pojawi się w Koncie za kilka minut.',
+  'Now playing on YouTube': 'Teraz gra na YouTube',
 };

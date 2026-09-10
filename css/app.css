@@ -467,28 +467,30 @@ h1,h2,h3{font-family:var(--display);font-weight:600;letter-spacing:-.02em;line-h
 
 /* ───────── player dock ───────── */
 .dock{position:fixed;left:0;right:0;bottom:calc(var(--tabbar-h) + var(--safe-b) + 8px);z-index:45;padding:0 10px;pointer-events:none}
-.dock-inner{pointer-events:auto;margin:0 auto;max-width:720px;background:rgba(255,253,249,.92);backdrop-filter:blur(20px) saturate(140%);-webkit-backdrop-filter:blur(20px) saturate(140%);border-radius:var(--r-l);box-shadow:var(--sh-3);display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:10px;padding:8px;transform:translateY(0);transition:transform .45s var(--ease)}
+/* YouTube API policy: while playing, the embedded player must stay visible and be at least 200×200 px.
+   Compact = 200×200 (356×200 from 600px) beside the info; expanded = full-width 16:9; mini = 200×200 corner card. */
+.dock-inner{pointer-events:auto;margin:0 auto;max-width:720px;background:rgba(255,253,249,.92);backdrop-filter:blur(20px) saturate(140%);-webkit-backdrop-filter:blur(20px) saturate(140%);border-radius:var(--r-l);box-shadow:var(--sh-3);display:grid;grid-template-columns:auto 1fr;grid-template-areas:"video info" "video controls";align-items:start;gap:6px 10px;padding:8px;transform:translateY(0);transition:transform .45s var(--ease)}
 .dock[hidden]{display:block!important;visibility:hidden}
 .dock[hidden] .dock-inner{transform:translateY(130%)}
-.dock-video{width:104px;aspect-ratio:16/9;border-radius:14px;overflow:hidden;background:#000;position:relative;transition:width .35s var(--ease)}
+.dock-video{grid-area:video;width:200px;height:200px;border-radius:14px;overflow:hidden;background:#000;position:relative;transition:width .35s var(--ease),height .35s var(--ease)}
 .dock-video iframe,.dock-video #yt{position:absolute;inset:0;width:100%;height:100%;border:0}
-.dock-info{min-width:0}
+.dock-info{grid-area:info;min-width:0}
 .dock-title{font-weight:600;font-size:.98rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
 .dock-sub{font-size:.76rem;color:var(--ink-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .dock-progress{height:6px;border-radius:3px;background:var(--cream-2);margin-top:8px;overflow:hidden;cursor:pointer}
 .dock-progress span{display:block;height:100%;width:0;background:var(--grad);transition:width 1s linear}
 .dock-time{font-size:.72rem;color:var(--ink-3);margin-top:4px;font-variant-numeric:tabular-nums}
-.dock-controls{display:flex;align-items:center;gap:2px}
+.dock-controls{grid-area:controls;display:flex;flex-wrap:wrap;align-items:center;align-self:end;gap:2px}
 .dock-controls .big{width:48px;height:48px;background:var(--ink);color:#fff}
 .dock-controls .big:hover{background:var(--plum);color:#fff}
 .dock-controls .big svg{fill:currentColor;stroke:none;width:18px;height:18px}
 .dock-controls .big .i-play{display:none}
 .dock.is-paused .big .i-play{display:block;margin-left:2px}
 .dock.is-paused .big .i-pause{display:none}
-.dock.is-expanded .dock-inner{grid-template-columns:1fr auto;grid-template-areas:"video video" "info controls";padding:10px}
-.dock.is-expanded .dock-video{grid-area:video;width:100%;border-radius:18px}
-.dock.is-expanded .dock-info{grid-area:info;padding-left:6px}
-.dock.is-expanded .dock-controls{grid-area:controls}
+.dock.is-expanded .dock-inner{grid-template-columns:1fr auto;grid-template-areas:"video video" "info controls";align-items:center;padding:10px}
+.dock.is-expanded .dock-video{width:100%;height:auto;aspect-ratio:16/9;border-radius:18px}
+.dock.is-expanded .dock-info{padding-left:6px}
+.dock.is-expanded .dock-controls{flex-wrap:nowrap;align-self:center}
 .dock.is-expanded #expandBtn svg{transform:rotate(180deg)}
 #prevBtn,#nextBtn{display:none}
 
@@ -509,6 +511,8 @@ h1,h2,h3{font-family:var(--display);font-weight:600;letter-spacing:-.02em;line-h
   .plans-row{grid-template-columns:1fr 1fr}
   .why-grid{grid-template-columns:1.1fr 1fr;gap:40px;align-items:start}
   .dock{padding:0 16px}
+  .dock-video{width:356px}
+  .dock-controls{flex-wrap:nowrap}
 }
 @media(min-width:840px){
   :root{--tabbar-h:0px}
@@ -526,7 +530,7 @@ h1,h2,h3{font-family:var(--display);font-weight:600;letter-spacing:-.02em;line-h
   .results-grid{grid-template-columns:380px 1fr;grid-template-areas:"book tracks" "moods tracks";gap:16px 22px;align-items:start}
   .book-card{position:sticky;top:calc(var(--top-h) + 14px)}
   .moods{position:sticky;top:calc(var(--top-h) + 214px)}
-  .dock{left:auto;right:24px;width:520px;padding:0}
+  .dock{left:auto;right:24px;width:640px;padding:0}
   .dock-inner{max-width:none}
 }
 @media(max-width:1059px){
@@ -553,9 +557,10 @@ h1,h2,h3{font-family:var(--display);font-weight:600;letter-spacing:-.02em;line-h
 
 /* ── player dock: mini mode (video keeps playing, dock shrinks to a corner card) ── */
 .dock.is-mini{left:auto;right:12px;padding:0;width:auto}
-.dock.is-mini .dock-inner{grid-template-columns:auto auto;gap:6px;padding:6px;max-width:none;width:max-content;margin:0 0 0 auto;border-radius:18px}
+.dock.is-mini .dock-inner{grid-template-columns:auto auto;grid-template-areas:"video controls";align-items:center;gap:6px;padding:6px;max-width:none;width:max-content;margin:0 0 0 auto;border-radius:18px}
 .dock.is-mini .dock-info,.dock.is-mini #prevBtn,.dock.is-mini #nextBtn,.dock.is-mini #expandBtn,.dock.is-mini #closeDock{display:none}
-.dock.is-mini .dock-video{width:104px;border-radius:12px}
+.dock.is-mini .dock-video{width:200px;height:200px;border-radius:12px}
+.dock.is-mini .dock-controls{flex-direction:column;flex-wrap:nowrap;align-self:center;gap:8px}
 .dock.is-mini .dock-controls .big{width:40px;height:40px}
 #miniBtn svg{transition:transform .3s var(--ease)}
 .dock.is-mini #miniBtn svg{transform:rotate(180deg)}

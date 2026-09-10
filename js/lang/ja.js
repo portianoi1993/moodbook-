@@ -264,4 +264,5 @@ export default {
   'Payments are not open yet. Try again later.': 'お支払いはまだ受け付けていません。後でもう一度お試しください。',
   'Checking your payment…': 'お支払いを確認しています…',
   'Payment is still being confirmed. Your restore code will appear in Account within a few minutes.': 'お支払いはまだ確認中です。復元コードは数分以内にアカウントに表示されます。',
+  'Now playing on YouTube': 'YouTubeで再生中',
 };

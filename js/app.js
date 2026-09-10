@@ -1,6 +1,6 @@
 // Static imports carry the same cache-busting version as the <script> tag (browsers cache /js for an hour).
-import { mountAll, mountMagnetic, mountSpotlight } from './fx.js?v=20260910a2';
-import { t, initI18n, getLang, setLang, LANGS } from './i18n.js?v=20260910a2';
+import { mountAll, mountMagnetic, mountSpotlight } from './fx.js?v=20260910a3';
+import { t, initI18n, getLang, setLang, LANGS } from './i18n.js?v=20260910a3';
 /* MoodBook v2 — vanilla JS, no build step. */
 await initI18n(); // load the dictionary and translate static copy before anything measures or splits it
 
@@ -603,10 +603,15 @@ function loadYT() {
   });
   return ytReady;
 }
-// Dock has three sizes: expanded (big video), compact bar, and mini (corner card; music keeps playing).
+// Dock has three sizes: expanded (big video), compact (200×200 video beside the info) and mini (200×200 corner
+// card; music keeps playing). The player is never smaller than 200×200 while it plays — YouTube API policy.
+// The page's bottom padding follows the real dock height (measured again once the size transition ends).
 function setDockHeight() {
-  const h = dock.hidden ? 0 : dock.classList.contains('is-mini') ? 84 : dock.classList.contains('is-expanded') ? 360 : 96;
-  document.documentElement.style.setProperty('--dock-h', h + 'px');
+  const measure = () => {
+    const h = dock.hidden ? 0 : ($('.dock-inner', dock)?.offsetHeight || 0) + 12;
+    document.documentElement.style.setProperty('--dock-h', h + 'px');
+  };
+  requestAnimationFrame(measure); setTimeout(measure, 420);
 }
 function syncDockButtons() {
   const ex = dock.classList.contains('is-expanded'), mini = dock.classList.contains('is-mini');

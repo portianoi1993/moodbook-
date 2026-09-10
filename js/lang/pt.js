@@ -264,4 +264,5 @@ export default {
   'Payments are not open yet. Try again later.': 'Os pagamentos ainda não estão abertos. Tenta mais tarde.',
   'Checking your payment…': 'A verificar o pagamento…',
   'Payment is still being confirmed. Your restore code will appear in Account within a few minutes.': 'O pagamento ainda está a ser confirmado. O teu código de restauro aparecerá em Conta dentro de minutos.',
+  'Now playing on YouTube': 'A tocar agora no YouTube',
 };

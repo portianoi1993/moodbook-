@@ -264,4 +264,5 @@ export default {
   'Payments are not open yet. Try again later.': '付款尚未开放，请稍后再试。',
   'Checking your payment…': '正在确认付款…',
   'Payment is still being confirmed. Your restore code will appear in Account within a few minutes.': '付款仍在确认中。恢复码将在几分钟内显示在账户中。',
+  'Now playing on YouTube': '正在 YouTube 上播放',
 };

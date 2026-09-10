@@ -1,0 +1,16 @@
+{
+  "remove": [],
+  "add": {
+    "Now playing on YouTube": {
+      "uk": "Зараз грає на YouTube",
+      "es": "Sonando ahora en YouTube",
+      "fr": "En lecture sur YouTube",
+      "de": "Läuft gerade auf YouTube",
+      "it": "In riproduzione su YouTube",
+      "pt": "A tocar agora no YouTube",
+      "pl": "Teraz gra na YouTube",
+      "zh": "正在 YouTube 上播放",
+      "ja": "YouTubeで再生中"
+    }
+  }
+}
