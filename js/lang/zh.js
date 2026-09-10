@@ -141,7 +141,6 @@ export default {
   'Current plan': '当前方案',
   'Included': '已包含',
   'You\'re on Pro ✦': '你已是 Pro ✦',
-  'Have a promo code?': '有优惠码？',
   'Enter code…': '输入优惠码…',
   'Made in Kyiv · music via YouTube · books via Google Books': '基辅出品 · 音乐来自 YouTube · 书籍来自 Google Books',
   'Privacy': '隐私',
@@ -258,4 +257,9 @@ export default {
   'All 100 seats are gone.': '100 个名额已全部售罄。',
   'Sold out': '已售罄',
   'Refunds': '退款',
+  'Have a promo or restore code?': '有优惠码或恢复码？',
+  'Your restore code': '你的恢复码',
+  'keeps Pro on any other device.': '可在任何其他设备上恢复 Pro。',
+  'Your restore code {code} is saved in Account.': '你的恢复码 {code} 已保存在账户中。',
+  'The plan behind that code has ended.': '该码对应的方案已结束。',
 };

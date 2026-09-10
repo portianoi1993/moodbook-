@@ -1,6 +1,10 @@
 // Promo codes: unique, server-side, burn on use.
 //
 //   POST /api/promo            body {code}            → redeem: {ok, plan:'pro', days, expiresAt, note}
+//                              Restore codes from purchases (lib/license.js) are accepted here too:
+//                              they never burn and answer {ok, plan:'pro', expiresAt, license:true, code}.
+//                              body {code, sync:true} is the app's silent daily re-check (not counted).
+//   GET  /api/promo?tx=txn_…   → the restore code of a just-completed Paddle checkout (no token: ids are unguessable)
 //   GET  /api/promo?admin=TOKEN&create=1&note=Blogger&days=365&uses=1   → mint a code (owner only)
 //   GET  /api/promo?admin=TOKEN&list=1                                   → list codes with status (owner only)
 //   GET  /api/promo?admin=TOKEN&revoke=CODE                              → disable a code
@@ -11,6 +15,7 @@
 // ADMIN_TOKEN env (set by the owner in Vercel) protects minting; without a store the API answers 503.
 import { cors, guard, noCache, str } from '../lib/http.js';
 import { kvEnabled, kvMemory, kvGet, kvSet, kvIncr } from '../lib/store.js';
+import { licenseByTx, redeemLicense, publicView } from '../lib/license.js';
 
 const ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no 0/O/1/I ambiguity
 function mint() {
@@ -39,6 +44,14 @@ export default async function handler(req, res) {
   // ── owner actions ──────────────────────────────────────────────────────────
   if (req.method === 'GET') {
     const q = req.query || {};
+    // A just-completed Paddle checkout asks for its restore code by transaction id.
+    if (q.tx) {
+      const txId = str(q.tx, 80);
+      if (!/^txn_[a-z0-9]{10,}$/i.test(txId)) return res.status(400).json({ error: 'invalid' });
+      const rec = await licenseByTx(txId);
+      if (!rec) return res.status(404).json({ error: 'pending', message: 'Not recorded yet — the webhook may still be on its way.' });
+      return res.status(200).json(publicView(rec));
+    }
     const token = process.env.ADMIN_TOKEN || '';
     if (!token) return res.status(503).json({ error: 'ADMIN_TOKEN is not set in Vercel env' });
     if (String(q.admin || '') !== token) return res.status(403).json({ error: 'Forbidden' });
@@ -74,7 +87,14 @@ export default async function handler(req, res) {
   const code = normalise(body.code);
   if (!/^MB-[A-Z2-9]{4}-[A-Z2-9]{4}$/.test(code)) return res.status(400).json({ error: 'invalid', message: 'That code does not look right.' });
   const rec = await get(`mb:promo:${code}`);
-  if (!rec || rec.revoked) return res.status(404).json({ error: 'unknown', message: 'That code is not valid.' });
+  if (!rec) {
+    // Not a promo code — maybe a restore code from a purchase. Those never burn.
+    const lic = await redeemLicense(code, { count: body.sync !== true });
+    if (!lic) return res.status(404).json({ error: 'unknown', message: 'That code is not valid.' });
+    if (lic.expired) return res.status(410).json({ error: 'expired', message: 'The plan behind that code has ended.' });
+    return res.status(200).json(publicView(lic.rec));
+  }
+  if (rec.revoked) return res.status(404).json({ error: 'unknown', message: 'That code is not valid.' });
   // Atomic burn: the counter decides who was first even if two people submit at the same moment.
   const n = await incr(`mb:promo:${code}:used`, 3 * YEAR);
   if (n == null) return res.status(503).json({ error: 'store', message: 'Store unavailable, try again in a minute.' });

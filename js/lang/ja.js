@@ -141,7 +141,6 @@ export default {
   'Current plan': '現在のプラン',
   'Included': '含まれています',
   'You\'re on Pro ✦': 'Proをご利用中 ✦',
-  'Have a promo code?': 'プロモコードをお持ちですか？',
   'Enter code…': 'コードを入力…',
   'Made in Kyiv · music via YouTube · books via Google Books': 'キーウ発 · 音楽はYouTube · 本はGoogle Books',
   'Privacy': 'プライバシー',
@@ -258,4 +257,9 @@ export default {
   'All 100 seats are gone.': '100席すべて埋まりました。',
   'Sold out': '完売',
   'Refunds': '返金',
+  'Have a promo or restore code?': 'プロモコードまたは復元コードはありますか？',
+  'Your restore code': 'あなたの復元コード',
+  'keeps Pro on any other device.': '他のどの端末でもProを復元できます。',
+  'Your restore code {code} is saved in Account.': '復元コード {code} はアカウントに保存されています。',
+  'The plan behind that code has ended.': 'このコードのプランは終了しました。',
 };

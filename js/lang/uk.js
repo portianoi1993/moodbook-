@@ -141,7 +141,6 @@ export default {
   'Current plan': 'Поточний план',
   'Included': 'Включено',
   'You\'re on Pro ✦': 'У тебе Pro ✦',
-  'Have a promo code?': 'Є промокод?',
   'Enter code…': 'Введи код…',
   'Made in Kyiv · music via YouTube · books via Google Books': 'Зроблено в Києві · музика з YouTube · книги з Google Books',
   'Privacy': 'Приватність',
@@ -258,4 +257,9 @@ export default {
   'All 100 seats are gone.': 'Усі 100 місць розібрані.',
   'Sold out': 'Місць немає',
   'Refunds': 'Повернення коштів',
+  'Have a promo or restore code?': 'Є промокод або код відновлення?',
+  'Your restore code': 'Твій код відновлення',
+  'keeps Pro on any other device.': 'повертає Pro на будь-якому іншому пристрої.',
+  'Your restore code {code} is saved in Account.': 'Твій код відновлення {code} збережено в Акаунті.',
+  'The plan behind that code has ended.': 'План за цим кодом уже закінчився.',
 };

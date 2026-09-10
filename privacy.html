@@ -9,7 +9,7 @@
 <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32.png">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT@0,9..144,300..700,0;1,9..144,300..700,0&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/css/app.css?v=20260909a1">
+<link rel="stylesheet" href="/css/app.css?v=20260910a1">
 <style>.legal{max-width:68ch;padding:40px 0 80px}.legal h1{font-size:clamp(2rem,5vw,2.8rem);margin:10px 0 6px}.legal h2{font-size:1.35rem;margin:34px 0 10px}.legal p,.legal li{color:var(--ink-2);text-wrap:pretty}.legal ul{padding-left:20px;display:grid;gap:6px}.legal .upd{font-family:var(--mono);font-size:.7rem;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3)}</style>
 </head>
 <body>
@@ -17,7 +17,7 @@
 <header class="top"><div class="top-inner"><a class="brand" href="/" aria-label="MoodBook home"><img src="/assets/logo.webp" width="36" height="36" alt=""><span class="brand-word">MoodBook</span></a><a class="plan-chip" href="/">← Back</a></div></header>
 <main class="shell">
   <article class="legal">
-    <p class="upd">Updated 7 September 2026</p>
+    <p class="upd">Updated 10 September 2026</p>
     <h1>Privacy</h1>
     <p>MoodBook (moodbook.ink) is a small service run by an individual founder in Kyiv, Ukraine. This page says plainly what the site stores, where data goes, and what it never collects.</p>
 
@@ -28,14 +28,15 @@
     <ul>
       <li><b>The book title you type.</b> It is sent to our serverless functions on Vercel so we can look the book up and compose a soundtrack. We keep it only in short-lived caches (up to 7 days) that speed up the same search for everyone.</li>
       <li><b>Your IP address.</b> Vercel sees it as part of serving the site; our functions use it only for temporary rate limiting and to comply with regional restrictions. It is not written to a database.</li>
-      <li><b>A promo code, if you enter one.</b> It is sent to our server to check that it is valid and unused. We store the code, the moment it was activated and the plan it unlocked. We do not store your name, e-mail or any account data, because there are no accounts.</li>
+      <li><b>A promo or restore code, if you enter one.</b> It is sent to our server to check that it is valid. We store the code, the moments it was used and the plan it unlocks. We do not store your name, e-mail or any account data, because there are no accounts.</li>
+      <li><b>A purchase, if you buy Pro.</b> Checkout is run by Paddle.com, our merchant of record; Paddle collects your payment details and e-mail under the <a href="https://www.paddle.com/legal/privacy">Paddle privacy policy</a>. Paddle sends us only the transaction id, the plan bought and its amount, and we store those with the restore code it produces. We never see or store your card number.</li>
     </ul>
 
     <h2>YouTube API Services</h2>
     <p>MoodBook uses <a href="https://developers.google.com/youtube/terms/api-services-terms-of-service">YouTube API Services</a> to find publicly available music mixes and plays them through the official embedded YouTube player. By using MoodBook you agree to be bound by the <a href="https://www.youtube.com/t/terms">YouTube Terms of Service</a>. Google's handling of your data is described in the <a href="https://policies.google.com/privacy">Google Privacy Policy</a>.</p>
     <ul>
       <li><b>What we access.</b> Only public video metadata returned by YouTube search: video ID, title, channel name, duration, thumbnail and view count. MoodBook never asks you to sign in with a Google or YouTube account, so we do not access, collect or store any data from your YouTube account.</li>
-      <li><b>How long we keep it.</b> Search results are cached on our servers for up to 7 days so the same book gets the same soundtrack for everyone, then they are discarded. We do not build profiles from this data and do not share it with third parties other than displaying it to you.</li>
+      <li><b>How long we keep it.</b> Search results are cached on our servers for up to 60 days, and the best public mix found for a search phrase is kept in our catalogue so the same phrase gets the same mix for everyone without repeating the request to YouTube. This is public video metadata only; we do not build profiles from it and do not share it with third parties other than displaying it to you.</li>
       <li><b>The embedded player.</b> When a track plays, YouTube sets its own cookies and may collect data according to the Google Privacy Policy. You can manage YouTube and Google cookies in your browser settings or use a content blocker; the player will still work in most cases.</li>
       <li><b>Revoking access.</b> Because MoodBook never receives authorised access to your YouTube account, there is nothing to revoke on our side. If you ever grant a Google permission by mistake, you can review and remove it at <a href="https://security.google.com/settings/security/permissions">security.google.com/settings/security/permissions</a>.</li>
     </ul>
@@ -50,9 +51,9 @@
 
     <h2>What we do not do</h2>
     <ul>
-      <li>No accounts, passwords or e-mail collection today. Card payments are not open yet; when they are, the payment provider and its policy will be named here before you pay.</li>
+      <li>No accounts, passwords or e-mail collection. Payments, when you choose to buy, go through Paddle.com as described above.</li>
       <li>No advertising, no tracking pixels, no sale of data.</li>
-      <li>No analytics cookies. If we enable privacy-friendly, cookie-free analytics later, this page will say so.</li>
+      <li>No analytics cookies. We use Vercel Web Analytics, which counts page views without cookies and without identifying you; it does not follow you across other sites.</li>
     </ul>
 
     <h2>Your choices and contact</h2>

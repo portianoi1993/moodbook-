@@ -141,7 +141,6 @@ export default {
   'Current plan': 'Aktueller Tarif',
   'Included': 'Enthalten',
   'You\'re on Pro ✦': 'Du hast Pro ✦',
-  'Have a promo code?': 'Hast du einen Aktionscode?',
   'Enter code…': 'Code eingeben…',
   'Made in Kyiv · music via YouTube · books via Google Books': 'Gemacht in Kyjiw · Musik via YouTube · Bücher via Google Books',
   'Privacy': 'Datenschutz',
@@ -258,4 +257,9 @@ export default {
   'All 100 seats are gone.': 'Alle 100 Plätze sind vergeben.',
   'Sold out': 'Ausverkauft',
   'Refunds': 'Rückerstattungen',
+  'Have a promo or restore code?': 'Hast du einen Promo- oder Wiederherstellungscode?',
+  'Your restore code': 'Dein Wiederherstellungscode',
+  'keeps Pro on any other device.': 'bringt Pro auf jedes andere Gerät.',
+  'Your restore code {code} is saved in Account.': 'Dein Wiederherstellungscode {code} ist unter Konto gespeichert.',
+  'The plan behind that code has ended.': 'Der Plan hinter diesem Code ist abgelaufen.',
 };

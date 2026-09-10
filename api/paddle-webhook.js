@@ -1,6 +1,6 @@
-// Paddle webhook: records completed sales for the founder and tracks the Founding Reader seat count.
-// Pro access itself is granted client-side right after checkout (see grantPro() in js/app.js) — MoodBook
-// has no accounts yet, so this endpoint is bookkeeping only, not the source of truth for access.
+// Paddle webhook: records completed sales, tracks the Founding Reader seat count and issues the buyer's
+// restore code (lib/license.js). Pro is switched on client-side right after checkout (grantPro() in
+// js/app.js); the restore code is what brings it back on another device and follows renewals.
 //
 // Setup: Paddle dashboard → Developer tools → Notifications → add a destination pointing here,
 // subscribe to transaction.completed, and put its signing secret in Vercel as PADDLE_WEBHOOK_SECRET.
@@ -10,6 +10,7 @@
 //   signed payload = `${ts}:${rawBody}`, HMAC-SHA256 with the endpoint's signing secret, hex digest.
 import crypto from 'node:crypto';
 import { kvGet, kvSet, kvIncr, kvEnabled } from '../lib/store.js';
+import { issueLicense } from '../lib/license.js';
 
 const FOUNDING_PRICE_ID = 'pri_01m20mn4r67t468bkfk7z09k6k';
 const MAX_SKEW_SEC = 5 * 60; // generous vs Paddle's own 5s default — network/clock jitter shouldn't cause false rejects
@@ -68,6 +69,12 @@ export default async function handler(req, res) {
       const list = (await kvGet('mb:paddle:sales')) || [];
       list.push(rec);
       await kvSet('mb:paddle:sales', list.slice(-500), 3 * 365 * 24 * 3600);
+
+      // Issue the reader's restore code, or push its date forward when this is a renewal.
+      try {
+        const lic = await issueLicense({ txId: event.data?.id, subscriptionId: event.data?.subscription_id || null, priceId });
+        console.log('[paddle-webhook] restore code issued', { plan: lic.plan, until: lic.until });
+      } catch (e) { console.error('[paddle-webhook] license failed:', e.message); }
 
       if (priceId === FOUNDING_PRICE_ID) {
         const n = await kvIncr('mb:paddle:founding:count', 3 * 365 * 24 * 3600);

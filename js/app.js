@@ -1,6 +1,6 @@
 // Static imports carry the same cache-busting version as the <script> tag (browsers cache /js for an hour).
-import { mountAll, mountMagnetic, mountSpotlight } from './fx.js?v=20260909a1';
-import { t, initI18n, getLang, setLang, LANGS } from './i18n.js?v=20260909a1';
+import { mountAll, mountMagnetic, mountSpotlight } from './fx.js?v=20260910a1';
+import { t, initI18n, getLang, setLang, LANGS } from './i18n.js?v=20260910a1';
 /* MoodBook v2 — vanilla JS, no build step. */
 await initI18n(); // load the dictionary and translate static copy before anything measures or splits it
 
@@ -27,8 +27,42 @@ function initPaddle() {
       if (e.name !== 'checkout.completed') return;
       const priceId = e.data?.items?.[0]?.price_id || e.data?.items?.[0]?.price?.id;
       grantPro(priceId);
+      claimLicense(e.data?.transaction_id || e.data?.id);
     },
   });
+}
+// After checkout the webhook issues a restore code (api/paddle-webhook.js → lib/license.js). Fetch it by
+// transaction id — it can take a few seconds to arrive — and keep it so Pro can be restored on another device.
+async function claimLicense(txId) {
+  if (!txId) return;
+  for (let i = 0; i < 8; i++) {
+    try {
+      const r = await fetch(`/api/promo?tx=${encodeURIComponent(txId)}`);
+      if (r.ok) {
+        const d = await r.json();
+        if (d.ok && d.code) { saveLicense(d); toast(t('Your restore code {code} is saved in Account.', { code: d.code }), { ms: 7000 }); showPage('account'); return; }
+      }
+    } catch {}
+    await new Promise((res) => setTimeout(res, 3000));
+  }
+}
+function saveLicense(d) {
+  ls.put('mb_license', d.code);
+  ls.put('mb_license_sync', String(Date.now()));
+  ls.put('mb_pro', 'true');
+  ls.put('mb_pro_until', d.expiresAt ? String(Date.parse(d.expiresAt)) : '');
+  renderQuota(); renderAccount();
+}
+// Once a day, ask the server about the saved code: a renewed subscription pushes the Pro date forward.
+async function syncLicense() {
+  const code = ls.raw('mb_license');
+  if (!code || Date.now() - +(ls.raw('mb_license_sync') || 0) < 24 * 3600 * 1000) return;
+  try {
+    const r = await fetch('/api/promo', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code, sync: true }) });
+    const d = await r.json().catch(() => ({}));
+    if (r.ok && d.ok && d.license) saveLicense(d);
+    else if (r.status === 410) ls.put('mb_license_sync', String(Date.now())); // plan ended; the local expiry date takes care of the rest
+  } catch {}
 }
 // Grant Pro locally right after a completed Paddle checkout — the same mechanism promo codes use
 // (see applyPromo below). MoodBook has no accounts yet, so there is no server-side subscription
@@ -538,9 +572,10 @@ async function applyPromo(raw, btn) {
     const r = await fetch('/api/promo', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code }) });
     const d = await r.json().catch(() => ({}));
     if (!r.ok || !d.ok) {
-      const msg = d.error === 'used' ? t('That code has already been used.') : d.error === 'unknown' || d.error === 'invalid' ? t('That code is not valid.') : r.status === 503 ? t('Promo codes are not available right now. Try again later.') : t("That code didn't work. Check the spelling and try again.");
+      const msg = d.error === 'used' ? t('That code has already been used.') : d.error === 'expired' ? t('The plan behind that code has ended.') : d.error === 'unknown' || d.error === 'invalid' ? t('That code is not valid.') : r.status === 503 ? t('Promo codes are not available right now. Try again later.') : t("That code didn't work. Check the spelling and try again.");
       toast(msg, { ms: 4200 }); return false;
     }
+    if (d.license) saveLicense(d); // a purchase restore code: remember it for the daily re-check
     ls.put('mb_pro', 'true');
     const until = d.days >= 36500 ? 0 : Date.parse(d.expiresAt);
     if (until) ls.put('mb_pro_until', String(until)); else ls.put('mb_pro_until', '');
@@ -808,6 +843,7 @@ function renderAccount() {
   const pro = isPro();
   const badge = $('#acctBadge'); badge.textContent = pro ? '✦ Pro' : 'Free'; badge.classList.toggle('is-pro', pro);
   const untilEl = $('#proUntil'); if (untilEl) { untilEl.hidden = !(pro && proUntil()); untilEl.textContent = pro && proUntil() ? t('Pro until {date}', { date: fmtDate(proUntil()) }) : ''; }
+  const rb = $('#restoreBox'); if (rb) { const code = ls.raw('mb_license') || ''; rb.hidden = !code; $('#restoreCode').textContent = code; }
   $('#statBooks').textContent = DB.books.length;
   $('#statLiked').textContent = DB.liked.length;
   $('#statSearches').textContent = ls.raw('mb_total_searches') || '0';
@@ -867,6 +903,7 @@ $('#finalCta')?.addEventListener('click', (e) => {
     applyPromo(code).then((ok) => { if (!ok) { showPage('account'); const inp = $('#promoInputAcct'); if (inp) inp.value = code; } });
   }
   if (ls.raw('mb_pro') === 'true' && proUntil() && Date.now() >= proUntil() && !ls.raw('mb_pro_expired_told')) { ls.put('mb_pro_expired_told', '1'); toast(t('Your Pro has expired'), { ms: 4500 }); }
+  syncLicense();
   // theme: auto (system) by default; the header button toggles night/day and remembers it
   const themeBtn = $('#themeBtn');
   const applyTheme = () => {

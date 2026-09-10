@@ -1,0 +1,60 @@
+{
+  "remove": ["Have a promo code?"],
+  "add": {
+    "Have a promo or restore code?": {
+      "uk": "Є промокод або код відновлення?",
+      "es": "¿Tienes un código promocional o de restauración?",
+      "fr": "Un code promo ou de restauration ?",
+      "de": "Hast du einen Promo- oder Wiederherstellungscode?",
+      "it": "Hai un codice promo o di ripristino?",
+      "pt": "Tens um código promocional ou de restauro?",
+      "pl": "Masz kod promocyjny lub kod przywracania?",
+      "zh": "有优惠码或恢复码？",
+      "ja": "プロモコードまたは復元コードはありますか？"
+    },
+    "Your restore code": {
+      "uk": "Твій код відновлення",
+      "es": "Tu código de restauración",
+      "fr": "Ton code de restauration",
+      "de": "Dein Wiederherstellungscode",
+      "it": "Il tuo codice di ripristino",
+      "pt": "O teu código de restauro",
+      "pl": "Twój kod przywracania",
+      "zh": "你的恢复码",
+      "ja": "あなたの復元コード"
+    },
+    "keeps Pro on any other device.": {
+      "uk": "повертає Pro на будь-якому іншому пристрої.",
+      "es": "activa Pro en cualquier otro dispositivo.",
+      "fr": "réactive Pro sur n'importe quel autre appareil.",
+      "de": "bringt Pro auf jedes andere Gerät.",
+      "it": "riattiva Pro su qualsiasi altro dispositivo.",
+      "pt": "repõe o Pro em qualquer outro dispositivo.",
+      "pl": "przywraca Pro na dowolnym innym urządzeniu.",
+      "zh": "可在任何其他设备上恢复 Pro。",
+      "ja": "他のどの端末でもProを復元できます。"
+    },
+    "Your restore code {code} is saved in Account.": {
+      "uk": "Твій код відновлення {code} збережено в Акаунті.",
+      "es": "Tu código de restauración {code} está guardado en Cuenta.",
+      "fr": "Ton code de restauration {code} est enregistré dans Compte.",
+      "de": "Dein Wiederherstellungscode {code} ist unter Konto gespeichert.",
+      "it": "Il tuo codice di ripristino {code} è salvato in Account.",
+      "pt": "O teu código de restauro {code} está guardado em Conta.",
+      "pl": "Twój kod przywracania {code} jest zapisany w Koncie.",
+      "zh": "你的恢复码 {code} 已保存在账户中。",
+      "ja": "復元コード {code} はアカウントに保存されています。"
+    },
+    "The plan behind that code has ended.": {
+      "uk": "План за цим кодом уже закінчився.",
+      "es": "El plan de ese código ya terminó.",
+      "fr": "L'abonnement lié à ce code est terminé.",
+      "de": "Der Plan hinter diesem Code ist abgelaufen.",
+      "it": "Il piano legato a questo codice è terminato.",
+      "pt": "O plano desse código já terminou.",
+      "pl": "Plan powiązany z tym kodem wygasł.",
+      "zh": "该码对应的方案已结束。",
+      "ja": "このコードのプランは終了しました。"
+    }
+  }
+}
