@@ -1,18 +1,30 @@
 // GET /api/search?q=...  → best embeddable long YouTube video for a query
 // Requires YT_API_KEY (server-side only, never shipped to the browser).
 // Quota: search.list costs 100 of the free 10 000 daily units (~100 searches a day), so:
-//   1. every answer is cached for 60 days (memory + shared store);
+//   1. every answer is cached for 30 days (memory + shared store);
 //   2. every real result also goes into the self-growing catalog (lib/catalog.js), which answers any
-//      later query with the same meaning without touching YouTube;
+//      later query with the same meaning without touching YouTube; entries older than 30 days are
+//      re-checked with videos.list (1 unit) and refreshed or dropped — YouTube API policy III.E.4;
 //   3. once YouTube reports quotaExceeded, evergreen mixes play until the quota resets at midnight Pacific.
 // Each real search is counted in mb:yt:used:<date> so /api/health?probe=1 can show today's usage.
 import { cors, guard, cacheFor, noCache, str, fetchWithTimeout } from '../lib/http.js';
 import { layeredCache, getFlag, setFlag, kvIncr } from '../lib/store.js';
 import { pickEvergreen } from '../lib/evergreen.js';
-import { findInCatalog, addToCatalog, pacificDate } from '../lib/catalog.js';
+import { findInCatalog, addToCatalog, refreshCatalog, dropFromCatalog, pacificDate } from '../lib/catalog.js';
 
 const cache = layeredCache('yt', { limit: 1000 });
-const CACHE_MS = 60 * 24 * 3600 * 1000; // a good mix for a query stays good for a long time
+const CACHE_MS = 30 * 24 * 3600 * 1000; // YouTube API Data may be kept at most 30 days without a refresh
+
+/** videos.list for one id (1 quota unit): fresh public metadata, or null when the video is gone/private/not embeddable. */
+async function refreshVideo(videoId, key) {
+  const vp = new URLSearchParams({ part: 'snippet,status,contentDetails,statistics', id: videoId, key });
+  const r = await fetchWithTimeout(`https://www.googleapis.com/youtube/v3/videos?${vp}`, {}, 8000);
+  const d = await r.json();
+  if (!r.ok) throw new Error(d?.error?.message || `YouTube videos ${r.status}`);
+  const v = (d.items || [])[0];
+  if (!v || v.status?.embeddable === false || (v.status?.privacyStatus || 'public') !== 'public') return null;
+  return { title: decode(v.snippet?.title || ''), channel: decode(v.snippet?.channelTitle || ''), thumb: v.snippet?.thumbnails?.medium?.url || '', seconds: isoToSec(v.contentDetails?.duration), views: +(v.statistics?.viewCount || 0) };
+}
 const BLOCK = /lyrics|karaoke|vocal|sing|cover song|reaction|podcast|asmr talk|tutorial|review|trailer/i;
 let quotaDownUntil = 0; // per-instance mirror of the shared flag
 
@@ -72,7 +84,15 @@ export default async function handler(req, res) {
   }
 
   // Same meaning searched before (by anyone)? Serve it from the catalog — costs no quota at all.
-  const known = await findInCatalog(q);
+  let known = await findInCatalog(q);
+  if (known?.stale) {
+    // Older than 30 days: re-check the video with YouTube (1 unit) before serving it again.
+    try {
+      const fresh = await refreshVideo(known.payload.videoId, key);
+      if (fresh) { known.payload = { ...known.payload, ...fresh }; await refreshCatalog(known.key, known.payload); }
+      else { await dropFromCatalog(known.key); known = null; }
+    } catch (e) { console.warn('[search] refresh failed, searching instead:', e.message); known = null; }
+  }
   if (known) {
     await cache.set(cacheKey, known.payload, CACHE_MS);
     cacheFor(res, 24 * 3600);
