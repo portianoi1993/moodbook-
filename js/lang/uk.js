@@ -245,7 +245,6 @@ export default {
   '14-day money-back guarantee. Books already on your shelf keep playing for free.': '14-денна гарантія повернення коштів. Книги, що вже на полиці, продовжують грати безкоштовно.',
   'Go Pro': 'Перейти на Pro',
   'Become a Founding Reader': 'Стати Founding Reader',
-  '🎉 Welcome to Pro. Enjoy the unlimited soundtrack.': '🎉 Ласкаво просимо до Pro. Насолоджуйся необмеженим саундтреком.',
   'Payments didn\'t load. Check your connection and try again.': 'Оплата не завантажилась. Перевір з\'єднання і спробуй ще раз.',
   'Sound instead of music': 'Звуки замість музики',
   'No melody at all — just the world of the book: rain, fire, waves, a crowded tavern.': 'Жодної мелодії — тільки світ книги: дощ, вогонь, хвилі, гомін таверни.',
@@ -262,4 +261,7 @@ export default {
   'keeps Pro on any other device.': 'повертає Pro на будь-якому іншому пристрої.',
   'Your restore code {code} is saved in Account.': 'Твій код відновлення {code} збережено в Акаунті.',
   'The plan behind that code has ended.': 'План за цим кодом уже закінчився.',
+  'Payments are not open yet. Try again later.': 'Оплата ще не відкрита. Спробуй трохи пізніше.',
+  'Checking your payment…': 'Перевіряємо оплату…',
+  'Payment is still being confirmed. Your restore code will appear in Account within a few minutes.': 'Оплата ще підтверджується. Код відновлення з\'явиться в Акаунті за кілька хвилин.',
 };

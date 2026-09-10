@@ -245,7 +245,6 @@ export default {
   '14-day money-back guarantee. Books already on your shelf keep playing for free.': '14 天退款保证。已在书架上的书仍可免费播放。',
   'Go Pro': '升级到 Pro',
   'Become a Founding Reader': '成为 Founding Reader',
-  '🎉 Welcome to Pro. Enjoy the unlimited soundtrack.': '🎉 欢迎加入 Pro。尽情享受无限原声音乐。',
   'Payments didn\'t load. Check your connection and try again.': '支付未能加载。请检查网络连接后重试。',
   'Sound instead of music': '用环境音代替音乐',
   'No melody at all — just the world of the book: rain, fire, waves, a crowded tavern.': '没有旋律，只有书中的世界：雨声、火声、海浪、喧闹的酒馆。',
@@ -262,4 +261,7 @@ export default {
   'keeps Pro on any other device.': '可在任何其他设备上恢复 Pro。',
   'Your restore code {code} is saved in Account.': '你的恢复码 {code} 已保存在账户中。',
   'The plan behind that code has ended.': '该码对应的方案已结束。',
+  'Payments are not open yet. Try again later.': '付款尚未开放，请稍后再试。',
+  'Checking your payment…': '正在确认付款…',
+  'Payment is still being confirmed. Your restore code will appear in Account within a few minutes.': '付款仍在确认中。恢复码将在几分钟内显示在账户中。',
 };

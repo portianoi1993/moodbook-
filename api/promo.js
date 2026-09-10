@@ -4,7 +4,7 @@
 //                              Restore codes from purchases (lib/license.js) are accepted here too:
 //                              they never burn and answer {ok, plan:'pro', expiresAt, license:true, code}.
 //                              body {code, sync:true} is the app's silent daily re-check (not counted).
-//   GET  /api/promo?tx=txn_…   → the restore code of a just-completed Paddle checkout (no token: ids are unguessable)
+//   GET  /api/promo?tx=mb_…    → the restore code of a just-completed checkout, by order id (no token: ids are unguessable)
 //   GET  /api/promo?admin=TOKEN&create=1&note=Blogger&days=365&uses=1   → mint a code (owner only)
 //   GET  /api/promo?admin=TOKEN&list=1                                   → list codes with status (owner only)
 //   GET  /api/promo?admin=TOKEN&revoke=CODE                              → disable a code
@@ -44,10 +44,10 @@ export default async function handler(req, res) {
   // ── owner actions ──────────────────────────────────────────────────────────
   if (req.method === 'GET') {
     const q = req.query || {};
-    // A just-completed Paddle checkout asks for its restore code by transaction id.
+    // Back from checkout: the browser asks for its restore code by order id (unguessable, minted by api/liqpay.js).
     if (q.tx) {
       const txId = str(q.tx, 80);
-      if (!/^txn_[a-z0-9]{10,}$/i.test(txId)) return res.status(400).json({ error: 'invalid' });
+      if (!/^mb_(monthly|annual|lifetime)_[a-z0-9]{8,}$/i.test(txId)) return res.status(400).json({ error: 'invalid' });
       const rec = await licenseByTx(txId);
       if (!rec) return res.status(404).json({ error: 'pending', message: 'Not recorded yet — the webhook may still be on its way.' });
       return res.status(200).json(publicView(rec));

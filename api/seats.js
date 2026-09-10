@@ -1,5 +1,5 @@
 // GET /api/seats → {sold, left, total} for the Founding Reader plan.
-// The counter is written by api/paddle-webhook.js on every completed Founding Reader purchase.
+// The counter is written by api/liqpay-webhook.js on every completed Founding Reader purchase.
 // Public and cheap: cached for a few minutes at the edge so the landing page can show it freely.
 import { cors, guard, cacheFor } from '../lib/http.js';
 import { kvGet } from '../lib/store.js';
@@ -12,7 +12,7 @@ export default async function handler(req, res) {
 
   let sold = 0;
   try {
-    const raw = await kvGet('mb:paddle:founding:count');
+    const raw = await kvGet('mb:founding:count');
     sold = Math.max(0, Math.min(TOTAL, parseInt(raw, 10) || 0));
   } catch { /* store down → show the full 100, never block the page */ }
 

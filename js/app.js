@@ -1,6 +1,6 @@
 // Static imports carry the same cache-busting version as the <script> tag (browsers cache /js for an hour).
-import { mountAll, mountMagnetic, mountSpotlight } from './fx.js?v=20260910a1';
-import { t, initI18n, getLang, setLang, LANGS } from './i18n.js?v=20260910a1';
+import { mountAll, mountMagnetic, mountSpotlight } from './fx.js?v=20260910a2';
+import { t, initI18n, getLang, setLang, LANGS } from './i18n.js?v=20260910a2';
 /* MoodBook v2 — vanilla JS, no build step. */
 await initI18n(); // load the dictionary and translate static copy before anything measures or splits it
 
@@ -13,38 +13,42 @@ const PRICES = {
   uah: { monthly: '₴249', annual: '₴1 490', perMonth: '₴124', lifetime: '₴1 990' },
 };
 const PRICE = new Proxy({}, { get: (_, k) => (getLang() === 'uk' ? PRICES.uah : PRICES.usd)[k] });
-// Paddle (Merchant of Record — handles cards, Apple Pay, Google Pay and tax worldwide).
-// Client-side token is public by design (safe to ship). Product/price IDs from the live Paddle catalogue.
-const PADDLE_TOKEN = 'live_66eceee86cdb1e5492a46becc2e';
-const PADDLE_PRICE = { monthly: 'pri_01m20m1ehtsv50d1y6782kw8dv', annual: 'pri_01m20mg69ztn0s2b5wsenhfe6j', lifetime: 'pri_01m20mn4r67t468bkfk7z09k6k' };
-let paddleReady = false;
-function initPaddle() {
-  if (paddleReady || typeof Paddle === 'undefined') return;
-  paddleReady = true;
-  Paddle.Initialize({
-    token: PADDLE_TOKEN,
-    eventCallback(e) {
-      if (e.name !== 'checkout.completed') return;
-      const priceId = e.data?.items?.[0]?.price_id || e.data?.items?.[0]?.price?.id;
-      grantPro(priceId);
-      claimLicense(e.data?.transaction_id || e.data?.id);
-    },
-  });
+// LiqPay (PrivatBank): cards, Apple Pay, Google Pay, Privat24. The server (api/liqpay.js) signs the order, the
+// browser posts it to LiqPay's hosted page, LiqPay sends the reader back to /?paid=<order> and calls our webhook,
+// which issues the restore code (lib/license.js). The browser then fetches that code by order id.
+async function startCheckout(plan, btn) {
+  btn?.setAttribute('disabled', '');
+  try {
+    const r = await fetch('/api/liqpay', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ plan, lang: getLang() }) });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok || !d.ok) { toast(r.status === 503 ? t('Payments are not open yet. Try again later.') : t("Payments didn't load. Check your connection and try again."), { ms: 4500 }); return; }
+    ls.put('mb_pending_order', d.orderId); ls.put('mb_pending_at', String(Date.now()));
+    const f = document.createElement('form'); f.method = 'POST'; f.action = d.url; f.acceptCharset = 'utf-8';
+    for (const [k, v] of [['data', d.data], ['signature', d.signature]]) { const i = document.createElement('input'); i.type = 'hidden'; i.name = k; i.value = v; f.appendChild(i); }
+    document.body.appendChild(f); f.submit();
+  } catch { toast(t("Payments didn't load. Check your connection and try again.")); }
+  finally { btn?.removeAttribute('disabled'); }
 }
-// After checkout the webhook issues a restore code (api/paddle-webhook.js → lib/license.js). Fetch it by
-// transaction id — it can take a few seconds to arrive — and keep it so Pro can be restored on another device.
-async function claimLicense(txId) {
-  if (!txId) return;
-  for (let i = 0; i < 8; i++) {
+// After payment the webhook issues a restore code. Fetch it by order id — it can take a little while to
+// arrive — and keep it so Pro can be restored on another device.
+async function claimLicense(txId, attempts = 8) {
+  if (!txId) return false;
+  for (let i = 0; i < attempts; i++) {
     try {
       const r = await fetch(`/api/promo?tx=${encodeURIComponent(txId)}`);
       if (r.ok) {
         const d = await r.json();
-        if (d.ok && d.code) { saveLicense(d); toast(t('Your restore code {code} is saved in Account.', { code: d.code }), { ms: 7000 }); showPage('account'); return; }
+        if (d.ok && d.code) {
+          saveLicense(d); ls.put('mb_pending_order', ''); ls.put('mb_pending_at', '');
+          toast(t('Your restore code {code} is saved in Account.', { code: d.code }), { ms: 7000 }); showPage('account');
+          if (!el.paywall.hidden) { el.paywall.hidden = true; el.hero.hidden = false; }
+          return true;
+        }
       }
     } catch {}
     await new Promise((res) => setTimeout(res, 3000));
   }
+  return false;
 }
 function saveLicense(d) {
   ls.put('mb_license', d.code);
@@ -63,23 +67,6 @@ async function syncLicense() {
     if (r.ok && d.ok && d.license) saveLicense(d);
     else if (r.status === 410) ls.put('mb_license_sync', String(Date.now())); // plan ended; the local expiry date takes care of the rest
   } catch {}
-}
-// Grant Pro locally right after a completed Paddle checkout — the same mechanism promo codes use
-// (see applyPromo below). MoodBook has no accounts yet, so there is no server-side subscription
-// truth to check on return visits; api/paddle-webhook.js only records the sale for the founder.
-function grantPro(priceId) {
-  ls.put('mb_pro', 'true');
-  if (priceId === PADDLE_PRICE.lifetime) ls.put('mb_pro_until', '');
-  else if (priceId === PADDLE_PRICE.monthly) ls.put('mb_pro_until', String(Date.now() + 35 * 24 * 3600 * 1000));
-  else ls.put('mb_pro_until', String(Date.now() + 370 * 24 * 3600 * 1000)); // annual (and unknown price ids fall back here)
-  renderQuota(); renderAccount();
-  toast(t('🎉 Welcome to Pro. Enjoy the unlimited soundtrack.'), { ms: 5000 });
-  if (!el.paywall.hidden) { el.paywall.hidden = true; el.hero.hidden = false; }
-}
-function openPaddleCheckout(priceId) {
-  initPaddle();
-  if (typeof Paddle === 'undefined') { toast(t("Payments didn't load. Check your connection and try again.")); return; }
-  Paddle.Checkout.open({ items: [{ priceId, quantity: 1 }] });
 }
 
 // ═══════════════ tiny helpers ═══════════════
@@ -863,7 +850,7 @@ function renderAccount() {
   $('#payAlt').textContent = billing === 'monthly' ? t('or {price}/year (save 50%)', { price: PRICE.annual }) : t('or {price}/month', { price: PRICE.monthly });
 }
 $$('.bill').forEach((b) => b.addEventListener('click', () => { billing = b.dataset.bill; renderAccount(); }));
-// Founding Reader is capped at 100 lifetime seats; the count comes from completed Paddle sales.
+// Founding Reader is capped at 100 lifetime seats; the count comes from completed LiqPay sales.
 async function renderSeats() {
   let d;
   try { d = await api('/api/seats'); } catch { return; } // store or network down → keep the static copy
@@ -876,9 +863,9 @@ async function renderSeats() {
   ['#seatsLanding', '#seatsAcct'].forEach((sel) => { const n = $(sel); if (n) n.textContent = copy; });
   if (d.left <= 0) { const b = $('#founderCta'); if (b) { b.disabled = true; b.textContent = t('Sold out'); } }
 }
-$('#proCta')?.addEventListener('click', () => openPaddleCheckout(billing === 'monthly' ? PADDLE_PRICE.monthly : PADDLE_PRICE.annual));
-$('#founderCta')?.addEventListener('click', () => openPaddleCheckout(PADDLE_PRICE.lifetime));
-$('#payCta')?.addEventListener('click', () => openPaddleCheckout(billing === 'monthly' ? PADDLE_PRICE.monthly : PADDLE_PRICE.annual));
+$('#proCta')?.addEventListener('click', (e) => startCheckout(billing === 'monthly' ? 'monthly' : 'annual', e.currentTarget));
+$('#founderCta')?.addEventListener('click', (e) => startCheckout('lifetime', e.currentTarget));
+$('#payCta')?.addEventListener('click', (e) => startCheckout(billing === 'monthly' ? 'monthly' : 'annual', e.currentTarget));
 
 
 // ═══════════════ landing: motion layer + final CTA ═══════════════
@@ -896,6 +883,16 @@ $('#finalCta')?.addEventListener('click', (e) => {
   if (!DB.books.length && ls.raw('mb_books')) { try { DB.books = JSON.parse(ls.raw('mb_books')) || []; } catch {} }
   renderQuota(); renderAccount(); renderSeats();
   const params = new URLSearchParams(location.search);
+  // Back from LiqPay (/?paid=<order>): the webhook issues the restore code, fetch it by order id. If the reader
+  // closed the tab too early, the order remembered at checkout time is retried quietly for a day.
+  const paidNow = params.get('paid') || '';
+  const pending = Date.now() - +(ls.raw('mb_pending_at') || 0) < 24 * 3600 * 1000 ? (ls.raw('mb_pending_order') || '') : '';
+  if (paidNow || pending) {
+    if (paidNow) { history.replaceState(null, '', location.pathname); toast(t('Checking your payment…'), { ms: 3000 }); }
+    claimLicense(paidNow || pending, paidNow ? 20 : 2).then((ok) => {
+      if (!ok && paidNow) toast(t('Payment is still being confirmed. Your restore code will appear in Account within a few minutes.'), { ms: 8000 });
+    });
+  }
   // Deep link with a promo code (e.g. sent to a blogger): redeem it once and clean the URL.
   if (params.get('code')) {
     const code = params.get('code');

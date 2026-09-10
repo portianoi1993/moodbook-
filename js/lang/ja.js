@@ -245,7 +245,6 @@ export default {
   '14-day money-back guarantee. Books already on your shelf keep playing for free.': '14日間の返金保証。すでに本棚にある本は引き続き無料で再生されます。',
   'Go Pro': 'Proにアップグレード',
   'Become a Founding Reader': 'Founding Readerになる',
-  '🎉 Welcome to Pro. Enjoy the unlimited soundtrack.': '🎉 Proへようこそ。無制限のサウンドトラックをお楽しみください。',
   'Payments didn\'t load. Check your connection and try again.': '決済の読み込みに失敗しました。接続を確認して再試行してください。',
   'Sound instead of music': '音楽ではなく音',
   'No melody at all — just the world of the book: rain, fire, waves, a crowded tavern.': '旋律は一切なし。あるのは本の世界だけ——雨、炎、波、賑わう酒場。',
@@ -262,4 +261,7 @@ export default {
   'keeps Pro on any other device.': '他のどの端末でもProを復元できます。',
   'Your restore code {code} is saved in Account.': '復元コード {code} はアカウントに保存されています。',
   'The plan behind that code has ended.': 'このコードのプランは終了しました。',
+  'Payments are not open yet. Try again later.': 'お支払いはまだ受け付けていません。後でもう一度お試しください。',
+  'Checking your payment…': 'お支払いを確認しています…',
+  'Payment is still being confirmed. Your restore code will appear in Account within a few minutes.': 'お支払いはまだ確認中です。復元コードは数分以内にアカウントに表示されます。',
 };

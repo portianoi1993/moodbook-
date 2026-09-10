@@ -245,7 +245,6 @@ export default {
   '14-day money-back guarantee. Books already on your shelf keep playing for free.': 'Garantia de reembolso de 14 dias. Os livros já na tua estante continuam a tocar gratuitamente.',
   'Go Pro': 'Passar a Pro',
   'Become a Founding Reader': 'Tornar-se Founding Reader',
-  '🎉 Welcome to Pro. Enjoy the unlimited soundtrack.': '🎉 Bem-vindo ao Pro. Aproveita a banda sonora ilimitada.',
   'Payments didn\'t load. Check your connection and try again.': 'Os pagamentos não carregaram. Verifica a tua ligação e tenta novamente.',
   'Sound instead of music': 'Som em vez de música',
   'No melody at all — just the world of the book: rain, fire, waves, a crowded tavern.': 'Sem melodia nenhuma — apenas o mundo do livro: chuva, fogo, ondas, uma taberna cheia.',
@@ -262,4 +261,7 @@ export default {
   'keeps Pro on any other device.': 'repõe o Pro em qualquer outro dispositivo.',
   'Your restore code {code} is saved in Account.': 'O teu código de restauro {code} está guardado em Conta.',
   'The plan behind that code has ended.': 'O plano desse código já terminou.',
+  'Payments are not open yet. Try again later.': 'Os pagamentos ainda não estão abertos. Tenta mais tarde.',
+  'Checking your payment…': 'A verificar o pagamento…',
+  'Payment is still being confirmed. Your restore code will appear in Account within a few minutes.': 'O pagamento ainda está a ser confirmado. O teu código de restauro aparecerá em Conta dentro de minutos.',
 };

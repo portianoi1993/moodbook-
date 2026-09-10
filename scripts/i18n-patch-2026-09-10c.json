@@ -1,0 +1,38 @@
+{
+  "remove": ["🎉 Welcome to Pro. Enjoy the unlimited soundtrack."],
+  "add": {
+    "Payments are not open yet. Try again later.": {
+      "uk": "Оплата ще не відкрита. Спробуй трохи пізніше.",
+      "es": "Los pagos aún no están abiertos. Inténtalo más tarde.",
+      "fr": "Les paiements ne sont pas encore ouverts. Réessaie plus tard.",
+      "de": "Zahlungen sind noch nicht freigeschaltet. Versuch es später noch einmal.",
+      "it": "I pagamenti non sono ancora attivi. Riprova più tardi.",
+      "pt": "Os pagamentos ainda não estão abertos. Tenta mais tarde.",
+      "pl": "Płatności nie są jeszcze otwarte. Spróbuj później.",
+      "zh": "付款尚未开放，请稍后再试。",
+      "ja": "お支払いはまだ受け付けていません。後でもう一度お試しください。"
+    },
+    "Checking your payment…": {
+      "uk": "Перевіряємо оплату…",
+      "es": "Comprobando tu pago…",
+      "fr": "Vérification du paiement…",
+      "de": "Zahlung wird geprüft…",
+      "it": "Verifica del pagamento…",
+      "pt": "A verificar o pagamento…",
+      "pl": "Sprawdzamy płatność…",
+      "zh": "正在确认付款…",
+      "ja": "お支払いを確認しています…"
+    },
+    "Payment is still being confirmed. Your restore code will appear in Account within a few minutes.": {
+      "uk": "Оплата ще підтверджується. Код відновлення з'явиться в Акаунті за кілька хвилин.",
+      "es": "El pago aún se está confirmando. Tu código de restauración aparecerá en Cuenta en unos minutos.",
+      "fr": "Le paiement est en cours de confirmation. Ton code de restauration apparaîtra dans Compte d'ici quelques minutes.",
+      "de": "Die Zahlung wird noch bestätigt. Dein Wiederherstellungscode erscheint in wenigen Minuten unter Konto.",
+      "it": "Il pagamento è ancora in conferma. Il tuo codice di ripristino apparirà in Account tra pochi minuti.",
+      "pt": "O pagamento ainda está a ser confirmado. O teu código de restauro aparecerá em Conta dentro de minutos.",
+      "pl": "Płatność jest jeszcze potwierdzana. Kod przywracania pojawi się w Koncie za kilka minut.",
+      "zh": "付款仍在确认中。恢复码将在几分钟内显示在账户中。",
+      "ja": "お支払いはまだ確認中です。復元コードは数分以内にアカウントに表示されます。"
+    }
+  }
+}
