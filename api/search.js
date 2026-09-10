@@ -1,13 +1,18 @@
 // GET /api/search?q=...  → best embeddable long YouTube video for a query
 // Requires YT_API_KEY (server-side only, never shipped to the browser).
-// Quota: search.list costs 100 of the free 10 000 daily units, so every answer is cached for a week
-// (memory + shared store) and, once YouTube reports quotaExceeded, we serve evergreen mixes until
-// the quota resets at midnight Pacific time instead of failing.
+// Quota: search.list costs 100 of the free 10 000 daily units (~100 searches a day), so:
+//   1. every answer is cached for 60 days (memory + shared store);
+//   2. every real result also goes into the self-growing catalog (lib/catalog.js), which answers any
+//      later query with the same meaning without touching YouTube;
+//   3. once YouTube reports quotaExceeded, evergreen mixes play until the quota resets at midnight Pacific.
+// Each real search is counted in mb:yt:used:<date> so /api/health?probe=1 can show today's usage.
 import { cors, guard, cacheFor, noCache, str, fetchWithTimeout } from '../lib/http.js';
-import { layeredCache, getFlag, setFlag } from '../lib/store.js';
+import { layeredCache, getFlag, setFlag, kvIncr } from '../lib/store.js';
 import { pickEvergreen } from '../lib/evergreen.js';
+import { findInCatalog, addToCatalog, pacificDate } from '../lib/catalog.js';
 
 const cache = layeredCache('yt', { limit: 1000 });
+const CACHE_MS = 60 * 24 * 3600 * 1000; // a good mix for a query stays good for a long time
 const BLOCK = /lyrics|karaoke|vocal|sing|cover song|reaction|podcast|asmr talk|tutorial|review|trailer/i;
 let quotaDownUntil = 0; // per-instance mirror of the shared flag
 
@@ -66,6 +71,16 @@ export default async function handler(req, res) {
     return res.status(200).json(hit);
   }
 
+  // Same meaning searched before (by anyone)? Serve it from the catalog — costs no quota at all.
+  const known = await findInCatalog(q);
+  if (known) {
+    await cache.set(cacheKey, known.payload, CACHE_MS);
+    cacheFor(res, 24 * 3600);
+    res.setHeader('X-Cache', 'MISS');
+    res.setHeader('X-Source', known.exact ? 'catalog' : 'catalog-similar');
+    return res.status(200).json(known.payload);
+  }
+
   const seed = [...q].reduce((a, c) => a + c.charCodeAt(0), 0);
   if (await quotaIsDown()) {
     // Do not cache: the moment the quota is back, the real search should run.
@@ -75,6 +90,7 @@ export default async function handler(req, res) {
   }
 
   try {
+    await kvIncr(`mb:yt:used:${pacificDate()}`, 3 * 24 * 3600); // one search.list = 100 units
     const sp = new URLSearchParams({
       part: 'snippet', q, type: 'video', maxResults: '10',
       videoEmbeddable: 'true', videoSyndicated: 'true', videoDuration: 'long',
@@ -135,9 +151,11 @@ export default async function handler(req, res) {
       views: pick.views,
       alternatives: ranked.slice(1, 4).map((x) => ({ videoId: x.it.id.videoId, title: decode(x.it.snippet?.title || '') })),
     };
-    await cache.set(cacheKey, payload, 7 * 24 * 3600 * 1000); // a good mix for a query stays good for a week
+    await cache.set(cacheKey, payload, CACHE_MS);
+    await addToCatalog(q, payload);
     cacheFor(res, 24 * 3600);
     res.setHeader('X-Cache', 'MISS');
+    res.setHeader('X-Source', 'youtube');
     return res.status(200).json(payload);
   } catch (e) {
     console.error('[search] failed:', e.message);

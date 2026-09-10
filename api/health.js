@@ -2,7 +2,8 @@
 // GET /api/health?probe=1  → also pings every AI provider in the fallback chain and reports the real upstream answer
 import { cors, guard, noCache } from '../lib/http.js';
 import { getProviders, probeAll, listModels } from '../lib/ai.js';
-import { kvEnabled, kvPing, getFlag } from '../lib/store.js';
+import { kvEnabled, kvPing, getFlag, kvGet } from '../lib/store.js';
+import { catalogSize, pacificDate } from '../lib/catalog.js';
 
 export default async function handler(req, res) {
   if (cors(req, res, 'GET, OPTIONS')) return;
@@ -30,6 +31,9 @@ export default async function handler(req, res) {
     out.ok = out.ok && out.probe.some((p) => p.ok);
     if (kvEnabled()) out.store = await kvPing();
     const yt = await getFlag('yt-quota-down'); if (yt && Date.now() < yt) out.youtubeQuota = { exhaustedUntil: new Date(yt).toISOString() };
+    // Real YouTube searches made today (quota day = Los Angeles date; ~100 allowed) and how many
+    // distinct queries the self-growing catalog can already answer for free.
+    out.youtube = { searchesToday: (await kvGet(`mb:yt:used:${pacificDate()}`)) ?? 0, searchesPerDay: 100, catalog: await catalogSize() };
     const gb = await getFlag('gb-quota-down'); if (gb && Date.now() < gb) out.googleBooksQuota = { pausedUntil: new Date(gb).toISOString() };
   }
   if (req.query?.models === '1') {

@@ -14,7 +14,7 @@
 Без Redis усе працює як раніше (памʼять + CDN), просто менш стійко.
 
 ## 2. Заявки на збільшення квот (безкоштовно, розгляд 1–3 тижні)
-### YouTube Data API v3 (зараз 10 000 одиниць/день = ~100 пошуків)
+### YouTube Data API v3 (зараз 10 000 одиниць/день = ~100 пошуків) — **заявку подано 10.09.2026**, чекаємо
 1. Google Cloud Console → проєкт «My First Project» → APIs & Services → **YouTube Data API v3** → **Quotas**.
 2. Знайди «Queries per day», натисни олівець → «Apply for higher quota».
 3. Форма: опиши сервіс так: *MoodBook is a web app that recommends long instrumental YouTube mixes matched to the book a reader is currently reading. Each user action performs one search.list call; results are cached for 7 days. Requested: 100,000 units/day.* Додай посилання на сайт, Privacy і Terms (вони є). Скріншоти інтерфейсу допомагають.
@@ -32,7 +32,8 @@ APIs & Services → **Books API** → Quotas → «Queries per day» → Apply. 
 
 ## Що код робить сам (нічого натискати не треба)
 - **Gemini без квоти** → сусідні моделі того самого ключа (flash-lite, інші flash, gemma), потім офлайн-жанровий плейлист із кнопкою «Try again».
-- **YouTube без квоти** (`quotaExceeded`) → до опівночі за Тихоокеанським часом грають **evergreen-мікси**: перевірені довгі відео за 14 музичними сімействами (`lib/evergreen.js`), підібрані за словами запиту. Користувач бачить одну підказку про це. Реальні пошуки кешуються на 7 днів; підігрівається лише перший трек.
+- **YouTube без квоти** (`quotaExceeded`) → до опівночі за Тихоокеанським часом грають **evergreen-мікси**: перевірені довгі відео за 14 музичними сімействами (`lib/evergreen.js`), підібрані за словами запиту. Користувач бачить одну підказку про це. Реальні пошуки кешуються на 60 днів; підігрівається лише перший трек.
+- **Самозростаючий каталог** (`lib/catalog.js`, з 10.09.2026): кожен справжній результат пошуку зберігається назавжди (`mb:ytc:v:<слова>` + список `mb:ytc:index`). Новий запит спершу шукає в каталозі запит із тим самим змістом (збіг значущих слів ≥ 60 %, «music» і «ambience» рахуються значущими, щоб музику не плутати зі звуками) і йде в YouTube лише коли схожого немає. Порядок: точний кеш → каталог → перевірка квоти → YouTube. Заголовок відповіді `X-Source: youtube | catalog | catalog-similar`. `/api/health?probe=1` показує `youtube.searchesToday` (з ~100) і `youtube.catalog` (скільки запитів уже безкоштовні).
 - **Google Books без квоти** → 15 хвилин лише Open Library; авторський індекс Google питаємо тільки для запитів із двох і більше слів.
 - **Rate limit** рахується спільно між інстансами, якщо є Redis.
 - `/api/health?probe=1` показує статус store, прапорці вичерпаних квот і тестовий виклик AI.
